@@ -1,0 +1,11 @@
+# PlatformIO
+.pio/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Inbox (temporary staging, not tracked)
+inbox/

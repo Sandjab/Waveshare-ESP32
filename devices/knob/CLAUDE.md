@@ -1,0 +1,37 @@
+# Waveshare ESP32-S3-Knob-Touch-LCD-1.8
+
+Documentation and development repo for the Waveshare ESP32-S3-Knob-Touch-LCD-1.8 device.
+
+## Skill
+
+For hardware details, pinout, GPIO table, framework setup, and flash commands, invoke the `waveshare-knob` skill. It is the primary reference for this project.
+
+## Repo Structure
+
+```
+Knob/
+├── .claude/skills/waveshare-knob/   # Device skill (4 files — SKILL.md is entry point)
+├── docs/
+│   ├── demo-code/                   # Waveshare demo code (ESP-IDF + Arduino, 8 examples each)
+│   └── schematics/                  # 5 schematic pages (PNG)
+└── inbox/                           # Temporary staging area for new material
+```
+
+## Conventions
+
+- **Demo code is authoritative for GPIOs.** `docs/demo-code/` takes precedence over schematics when there is a conflict. Schematics have been wrong for SD card GPIOs in the past.
+- **`inbox/`** is a temporary drop zone — files there are unprocessed material, not project source.
+- **Schematics** in `docs/schematics/` are reference-only PNGs (5 pages covering LCD/power, ESP32-S3, ESP32 secondary, peripherals, DAC).
+
+## LVGL Documentation
+
+The demo code uses LVGL v8.3.11. For up-to-date docs, use Context7:
+- `/websites/lvgl_io_8_4` — best version match (v8.4, closest to v8.3.11)
+- `/websites/lvgl_io_master` — latest docs (6400 snippets, highest coverage)
+- Official docs: https://docs.lvgl.io
+
+## Gotchas
+
+- **Not a Guition JC3636W518.** Similar form factor, completely different pinouts. Do not mix configurations.
+- **Display driver mismatch.** The QSPI framework uses `esp_lcd_sh8601`, but the actual panel IC is an **ST77916** with a custom init sequence. Don't assume SH8601 registers apply.
+- **GPIO 0 dual role.** It serves as both BOOT strap pin and audio mux control (HIGH = S3 controls PCM5100A DAC).
