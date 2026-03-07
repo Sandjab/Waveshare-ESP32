@@ -21,3 +21,11 @@
 // --- I2C (shared: CST816 touch + DRV2605 haptics) ---
 #define PIN_I2C_SDA   11
 #define PIN_I2C_SCL   12
+
+// --- SD Card (SDMMC 4-wire) ---
+#define SD_CMD_PIN    3
+#define SD_CLK_PIN    4
+#define SD_D0_PIN     5
+#define SD_D1_PIN     6
+#define SD_D2_PIN     42
+#define SD_D3_PIN     2
