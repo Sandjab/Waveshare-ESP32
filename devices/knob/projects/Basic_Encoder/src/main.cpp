@@ -1,7 +1,5 @@
 #include <Arduino.h>
-#include <Wire.h>
 #include <lvgl.h>
-#include <Adafruit_DRV2605.h>
 #include "esp_lcd_panel_io.h"
 #include "esp_lcd_panel_ops.h"
 #include "driver/spi_master.h"
@@ -11,52 +9,15 @@
 #include "knob_lcd_init.h"
 #include "bidi_switch_knob.h"
 
-#define BUF_HEIGHT    36
-
-// ---- Hue step per encoder count ----
-#define HUE_STEP      5
+#define BUF_HEIGHT 36
 
 // ---- Globals ----
 static esp_lcd_panel_handle_t panel_handle = NULL;
 static lv_disp_draw_buf_t disp_buf;
 static lv_disp_drv_t disp_drv;
-
-static Adafruit_DRV2605 drv;
-static bool drv_ok = false;
-
-// ---- Encoder (bidi_switch_knob driver) ----
 static volatile int32_t enc_position = 0;
-
-static lv_obj_t *bg_obj = NULL;
-static lv_obj_t *dot_obj = NULL;
-static lv_obj_t *hex_label = NULL;
-static lv_obj_t *count_label = NULL;
-
-static int16_t hue = 0;
 static int32_t last_count = 0;
-
-// ---- HSV to RGB (S=255, V=255) ----
-static void hsv_to_rgb(uint16_t h, uint8_t &r, uint8_t &g, uint8_t &b) {
-    h = h % 360;
-    uint16_t sector = h / 60;
-    uint16_t frac = (h % 60) * 255 / 60;
-    uint8_t q = 255 - frac;
-    uint8_t t = frac;
-
-    switch (sector) {
-        case 0:  r = 255; g = t;   b = 0;   break;
-        case 1:  r = q;   g = 255; b = 0;   break;
-        case 2:  r = 0;   g = 255; b = t;   break;
-        case 3:  r = 0;   g = q;   b = 255; break;
-        case 4:  r = t;   g = 0;   b = 255; break;
-        default: r = 255; g = 0;   b = q;   break;
-    }
-}
-
-// ---- Perceived brightness (BT.601) ----
-static bool is_dark(uint8_t r, uint8_t g, uint8_t b) {
-    return (r * 299 + g * 587 + b * 114) < 128000;
-}
+static lv_obj_t *count_label = NULL;
 
 // ---- LVGL callbacks ----
 static bool notify_flush_ready(esp_lcd_panel_io_handle_t io,
@@ -80,39 +41,10 @@ static void lvgl_rounder_cb(lv_disp_drv_t *disp_drv, lv_area_t *area) {
     area->y2 = ((area->y2 >> 1) << 1) + 1;
 }
 
-// ---- Haptic tick ----
-static void haptic_tick() {
-    if (!drv_ok) return;
-    drv.setWaveform(0, 17);  // Strong Click 1
-    drv.setWaveform(1, 0);
-    drv.go();
-}
-
-// ---- Update display for current hue ----
-static void update_color() {
-    uint8_t r, g, b;
-    hsv_to_rgb(hue, r, g, b);
-
-    // Background
-    lv_obj_set_style_bg_color(bg_obj, lv_color_make(r, g, b), 0);
-
-    // Auto-contrast: white on dark, black on light
-    bool dark = is_dark(r, g, b);
-    lv_color_t fg = dark ? lv_color_white() : lv_color_black();
-    lv_obj_set_style_bg_color(dot_obj, fg, 0);
-    lv_obj_set_style_text_color(hex_label, fg, 0);
-    lv_obj_set_style_text_color(count_label, fg, 0);
-
-    // Update hex string
-    char hex[10];
-    snprintf(hex, sizeof(hex), "#%02X%02X%02X", r, g, b);
-    lv_label_set_text(hex_label, hex);
-}
-
 // ---- Setup ----
 void setup() {
     Serial.begin(115200);
-    Serial.println("Basic_Encoder: Hue Wheel");
+    Serial.println("Basic_Encoder: Counter");
 
     // 1. Display init (QSPI bus)
     Serial.println("Init SPI bus...");
@@ -122,7 +54,7 @@ void setup() {
     );
     ESP_ERROR_CHECK(spi_bus_initialize(SPI2_HOST, &buscfg, SPI_DMA_CH_AUTO));
 
-    // 2. Panel IO (with LVGL flush-ready callback)
+    // 2. Panel IO
     Serial.println("Create panel IO...");
     esp_lcd_panel_io_handle_t io_handle = NULL;
     const esp_lcd_panel_io_spi_config_t io_config = SH8601_PANEL_IO_QSPI_CONFIG(
@@ -182,38 +114,13 @@ void setup() {
     ESP_ERROR_CHECK(esp_timer_create(&tick_args, &tick_timer));
     ESP_ERROR_CHECK(esp_timer_start_periodic(tick_timer, 2000));
 
-    // 6. Build UI
+    // 6. UI — single centered counter label
     Serial.println("Build UI...");
-
-    // Full-screen background
-    bg_obj = lv_obj_create(lv_scr_act());
-    lv_obj_remove_style_all(bg_obj);
-    lv_obj_set_size(bg_obj, LCD_H_RES, LCD_V_RES);
-    lv_obj_set_style_bg_opa(bg_obj, LV_OPA_COVER, 0);
-    lv_obj_set_style_bg_color(bg_obj, lv_color_make(255, 0, 0), 0);
-
-    // Center dot (semi-transparent contrast circle)
-    dot_obj = lv_obj_create(lv_scr_act());
-    lv_obj_remove_style_all(dot_obj);
-    lv_obj_set_size(dot_obj, 100, 100);
-    lv_obj_align(dot_obj, LV_ALIGN_CENTER, 0, 0);
-    lv_obj_set_style_radius(dot_obj, LV_RADIUS_CIRCLE, 0);
-    lv_obj_set_style_bg_opa(dot_obj, LV_OPA_40, 0);
-    lv_obj_set_style_bg_color(dot_obj, lv_color_white(), 0);
-
-    // Hex label
-    hex_label = lv_label_create(lv_scr_act());
-    lv_obj_align(hex_label, LV_ALIGN_CENTER, 0, 0);
-    lv_obj_set_style_text_font(hex_label, &lv_font_montserrat_20, 0);
-    lv_obj_set_style_text_color(hex_label, lv_color_white(), 0);
-    lv_label_set_text(hex_label, "#FF0000");
-
-    // Counter label (bottom of screen)
     count_label = lv_label_create(lv_scr_act());
-    lv_obj_align(count_label, LV_ALIGN_BOTTOM_MID, 0, -10);
-    lv_obj_set_style_text_font(count_label, &lv_font_montserrat_20, 0);
-    lv_obj_set_style_text_color(count_label, lv_color_white(), 0);
-    lv_label_set_text(count_label, "0");
+    lv_obj_align(count_label, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_set_style_text_font(count_label, &lv_font_montserrat_48, 0);
+    lv_obj_set_style_text_color(count_label, lv_color_black(), 0);
+    lv_label_set_text(count_label, " 0000");
 
     // 7. Encoder (bidi_switch_knob driver, timer-polled)
     Serial.println("Init encoder...");
@@ -229,19 +136,6 @@ void setup() {
         enc_position = enc_position - 1;
     }, NULL);
 
-    // 8. DRV2605 haptics
-    Serial.println("Init DRV2605...");
-    Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
-    if (drv.begin()) {
-        drv.useLRA();
-        drv.selectLibrary(6);
-        drv.setMode(DRV2605_MODE_INTTRIG);
-        drv_ok = true;
-        Serial.println("DRV2605 OK (LRA, library 6)");
-    } else {
-        Serial.println("DRV2605 not found — haptics disabled");
-    }
-
     Serial.println("Ready. Rotate the knob!");
 }
 
@@ -249,20 +143,19 @@ void setup() {
 void loop() {
     int32_t count = enc_position;
     if (count != last_count) {
-        int32_t diff = count - last_count;
         last_count = count;
 
-        hue = (hue + (int)(diff * HUE_STEP)) % 360;
-        if (hue < 0) hue += 360;
+        int32_t display_val = count;
+        if (display_val > 9999) display_val = 9999;
+        if (display_val < -9999) display_val = -9999;
 
-        update_color();
-        haptic_tick();
+        char buf[8];
+        if (display_val == 0) snprintf(buf, sizeof(buf), " 0000");
+        else if (display_val > 0) snprintf(buf, sizeof(buf), "+%04ld", (long)display_val);
+        else snprintf(buf, sizeof(buf), "-%04ld", (long)(-display_val));
 
-        char buf[16];
-        snprintf(buf, sizeof(buf), "%ld", (long)count);
         lv_label_set_text(count_label, buf);
-
-        Serial.printf("Hue: %d  Count: %ld\n", hue, (long)count);
+        Serial.printf("Count: %ld\n", (long)count);
     }
 
     lv_timer_handler();

@@ -6,7 +6,7 @@
 
 #define LV_MEM_SIZE             (48U * 1024U)
 
-#define LV_FONT_MONTSERRAT_20  1
+#define LV_FONT_MONTSERRAT_48  1
 
 #define LV_BUILD_EXAMPLES       0
 
