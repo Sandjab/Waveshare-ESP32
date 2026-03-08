@@ -12,7 +12,7 @@ For hardware details, pinout, GPIO table, framework setup, and flash commands, i
 devices/knob/
 ├── .claude/skills/waveshare-knob/   # Device skill (3 files — SKILL.md is entry point)
 ├── lib/knob_hw/                     # Device-specific lib (pins, LCD init)
-├── projects/Test01..03/             # PlatformIO projects
+├── projects/Basic_Blink, etc./      # PlatformIO projects
 ├── docs/
 │   ├── demo-code/                   # Waveshare demo code (ESP-IDF + Arduino, 8 examples each)
 │   └── schematics/                  # 5 schematic pages (PNG)

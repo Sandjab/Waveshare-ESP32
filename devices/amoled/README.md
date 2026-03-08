@@ -29,7 +29,7 @@ Depuis la racine du monorepo :
 
 ```powershell
 .\build.ps1 amoled                     # Build tous les projets AMOLED
-.\build.ps1 amoled Test01 -Upload      # Build + flash
+.\build.ps1 amoled MyProject -Upload   # Build + flash
 ```
 
 ## Peripheriques

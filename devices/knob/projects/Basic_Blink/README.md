@@ -1,4 +1,4 @@
-# Test01 - Minimal Screen Blink
+# Basic_Blink - Minimal Screen Blink
 
 Validates the QSPI display pipeline. Alternates the full 360x360 screen between green and red every second.
 
@@ -12,7 +12,7 @@ Validates the QSPI display pipeline. Alternates the full 360x360 screen between 
 ## Build & flash
 
 ```
-cd projects/Test01
+cd projects/Basic_Blink
 pio run                          # build
 pio run -t upload --upload-port COMxx  # flash
 ```

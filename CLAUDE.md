@@ -33,8 +33,8 @@ Waveshare/
 ## Build
 
 ```powershell
-.\build.ps1 knob Test01              # Build specific project
-.\build.ps1 knob Test01 -Upload      # Build + flash
+.\build.ps1 knob Basic_Blink         # Build specific project
+.\build.ps1 knob Basic_Blink -Upload # Build + flash
 .\build.ps1 amoled                   # Build all AMOLED projects
 .\build.ps1 -ListDevices             # Show available devices
 ```

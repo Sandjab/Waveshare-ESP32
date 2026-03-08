@@ -24,6 +24,13 @@ static lv_disp_drv_t disp_drv;
 static Adafruit_DRV2605 drv;
 static bool drv_ok = false;
 
+static bool haptic_on = true;
+static bool touch_down = false;
+static uint32_t last_toggle_ms = 0;
+static lv_obj_t *haptic_icon = NULL;
+#define CST816_ADDR        0x15
+#define TOGGLE_COOLDOWN_MS 200
+
 // ---- Encoder (bidi_switch_knob driver) ----
 static volatile int32_t enc_position = 0;
 
@@ -58,6 +65,17 @@ static bool is_dark(uint8_t r, uint8_t g, uint8_t b) {
     return (r * 299 + g * 587 + b * 114) < 128000;
 }
 
+// ---- Touch active (CST816 poll) ----
+static bool touch_active() {
+    uint8_t buf[7];
+    Wire.beginTransmission(CST816_ADDR);
+    Wire.write(0x00);
+    if (Wire.endTransmission() != 0) return false;
+    if (Wire.requestFrom(CST816_ADDR, 7) != 7) return false;
+    for (int i = 0; i < 7; i++) buf[i] = Wire.read();
+    return buf[2] > 0;
+}
+
 // ---- LVGL callbacks ----
 static bool notify_flush_ready(esp_lcd_panel_io_handle_t io,
                                esp_lcd_panel_io_event_data_t *edata,
@@ -82,7 +100,7 @@ static void lvgl_rounder_cb(lv_disp_drv_t *disp_drv, lv_area_t *area) {
 
 // ---- Haptic tick ----
 static void haptic_tick() {
-    if (!drv_ok) return;
+    if (!drv_ok || !haptic_on) return;
     drv.setWaveform(0, 17);  // Strong Click 1
     drv.setWaveform(1, 0);
     drv.go();
@@ -102,6 +120,7 @@ static void update_color() {
     lv_obj_set_style_bg_color(dot_obj, fg, 0);
     lv_obj_set_style_text_color(hex_label, fg, 0);
     lv_obj_set_style_text_color(count_label, fg, 0);
+    if (haptic_icon) lv_obj_set_style_text_color(haptic_icon, fg, 0);
 
     // Update hex string
     char hex[10];
@@ -112,7 +131,7 @@ static void update_color() {
 // ---- Setup ----
 void setup() {
     Serial.begin(115200);
-    Serial.println("Test02: Hue Wheel");
+    Serial.println("Hue_Encoder: Hue Wheel + Haptic Toggle");
 
     // 1. Display init (QSPI bus)
     Serial.println("Init SPI bus...");
@@ -215,6 +234,13 @@ void setup() {
     lv_obj_set_style_text_color(count_label, lv_color_white(), 0);
     lv_label_set_text(count_label, "0");
 
+    // Haptic icon (top of screen)
+    haptic_icon = lv_label_create(lv_scr_act());
+    lv_obj_align(haptic_icon, LV_ALIGN_TOP_MID, 0, 40);
+    lv_obj_set_style_text_font(haptic_icon, &lv_font_montserrat_20, 0);
+    lv_obj_set_style_text_color(haptic_icon, lv_color_white(), 0);
+    lv_label_set_text(haptic_icon, LV_SYMBOL_VOLUME_MID);
+
     // 7. Encoder (bidi_switch_knob driver, timer-polled)
     Serial.println("Init encoder...");
     knob_config_t enc_cfg = {
@@ -242,7 +268,7 @@ void setup() {
         Serial.println("DRV2605 not found — haptics disabled");
     }
 
-    Serial.println("Ready. Rotate the knob!");
+    Serial.println("Ready. Rotate the knob! Tap screen to toggle haptics.");
 }
 
 // ---- Loop ----
@@ -264,6 +290,20 @@ void loop() {
 
         Serial.printf("Hue: %d  Count: %ld\n", hue, (long)count);
     }
+
+    // Touch toggle: haptic on/off on release
+    bool now_touched = touch_active();
+    if (touch_down && !now_touched) {
+        uint32_t now = millis();
+        if (now - last_toggle_ms > TOGGLE_COOLDOWN_MS) {
+            haptic_on = !haptic_on;
+            lv_label_set_text(haptic_icon,
+                haptic_on ? LV_SYMBOL_VOLUME_MID : LV_SYMBOL_MUTE);
+            last_toggle_ms = now;
+            Serial.printf("Haptic: %s\n", haptic_on ? "ON" : "OFF");
+        }
+    }
+    touch_down = now_touched;
 
     lv_timer_handler();
     delay(5);

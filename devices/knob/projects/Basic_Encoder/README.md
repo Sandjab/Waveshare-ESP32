@@ -1,4 +1,4 @@
-# Test02 - Hue Wheel
+# Basic_Encoder - Hue Wheel
 
 Rotate the encoder to sweep through HSV hues. The full screen updates via LVGL, with a center dot showing the hex color code and a haptic tick on each step.
 
@@ -12,7 +12,7 @@ Rotate the encoder to sweep through HSV hues. The full screen updates via LVGL, 
 ## Build & flash
 
 ```
-cd projects/Test02
+cd projects/Basic_Encoder
 pio run                          # build
 pio run -t upload --upload-port COMxx  # flash
 ```

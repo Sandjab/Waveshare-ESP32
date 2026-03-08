@@ -85,7 +85,7 @@ static void init_usb_msc() {
 void setup() {
     Serial.begin(115200);
     delay(1000);
-    Serial.println("\n=== Test03: USB SD Card Reader ===");
+    Serial.println("\n=== Basic_SD_OTG: USB SD Card Reader ===");
 
     if (!init_sdmmc()) {
         Serial.println("SD card init failed. Insert card and reset.");

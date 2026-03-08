@@ -28,7 +28,7 @@ void fill_screen(uint16_t color) {
 
 void setup() {
     Serial.begin(115200);
-    Serial.println("Test01: Minimal Screen Blink");
+    Serial.println("Basic_Blink: Minimal Screen Blink");
 
     // 1. Init SPI bus (QSPI)
     Serial.println("Init SPI bus...");

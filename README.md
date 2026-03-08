@@ -25,9 +25,9 @@ Waveshare/
 Prerequis : [PlatformIO Core (CLI)](https://docs.platformio.org/en/latest/core/installation.html)
 
 ```powershell
-.\build.ps1 knob Test01                   # Build un projet
-.\build.ps1 knob Test01 -Upload           # Build + flash (autodetect port)
-.\build.ps1 knob Test01 -Upload -Monitor  # Build + flash + monitor serie
+.\build.ps1 knob Basic_Blink                   # Build un projet
+.\build.ps1 knob Basic_Blink -Upload           # Build + flash (autodetect port)
+.\build.ps1 knob Basic_Blink -Upload -Monitor  # Build + flash + monitor serie
 .\build.ps1 knob -Clean                   # Clean + rebuild tous les projets du device
 .\build.ps1 -ListDevices                  # Lister les devices disponibles
 ```

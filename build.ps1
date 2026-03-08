@@ -3,10 +3,10 @@
     Build script for Waveshare ESP32-S3 monorepo
 .EXAMPLE
     .\build.ps1 knob                            # Build all Knob projects
-    .\build.ps1 knob Test01                     # Build Knob Test01 only
-    .\build.ps1 knob Test02 -Upload             # Build + upload (auto-detect port)
-    .\build.ps1 amoled Test01 -Upload -Port COM13 -Monitor
-    .\build.ps1 knob Test01 -Flash              # Upload last build without rebuilding
+    .\build.ps1 knob Basic_Blink                # Build Knob Basic_Blink only
+    .\build.ps1 knob Basic_Encoder -Upload      # Build + upload (auto-detect port)
+    .\build.ps1 amoled MyProject -Upload -Port COM13 -Monitor
+    .\build.ps1 knob Basic_Blink -Flash         # Upload last build without rebuilding
     .\build.ps1 knob -Clean                     # Clean + rebuild all
     .\build.ps1 -ListDevices                    # Show available devices
 #>
