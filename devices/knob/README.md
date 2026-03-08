@@ -1,6 +1,6 @@
 # Waveshare ESP32-S3-Knob-Touch-LCD-1.8
 
-<img src="docs/ESP32-S3-Knob-Touch-LCD-1.8.jpg" width="200" alt="ESP32-S3-Knob-Touch-LCD-1.8">
+<img src="docs/images/ESP32-S3-Knob-Touch-LCD-1.8.jpg" width="200" alt="ESP32-S3-Knob-Touch-LCD-1.8">
 
 Repo de dev pour le [Waveshare ESP32-S3-Knob-Touch-LCD-1.8](https://www.waveshare.com/esp32-s3-knob-touch-lcd-1.8.htm) - un device rotatif avec ecran rond 360x360, encoder, touch, haptics et audio.
 
