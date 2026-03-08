@@ -26,6 +26,7 @@
       "Bash(xxd:*)",
       "Bash(pip show:*)",
       "Bash(git:*)",
+      "Bash(cd \"D:/DEV/ClaudeCode/Waveshare\" && git:*)",
       "Bash(cp:*)",
       "Bash(while read d)",
       "Bash(do echo \"=== $d ===\")",
