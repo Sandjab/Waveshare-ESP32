@@ -7,5 +7,9 @@
 Thumbs.db
 desktop.ini
 
+# Python
+__pycache__/
+*.pyc
+
 # Inbox (temporary staging, not tracked)
 inbox/

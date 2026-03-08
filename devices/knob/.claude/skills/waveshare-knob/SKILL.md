@@ -52,7 +52,7 @@ pio device monitor -b 115200
 
 For deeper information, consult these files in order:
 
-1. **[esp32-platform.md](esp32-platform.md)** — PlatformIO setup, toolchain, common libraries (reusable for any ESP32-S3 project)
+1. **[esp32-platform.md](../../../../.claude/skills/waveshare-esp32/esp32-platform.md)** — PlatformIO setup, toolchain, common libraries (reusable for any ESP32-S3 project)
 2. **[device-hardware.md](device-hardware.md)** — Dual-MCU architecture, complete pinout, ICs, display init, power
 3. **[resources.md](resources.md)** — Official links, datasheets, community projects, repos
 

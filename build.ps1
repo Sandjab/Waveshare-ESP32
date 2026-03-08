@@ -1,42 +1,75 @@
 <#
 .SYNOPSIS
-    Build script for Waveshare Knob projects
+    Build script for Waveshare ESP32-S3 monorepo
 .EXAMPLE
-    .\build.ps1                             # Build all projects
-    .\build.ps1 Test01                      # Build Test01 only
-    .\build.ps1 Test02 -Upload              # Build + upload (auto-detect port)
-    .\build.ps1 Test01 -Upload -Port COM13 -Monitor
-    .\build.ps1 Test01 -Flash               # Upload last build without rebuilding
-    .\build.ps1 -Clean                      # Clean + rebuild all
+    .\build.ps1 knob                            # Build all Knob projects
+    .\build.ps1 knob Test01                     # Build Knob Test01 only
+    .\build.ps1 knob Test02 -Upload             # Build + upload (auto-detect port)
+    .\build.ps1 amoled Test01 -Upload -Port COM13 -Monitor
+    .\build.ps1 knob Test01 -Flash              # Upload last build without rebuilding
+    .\build.ps1 knob -Clean                     # Clean + rebuild all
+    .\build.ps1 -ListDevices                    # Show available devices
 #>
 param(
+    [string]$Device,
     [string[]]$Projects,
     [switch]$Upload,
     [switch]$Flash,
     [string]$Port,
     [switch]$Monitor,
-    [switch]$Clean
+    [switch]$Clean,
+    [switch]$ListDevices
 )
 
 $ErrorActionPreference = 'Stop'
 
 $RepoDir = $PSScriptRoot
-$ProjectsDir = Join-Path $RepoDir 'projects'
+$DevicesDir = Join-Path $RepoDir 'devices'
 $Pio = Join-Path $env:USERPROFILE '.platformio\penv\Scripts\pio.exe'
+
+# List devices mode
+if ($ListDevices) {
+    Write-Host 'Available devices:' -ForegroundColor Cyan
+    Get-ChildItem $DevicesDir -Directory | ForEach-Object {
+        $projCount = (Get-ChildItem (Join-Path $_.FullName 'projects') -Directory -ErrorAction SilentlyContinue | Measure-Object).Count
+        Write-Host "  $($_.Name) ($projCount projects)"
+    }
+    exit 0
+}
+
+if (-not $Device) {
+    Write-Error "Usage: .\build.ps1 <device> [project...] [-Upload] [-Flash] [-Port COMx] [-Monitor] [-Clean]`nUse -ListDevices to see available devices."
+}
+
+# Resolve device directory
+$DeviceDir = Join-Path $DevicesDir $Device
+if (-not (Test-Path $DeviceDir)) {
+    Write-Error "Unknown device: $Device. Use -ListDevices to see available devices."
+}
+
+$ProjectsDir = Join-Path $DeviceDir 'projects'
+if (-not (Test-Path $ProjectsDir)) {
+    Write-Error "No projects directory for device: $Device"
+}
 
 if (-not (Test-Path $Pio)) {
     Write-Error "PlatformIO not found at $Pio"
 }
 
-# Default: all projects
+# Default: all projects for this device
 if (-not $Projects) {
     $Projects = Get-ChildItem $ProjectsDir -Directory | ForEach-Object { $_.Name }
+}
+
+if (-not $Projects) {
+    Write-Host "No projects found for device '$Device'" -ForegroundColor Yellow
+    exit 0
 }
 
 # Validate project names
 foreach ($p in $Projects) {
     if (-not (Test-Path (Join-Path $ProjectsDir $p))) {
-        Write-Error "Unknown project: $p"
+        Write-Error "Unknown project: $p (in device $Device)"
     }
 }
 
@@ -70,9 +103,10 @@ if (($Upload -or $Flash -or $Monitor) -and -not $Port) {
 }
 
 # Build loop
+Write-Host "`n[$Device]" -ForegroundColor Cyan
 foreach ($proj in $Projects) {
     $dir = Join-Path $ProjectsDir $proj
-    Write-Host "`n=== $proj ===" -ForegroundColor White
+    Write-Host "`n=== $Device/$proj ===" -ForegroundColor White
 
     if ($Flash) {
         # Flash only - skip build, use esptool directly

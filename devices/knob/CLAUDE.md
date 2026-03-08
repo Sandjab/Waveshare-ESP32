@@ -9,18 +9,20 @@ For hardware details, pinout, GPIO table, framework setup, and flash commands, i
 ## Repo Structure
 
 ```
-Knob/
-├── .claude/skills/waveshare-knob/   # Device skill (4 files — SKILL.md is entry point)
+devices/knob/
+├── .claude/skills/waveshare-knob/   # Device skill (3 files — SKILL.md is entry point)
+├── lib/knob_hw/                     # Device-specific lib (pins, LCD init)
+├── projects/Test01..03/             # PlatformIO projects
 ├── docs/
 │   ├── demo-code/                   # Waveshare demo code (ESP-IDF + Arduino, 8 examples each)
 │   └── schematics/                  # 5 schematic pages (PNG)
-└── inbox/                           # Temporary staging area for new material
 ```
+
+Shared code lives in `../../shared/lib/` (QSPI driver `esp_lcd_sh8601`).
 
 ## Conventions
 
 - **Demo code is authoritative for GPIOs.** `docs/demo-code/` takes precedence over schematics when there is a conflict. Schematics have been wrong for SD card GPIOs in the past.
-- **`inbox/`** is a temporary drop zone — files there are unprocessed material, not project source.
 - **Schematics** in `docs/schematics/` are reference-only PNGs (5 pages covering LCD/power, ESP32-S3, ESP32 secondary, peripherals, DAC).
 
 ## LVGL Documentation
