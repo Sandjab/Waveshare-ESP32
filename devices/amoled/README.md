@@ -1,5 +1,7 @@
 # Waveshare ESP32-S3-Touch-AMOLED-1.8
 
+<img src="docs/ESP32-S3-Touch-AMOLED-1.8.png" width="200" alt="ESP32-S3-Touch-AMOLED-1.8">
+
 Dev repo pour le [Waveshare ESP32-S3-Touch-AMOLED-1.8](https://www.waveshare.com/esp32-s3-touch-amoled-1.8.htm) - montre connectee avec ecran AMOLED 368x448, touch, audio, IMU, RTC et PMIC.
 
 ## Projets
