@@ -158,15 +158,16 @@ foreach ($proj in $Projects) {
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         }
 
-        Write-Host 'Building...'
-        & $Pio run -d $dir
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
         if ($Upload) {
-            Write-Host 'Uploading...'
+            Write-Host 'Building + uploading...'
             $uploadArgs = @('run', '-d', $dir, '-t', 'upload')
             if ($Port) { $uploadArgs += '--upload-port', $Port }
             Invoke-Upload -Exe $Pio -Arguments $uploadArgs
+        }
+        else {
+            Write-Host 'Building...'
+            & $Pio run -d $dir
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         }
     }
 
