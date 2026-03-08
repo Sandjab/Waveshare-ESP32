@@ -20,6 +20,10 @@ devices/knob/
 
 Shared code lives in `../../shared/lib/` (QSPI driver `esp_lcd_sh8601`).
 
+## Encoder
+
+The rotary encoder is **not quadrature** — it has two independent contacts (Phase A on GPIO 8, Phase B on GPIO 7). Use the `bidi_switch_knob` driver in `lib/knob_hw/` (timer-polled at 3ms with debounce). Do **not** use interrupt-based quadrature decoding — it won't work with this hardware. Reference demo: `docs/demo-code/Arduino/examples/04_Encoder_Test/`.
+
 ## Conventions
 
 - **Demo code is authoritative for GPIOs.** `docs/demo-code/` takes precedence over schematics when there is a conflict. Schematics have been wrong for SD card GPIOs in the past.

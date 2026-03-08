@@ -9,6 +9,7 @@
 #include "esp_lcd_sh8601.h"
 #include "knob_pins.h"
 #include "knob_lcd_init.h"
+#include "bidi_switch_knob.h"
 
 #define BUF_HEIGHT    36
 
@@ -23,19 +24,13 @@ static lv_disp_drv_t disp_drv;
 static Adafruit_DRV2605 drv;
 static bool drv_ok = false;
 
-// Encoder via GPIO interrupt (half-quad: trigger on A, check B for direction)
-static volatile int32_t enc_count = 0;
-
-static void IRAM_ATTR enc_a_isr() {
-    if (digitalRead(PIN_ENC_A) != digitalRead(PIN_ENC_B))
-        enc_count++;
-    else
-        enc_count--;
-}
+// ---- Encoder (bidi_switch_knob driver) ----
+static volatile int32_t enc_position = 0;
 
 static lv_obj_t *bg_obj = NULL;
 static lv_obj_t *dot_obj = NULL;
 static lv_obj_t *hex_label = NULL;
+static lv_obj_t *count_label = NULL;
 
 static int16_t hue = 0;
 static int32_t last_count = 0;
@@ -106,6 +101,7 @@ static void update_color() {
     lv_color_t fg = dark ? lv_color_white() : lv_color_black();
     lv_obj_set_style_bg_color(dot_obj, fg, 0);
     lv_obj_set_style_text_color(hex_label, fg, 0);
+    lv_obj_set_style_text_color(count_label, fg, 0);
 
     // Update hex string
     char hex[10];
@@ -212,11 +208,26 @@ void setup() {
     lv_obj_set_style_text_color(hex_label, lv_color_white(), 0);
     lv_label_set_text(hex_label, "#FF0000");
 
-    // 7. Encoder (GPIO interrupt, half-quad)
+    // Counter label (bottom of screen)
+    count_label = lv_label_create(lv_scr_act());
+    lv_obj_align(count_label, LV_ALIGN_BOTTOM_MID, 0, -10);
+    lv_obj_set_style_text_font(count_label, &lv_font_montserrat_20, 0);
+    lv_obj_set_style_text_color(count_label, lv_color_white(), 0);
+    lv_label_set_text(count_label, "0");
+
+    // 7. Encoder (bidi_switch_knob driver, timer-polled)
     Serial.println("Init encoder...");
-    pinMode(PIN_ENC_A, INPUT_PULLUP);
-    pinMode(PIN_ENC_B, INPUT_PULLUP);
-    attachInterrupt(PIN_ENC_A, enc_a_isr, CHANGE);
+    knob_config_t enc_cfg = {
+        .gpio_encoder_a = PIN_ENC_A,
+        .gpio_encoder_b = PIN_ENC_B,
+    };
+    knob_handle_t knob = iot_knob_create(&enc_cfg);
+    iot_knob_register_cb(knob, KNOB_RIGHT, [](void *, void *) {
+        enc_position = enc_position + 1;
+    }, NULL);
+    iot_knob_register_cb(knob, KNOB_LEFT, [](void *, void *) {
+        enc_position = enc_position - 1;
+    }, NULL);
 
     // 8. DRV2605 haptics
     Serial.println("Init DRV2605...");
@@ -236,7 +247,7 @@ void setup() {
 
 // ---- Loop ----
 void loop() {
-    int32_t count = enc_count;
+    int32_t count = enc_position;
     if (count != last_count) {
         int32_t diff = count - last_count;
         last_count = count;
@@ -247,7 +258,11 @@ void loop() {
         update_color();
         haptic_tick();
 
-        Serial.printf("Hue: %d\n", hue);
+        char buf[16];
+        snprintf(buf, sizeof(buf), "%ld", (long)count);
+        lv_label_set_text(count_label, buf);
+
+        Serial.printf("Hue: %d  Count: %ld\n", hue, (long)count);
     }
 
     lv_timer_handler();
