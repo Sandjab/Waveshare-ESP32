@@ -11,14 +11,30 @@ For hardware details, pinout, GPIO table, framework setup, and flash commands, i
 ```
 devices/knob/
 ├── .claude/skills/waveshare-knob/   # Device skill (3 files — SKILL.md is entry point)
-├── lib/knob_hw/                     # Device-specific lib (pins, LCD init)
-├── projects/Basic_Blink, etc./      # PlatformIO projects
+├── lib/knob_hw/                     # Device-specific lib (see below)
+│   ├── knob_pins.h                  # GPIO definitions
+│   ├── knob_lcd_init.h              # ST77916 init command sequence
+│   ├── knob_display.h               # One-liner display init (header-only)
+│   ├── knob_lvgl.h                  # One-liner LVGL init (header-only, calls display_init)
+│   ├── bidi_switch_knob.h/.c        # Encoder driver (timer-polled, debounced)
+├── projects/
+│   ├── Basic_Blink/                 # Ecran clignotant (raw display)
+│   ├── Basic_Encoder/               # Compteur rotatif ±9999 (LVGL + encoder)
+│   ├── Hue_Encoder/                 # Roue de teintes HSV (LVGL + encoder + haptics + touch)
+│   └── Basic_SD_OTG/                # Lecteur SD USB
 ├── docs/
 │   ├── demo-code/                   # Waveshare demo code (ESP-IDF + Arduino, 8 examples each)
 │   └── schematics/                  # 5 schematic pages (PNG)
 ```
 
 Shared code lives in `../../shared/lib/` (QSPI driver `esp_lcd_sh8601`).
+
+### Display / LVGL helpers
+
+`knob_display.h` and `knob_lvgl.h` are header-only helpers that eliminate boilerplate:
+
+- **`knob_display_init()`** — raw display init (SPI bus, panel IO, ST77916, backlight). Use for non-LVGL projects (e.g. Basic_Blink).
+- **`knob_lvgl_init()`** — full LVGL setup (calls `knob_display_init()` internally, then configures double-buffered DMA, display driver, rounder, tick timer). Use for any LVGL project.
 
 ## Encoder
 

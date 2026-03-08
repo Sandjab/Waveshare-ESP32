@@ -9,7 +9,8 @@ Repo de dev pour le [Waveshare ESP32-S3-Knob-Touch-LCD-1.8](https://www.waveshar
 | Projet | Description | Peripheriques utilises |
 |--------|-------------|----------------------|
 | [Basic_Blink](projects/Basic_Blink/) | Ecran clignotant (vert/rouge) | Display QSPI, backlight PWM |
-| [Basic_Encoder](projects/Basic_Encoder/) | Roue de teintes HSV | Display + LVGL, encoder, DRV2605 haptics |
+| [Basic_Encoder](projects/Basic_Encoder/) | Compteur rotatif ±9999 | Display + LVGL, encoder |
+| [Hue_Encoder](projects/Hue_Encoder/) | Roue de teintes HSV + toggle haptics | Display + LVGL, encoder, DRV2605 haptics, CST816 touch |
 | [Basic_SD_OTG](projects/Basic_SD_OTG/) | Lecteur SD USB (mass storage) | SD card SDMMC, USB-OTG MSC |
 
 ## Structure
@@ -17,17 +18,18 @@ Repo de dev pour le [Waveshare ESP32-S3-Knob-Touch-LCD-1.8](https://www.waveshar
 ```
 devices/knob/
 ├── lib/
-│   └── knob_hw/                 # Lib device-specific (pins, init LCD)
+│   └── knob_hw/                 # Lib device-specific (pins, display, LVGL, encoder)
 ├── projects/
 │   ├── Basic_Blink/             # Ecran clignotant
-│   ├── Basic_Encoder/           # Roue de teintes
+│   ├── Basic_Encoder/           # Compteur rotatif
+│   ├── Hue_Encoder/             # Roue de teintes HSV
 │   └── Basic_SD_OTG/            # Lecteur SD USB
 └── docs/
     ├── demo-code/               # Code demo Waveshare (ESP-IDF + Arduino)
     └── schematics/              # Schemas (5 pages PNG)
 ```
 
-Les projets utilisent `lib/knob_hw/` (pins, init LCD) et `shared/lib/qspi_panel/` (driver QSPI `esp_lcd_sh8601`).
+Les projets utilisent `lib/knob_hw/` (pins, init display via `knob_display.h`, init LVGL via `knob_lvgl.h`, encoder) et `shared/lib/qspi_panel/` (driver QSPI `esp_lcd_sh8601`).
 
 ## Build et flash
 

@@ -4,15 +4,12 @@ Validates the QSPI display pipeline. Alternates the full 360x360 screen between 
 
 ## What it tests
 
-- SPI bus init (QSPI, SPI2_HOST)
-- ST77916 panel init via `esp_lcd_sh8601` driver + custom init sequence
-- PWM backlight on GPIO 47
+- Display init via `knob_display.h` (one-liner: SPI bus, panel IO, ST77916, backlight)
 - Strip-based drawing (360x36 px strips, DMA buffer)
 
 ## Build & flash
 
-```
-cd projects/Basic_Blink
-pio run                          # build
-pio run -t upload --upload-port COMxx  # flash
+```powershell
+.\build.ps1 knob Basic_Blink           # build
+.\build.ps1 knob Basic_Blink -Upload   # build + flash
 ```
