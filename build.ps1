@@ -23,6 +23,29 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# Upload helper — buffers output, suppresses post-hard-reset noise on success
+function Invoke-Upload {
+    param(
+        [string]$Exe,
+        [string[]]$Arguments,
+        [string]$SuccessPattern
+    )
+    $output = & $Exe @Arguments 2>&1 | ForEach-Object { $_.ToString() }
+    $code = $LASTEXITCODE
+    if ($code -eq 0) {
+        foreach ($line in $output) {
+            Write-Host $line
+            if ($line -match $SuccessPattern) { break }
+        }
+        Write-Host 'Upload OK' -ForegroundColor Green
+    }
+    else {
+        foreach ($line in $output) { Write-Host $line }
+        Write-Host 'Upload FAILED' -ForegroundColor Red
+        exit $code
+    }
+}
+
 $RepoDir = $PSScriptRoot
 $DevicesDir = Join-Path $RepoDir 'devices'
 $Pio = Join-Path $env:USERPROFILE '.platformio\penv\Scripts\pio.exe'
@@ -119,8 +142,12 @@ foreach ($proj in $Projects) {
         $esptoolPkg = Join-Path $env:USERPROFILE '.platformio\packages\tool-esptoolpy'
         $bootloader = Join-Path $dir '.pio\build\esp32s3\bootloader.bin'
         $partitions = Join-Path $dir '.pio\build\esp32s3\partitions.bin'
-        & $python (Join-Path $esptoolPkg 'esptool.py') --chip esp32s3 --port $Port --baud 921600 write_flash 0x0000 $bootloader 0x8000 $partitions 0x10000 $bin
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        $esptoolArgs = @(
+            (Join-Path $esptoolPkg 'esptool.py'),
+            '--chip', 'esp32s3', '--port', $Port, '--baud', '921600',
+            'write_flash', '0x0000', $bootloader, '0x8000', $partitions, '0x10000', $bin
+        )
+        Invoke-Upload -Exe $python -Arguments $esptoolArgs -SuccessPattern 'Hard resetting'
     }
     else {
         if ($Clean) {
@@ -137,8 +164,7 @@ foreach ($proj in $Projects) {
             Write-Host 'Uploading...'
             $uploadArgs = @('run', '-d', $dir, '-t', 'upload')
             if ($Port) { $uploadArgs += '--upload-port', $Port }
-            & $Pio @uploadArgs
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            Invoke-Upload -Exe $Pio -Arguments $uploadArgs -SuccessPattern '\[SUCCESS\]'
         }
     }
 
