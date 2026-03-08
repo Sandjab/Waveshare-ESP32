@@ -30,6 +30,7 @@ function Invoke-Upload {
         [string[]]$Arguments,
         [string]$SuccessPattern
     )
+    $ErrorActionPreference = 'Continue'   # let stderr flow without throwing
     $output = & $Exe @Arguments 2>&1 | ForEach-Object { $_.ToString() }
     $code = $LASTEXITCODE
     if ($code -eq 0) {
