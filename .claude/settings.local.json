@@ -26,7 +26,13 @@
       "Bash(xxd:*)",
       "Bash(pip show:*)",
       "Bash(git:*)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Bash(while read d)",
+      "Bash(do echo \"=== $d ===\")",
+      "Read(//d/DEV/ClaudeCode/Waveshare/**)",
+      "Write(D:/DEV/ClaudeCode/Waveshare/**)",
+      "Edit(D:/DEV/ClaudeCode/Waveshare/**)",
+      "Bash(powershell -Command:*)"
     ]
   }
 }
