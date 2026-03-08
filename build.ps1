@@ -23,7 +23,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# Upload helper — buffers output, suppresses post-hard-reset serial noise.
+# Upload helper — streams output in real-time, suppresses post-hard-reset noise.
 # "Hard resetting" from esptool = flash write succeeded. The exit code is
 # unreliable because the post-reset port disconnect makes PIO report [FAILED].
 function Invoke-Upload {
@@ -32,17 +32,17 @@ function Invoke-Upload {
         [string[]]$Arguments
     )
     $ErrorActionPreference = 'Continue'   # let stderr flow without throwing
-    $output = & $Exe @Arguments 2>&1 | ForEach-Object { $_.ToString() }
-    $flashOk = $output | Where-Object { $_ -match 'Hard resetting' } | Select-Object -First 1
+    $flashOk = $false
+    & $Exe @Arguments 2>&1 | ForEach-Object {
+        $line = $_.ToString()
+        if ($flashOk) { return }          # discard post-reset noise
+        Write-Host $line
+        if ($line -match 'Hard resetting') { $flashOk = $true }
+    }
     if ($flashOk) {
-        foreach ($line in $output) {
-            Write-Host $line
-            if ($line -match 'Hard resetting') { break }
-        }
         Write-Host 'Upload OK' -ForegroundColor Green
     }
     else {
-        foreach ($line in $output) { Write-Host $line }
         Write-Host 'Upload FAILED' -ForegroundColor Red
         exit 1
     }
