@@ -23,27 +23,28 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# Upload helper — buffers output, suppresses post-hard-reset noise on success
+# Upload helper — buffers output, suppresses post-hard-reset serial noise.
+# "Hard resetting" from esptool = flash write succeeded. The exit code is
+# unreliable because the post-reset port disconnect makes PIO report [FAILED].
 function Invoke-Upload {
     param(
         [string]$Exe,
-        [string[]]$Arguments,
-        [string]$SuccessPattern
+        [string[]]$Arguments
     )
     $ErrorActionPreference = 'Continue'   # let stderr flow without throwing
     $output = & $Exe @Arguments 2>&1 | ForEach-Object { $_.ToString() }
-    $code = $LASTEXITCODE
-    if ($code -eq 0) {
+    $flashOk = $output | Where-Object { $_ -match 'Hard resetting' } | Select-Object -First 1
+    if ($flashOk) {
         foreach ($line in $output) {
             Write-Host $line
-            if ($line -match $SuccessPattern) { break }
+            if ($line -match 'Hard resetting') { break }
         }
         Write-Host 'Upload OK' -ForegroundColor Green
     }
     else {
         foreach ($line in $output) { Write-Host $line }
         Write-Host 'Upload FAILED' -ForegroundColor Red
-        exit $code
+        exit 1
     }
 }
 
@@ -148,7 +149,7 @@ foreach ($proj in $Projects) {
             '--chip', 'esp32s3', '--port', $Port, '--baud', '921600',
             'write_flash', '0x0000', $bootloader, '0x8000', $partitions, '0x10000', $bin
         )
-        Invoke-Upload -Exe $python -Arguments $esptoolArgs -SuccessPattern 'Hard resetting'
+        Invoke-Upload -Exe $python -Arguments $esptoolArgs
     }
     else {
         if ($Clean) {
@@ -165,7 +166,7 @@ foreach ($proj in $Projects) {
             Write-Host 'Uploading...'
             $uploadArgs = @('run', '-d', $dir, '-t', 'upload')
             if ($Port) { $uploadArgs += '--upload-port', $Port }
-            Invoke-Upload -Exe $Pio -Arguments $uploadArgs -SuccessPattern '\[SUCCESS\]'
+            Invoke-Upload -Exe $Pio -Arguments $uploadArgs
         }
     }
 
