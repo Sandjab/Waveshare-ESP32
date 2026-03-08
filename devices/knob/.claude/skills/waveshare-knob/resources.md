@@ -41,9 +41,10 @@
 |---|---|
 | **ST77916 datasheet** | https://dl.espressif.com/AE/esp-iot-solution/ST77916_SPEC_V1.0.pdf |
 | **esp_lcd_st77916** (ESP-IDF component) | https://components.espressif.com/components/espressif/esp_lcd_st77916 |
-| **DRV2605** datasheet | Available from TI (Texas Instruments) |
-| **PCM5100A** datasheet | Available from TI (Texas Instruments) |
-| **CST816** | Available from Hynitron |
+| **DRV2605** datasheet | `docs/datasheets/Drv2605.pdf` |
+| **PCM5100A** datasheet | `docs/datasheets/Pcm5100a.pdf` |
+| **CST816D** datasheet | `docs/datasheets/CST816D_datasheet_En_V1.3.pdf` |
+| **SH8601** datasheet (shared QSPI driver) | `../../../shared/docs/datasheets/SH8601A0_DataSheet_Preliminary_V0.0_UCS_191107_1_.pdf` |
 | **CH445P** datasheet | Available from WCH (Jiangsu Qin Heng) |
 
 ## Libraries

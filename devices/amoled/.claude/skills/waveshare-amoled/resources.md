@@ -26,15 +26,15 @@
 
 ## IC Datasheets & Components
 
-| Component | Resource |
-|---|---|
-| **SH8601** | QSPI AMOLED driver (Espressif esp_lcd component) |
-| **FT3168** | Focaltech capacitive touch controller |
-| **ES8311** | Everest Semiconductor audio codec |
-| **AXP2101** | X-Powers PMIC (battery management + multi-rail) |
-| **QMI8658** | QST 6-axis IMU (accelerometer + gyroscope) |
-| **PCF85063** | NXP low-power real-time clock |
-| **XCA9554 / TCA9554** | I2C 8-bit I/O expander |
+| Component | Local datasheet | Notes |
+|---|---|---|
+| **SH8601** | `../../../shared/docs/datasheets/SH8601A0_DataSheet_Preliminary_V0.0_UCS_191107_1_.pdf` | QSPI AMOLED driver |
+| **FT3168** | `docs/datasheets/FT3168.pdf` | Focaltech capacitive touch controller |
+| **ES8311** | `docs/datasheets/ES8311.DS.pdf` + `docs/datasheets/ES8311.user.Guide.pdf` | Everest Semiconductor audio codec |
+| **AXP2101** | `docs/datasheets/X-power-AXP2101_SWcharge_V1.0.pdf` | X-Powers PMIC (battery management + multi-rail) |
+| **QMI8658** | `docs/datasheets/QMI8658C.pdf` | QST 6-axis IMU (accelerometer + gyroscope) |
+| **PCF85063** | `docs/datasheets/PCF85063A.pdf` | NXP low-power real-time clock |
+| **XCA9554 / TCA9554** | — | I2C 8-bit I/O expander |
 
 ## Libraries
 
