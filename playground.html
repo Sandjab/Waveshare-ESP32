@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Waveshare ESP32-S3 — Explorateur de repo</title>
+<style>
+  :root {
+    --bg: #1a1b26; --bg2: #24283b; --fg: #c0caf5; --fg-dim: #565f89;
+    --blue: #7aa2f7; --green: #9ece6a; --violet: #bb9af7; --orange: #ff9e64;
+    --red: #f7768e; --cyan: #7dcfff; --gray: #414868;
+    --border: #3b4261;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace; background: var(--bg); color: var(--fg); height: 100vh; display: flex; flex-direction: column; }
+  header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+  header h1 { font-size: 16px; font-weight: 600; color: var(--blue); }
+  header span { font-size: 12px; color: var(--fg-dim); }
+  .container { display: flex; flex: 1; overflow: hidden; }
+  .tree-panel { width: 420px; min-width: 280px; overflow-y: auto; padding: 16px; border-right: 1px solid var(--border); flex-shrink: 0; }
+  .desc-panel { flex: 1; padding: 32px; overflow-y: auto; display: flex; flex-direction: column; }
+  .desc-panel .empty { color: var(--fg-dim); font-style: italic; margin: auto; text-align: center; font-size: 14px; }
+  .desc-panel h2 { font-size: 15px; color: var(--cyan); margin-bottom: 4px; font-weight: 600; }
+  .desc-panel .path { font-size: 12px; color: var(--fg-dim); margin-bottom: 16px; }
+  .desc-panel .desc-text { font-size: 14px; line-height: 1.7; color: var(--fg); }
+  .desc-panel .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 4px; margin-right: 6px; margin-bottom: 8px; font-weight: 600; }
+  .badge-shared { background: rgba(122,162,247,.15); color: var(--blue); }
+  .badge-device { background: rgba(158,206,106,.15); color: var(--green); }
+  .badge-skill { background: rgba(187,154,247,.15); color: var(--violet); }
+  .badge-doc { background: rgba(255,158,100,.15); color: var(--orange); }
+  .badge-config { background: rgba(65,72,104,.3); color: var(--fg-dim); }
+  .badge-build { background: rgba(247,118,142,.15); color: var(--red); }
+
+  /* Tree */
+  .node { user-select: none; }
+  .node-row { display: flex; align-items: center; padding: 3px 8px; border-radius: 4px; cursor: pointer; gap: 6px; font-size: 13px; }
+  .node-row:hover { background: rgba(122,162,247,.08); }
+  .node-row.selected { background: rgba(122,162,247,.15); }
+  .node-row .icon { width: 18px; text-align: center; flex-shrink: 0; font-size: 14px; }
+  .node-row .arrow { width: 16px; text-align: center; flex-shrink: 0; font-size: 10px; color: var(--fg-dim); transition: transform .15s; }
+  .node-row .arrow.open { transform: rotate(90deg); }
+  .node-row .arrow.hidden { visibility: hidden; }
+  .node-row .label { white-space: nowrap; }
+  .node-children { margin-left: 20px; overflow: hidden; }
+  .node-children.collapsed { display: none; }
+
+  /* Color coding */
+  .cat-shared .label { color: var(--blue); }
+  .cat-device .label { color: var(--green); }
+  .cat-skill .label { color: var(--violet); }
+  .cat-doc .label { color: var(--orange); }
+  .cat-config .label { color: var(--fg-dim); }
+  .cat-build .label { color: var(--red); }
+  .cat-source .label { color: var(--cyan); }
+
+  /* Legend */
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; padding: 10px 24px; border-top: 1px solid var(--border); background: var(--bg2); font-size: 11px; flex-shrink: 0; }
+  .legend-item { display: flex; align-items: center; gap: 4px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* Toolbar */
+  .toolbar { display: flex; gap: 8px; padding: 8px 16px; border-bottom: 1px solid var(--border); background: var(--bg2); }
+  .toolbar button { background: rgba(122,162,247,.1); border: 1px solid var(--border); color: var(--fg); padding: 4px 12px; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: 11px; }
+  .toolbar button:hover { background: rgba(122,162,247,.2); }
+
+  @media (max-width: 700px) {
+    .container { flex-direction: column; }
+    .tree-panel { width: 100%; border-right: none; border-bottom: 1px solid var(--border); max-height: 50vh; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Waveshare ESP32-S3 Monorepo</h1>
+  <span>Explorateur interactif de l'arborescence</span>
+</header>
+
+<div class="toolbar">
+  <button onclick="expandAll()">Tout ouvrir</button>
+  <button onclick="collapseAll()">Tout fermer</button>
+</div>
+
+<div class="container">
+  <div class="tree-panel" id="tree"></div>
+  <div class="desc-panel" id="desc">
+    <div class="empty">Cliquez sur un element de l'arbre<br>pour voir sa description</div>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div> Shared</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Device</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--violet)"></div> Skill</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div> Docs</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--cyan)"></div> Source</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> Build</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--fg-dim)"></div> Config</div>
+</div>
+
+<script>
+const tree = {
+  name: "Waveshare-ESP32", type: "dir", cat: "config", open: true,
+  desc: "Racine du monorepo. Contient le code firmware pour deux cartes de developpement Waveshare basees sur l'ESP32-S3 : la Knob-Touch-LCD-1.8 et la Touch-AMOLED-1.8. L'architecture separe le code partage du code specifique a chaque appareil.",
+  badge: "config", badgeLabel: "Monorepo",
+  children: [
+    { name: ".claude/", type: "dir", cat: "skill", desc: "Configuration et skills Claude Code au niveau du repo. Permet a Claude de comprendre l'architecture globale du projet.", badge: "skill", badgeLabel: "AI Skills", children: [
+      { name: "skills/", type: "dir", cat: "skill", desc: "Dossier des skills (competences) Claude Code communes a tous les appareils.", children: [
+        { name: "waveshare-esp32/", type: "dir", cat: "skill", desc: "Skill plateforme ESP32-S3 commune. Contient les connaissances partagees sur le toolchain PlatformIO, les conventions du repo, et la configuration ESP32.", children: [
+          { name: "SKILL.md", type: "file", cat: "skill", desc: "Point d'entree de la skill. Decrit quand et comment cette skill doit etre activee par Claude Code." },
+          { name: "esp32-platform.md", type: "file", cat: "skill", desc: "Reference technique de la plateforme ESP32-S3 : configuration PlatformIO, toolchain, bibliotheques communes, et conventions de build." }
+        ]}
+      ]}
+    ]},
+    { name: "shared/", type: "dir", cat: "shared", open: true, desc: "Code et documentation partages entre tous les appareils. Tout ce qui n'est pas specifique a un seul device vit ici. Chaque projet PlatformIO reference ce dossier via lib_extra_dirs.", badge: "shared", badgeLabel: "Shared", children: [
+      { name: "lib/", type: "dir", cat: "shared", desc: "Bibliotheques C/C++ partagees entre les appareils.", children: [
+        { name: "qspi_panel/", type: "dir", cat: "shared", desc: "Driver d'ecran QSPI pour le controleur SH8601. Utilise par les deux appareils (Knob et AMOLED) pour piloter leur ecran via l'interface QSPI haute vitesse.", children: [
+          { name: "esp_lcd_sh8601.h", type: "file", cat: "source", desc: "Header du driver SH8601. Declare les fonctions d'initialisation et de controle de l'ecran QSPI (resolution, rotation, envoi de framebuffer)." },
+          { name: "esp_lcd_sh8601.c", type: "file", cat: "source", desc: "Implementation du driver SH8601. Gere la communication SPI avec le controleur d'ecran, les sequences d'initialisation, et le transfert des pixels." }
+        ]}
+      ]},
+      { name: "docs/", type: "dir", cat: "doc", desc: "Documentation partagee : datasheets de composants communs aux deux appareils.", children: [
+        { name: "datasheets/", type: "dir", cat: "doc", desc: "Fiches techniques des composants communs.", children: [
+          { name: "SH8601A0_DataSheet_...pdf", type: "file", cat: "doc", desc: "Datasheet du controleur d'ecran AMOLED SH8601A0 (interface QSPI). Reference technique pour le driver dans shared/lib/qspi_panel/." }
+        ]}
+      ]}
+    ]},
+    { name: "devices/", type: "dir", cat: "device", open: true, desc: "Contient un sous-dossier par appareil Waveshare supporte. Chaque appareil a ses propres projets, bibliotheques hardware, documentation et skills Claude.", badge: "device", badgeLabel: "Devices", children: [
+      { name: "knob/", type: "dir", cat: "device", open: true, desc: "ESP32-S3-Knob-Touch-LCD-1.8 — Carte de dev avec ecran LCD 1.8 pouces, encodeur rotatif (knob) avec retour haptique (DRV2605), ecran tactile (CST816D), DAC audio (PCM5100A), slot SD, et USB OTG.", badge: "device", badgeLabel: "Knob", children: [
+        { name: "projects/", type: "dir", cat: "device", desc: "Projets PlatformIO pour le Knob. Chaque sous-dossier est un projet autonome avec son propre platformio.ini et dossier src/.", children: [
+          { name: "Basic_Blink/", type: "dir", cat: "device", desc: "Projet minimal : fait clignoter une LED. Point de depart pour verifier que le toolchain et le flash fonctionnent correctement." },
+          { name: "Basic_Encoder/", type: "dir", cat: "device", desc: "Demonstration de l'encodeur rotatif avec LVGL. Affiche un widget arc interactif controle par la rotation du knob. Utilise le retour haptique DRV2605." },
+          { name: "Hue_Encoder/", type: "dir", cat: "device", desc: "Selecteur de teinte (hue) via l'encodeur rotatif. Interface LVGL avec roue de couleurs controlee par le knob — demo avancee combinant ecran, encodeur et tactile." },
+          { name: "Basic_SD_OTG/", type: "dir", cat: "device", desc: "Demonstration SD + USB OTG. Monte la carte SD et l'expose comme peripherique de stockage USB — permet d'utiliser le Knob comme lecteur de carte SD via USB." }
+        ]},
+        { name: "lib/", type: "dir", cat: "device", desc: "Bibliotheques specifiques au hardware du Knob.", children: [
+          { name: "knob_hw/", type: "dir", cat: "source", desc: "HAL (Hardware Abstraction Layer) du Knob. Centralise toute l'initialisation materielle : pins, ecran LCD, LVGL, et switch bidirectionnel USB/SD.", children: [
+            { name: "knob_pins.h", type: "file", cat: "source", desc: "Definition de toutes les broches GPIO du Knob : SPI ecran, I2C tactile/haptique, encodeur, SD, I2S audio, USB OTG." },
+            { name: "knob_display.h", type: "file", cat: "source", desc: "Initialisation de l'ecran LCD via QSPI (SH8601). Configure le bus SPI, le panel, et le backlight." },
+            { name: "knob_lvgl.h", type: "file", cat: "source", desc: "Integration LVGL : cree le display driver, le buffer de rendu, et connecte l'input driver tactile (CST816D)." },
+            { name: "knob_lcd_init.h", type: "file", cat: "source", desc: "Sequence d'initialisation bas-niveau de l'ecran LCD : commandes du controleur SH8601 (resolution, gamma, timing)." },
+            { name: "bidi_switch_knob.h", type: "file", cat: "source", desc: "Header du switch bidirectionnel qui partage le bus de donnees entre la carte SD et l'USB OTG." },
+            { name: "bidi_switch_knob.c", type: "file", cat: "source", desc: "Implementation du switch SD/USB OTG. Controle le multiplexeur analogique pour basculer entre les deux peripheriques." }
+          ]}
+        ]},
+        { name: "docs/", type: "dir", cat: "doc", desc: "Documentation complete du Knob : schemas electriques, datasheets des composants, et code de demo du fabricant.", children: [
+          { name: "schematics/", type: "dir", cat: "doc", desc: "Schemas electriques de la carte Knob (captures PNG). Attention : les GPIOs du demo-code font foi en cas de conflit." },
+          { name: "datasheets/", type: "dir", cat: "doc", desc: "Fiches techniques : DRV2605 (haptique), CST816D (tactile), PCM5100A (DAC audio)." },
+          { name: "demo-code/", type: "dir", cat: "doc", desc: "Code de demonstration officiel Waveshare. Source de verite pour les assignations GPIO. Contient des exemples Arduino et ESP-IDF.", children: [
+            { name: "Arduino/", type: "dir", cat: "doc", desc: "Exemples Arduino du fabricant : bibliotheques et sketches de demo." },
+            { name: "ESP-IDF/", type: "dir", cat: "doc", desc: "Exemples ESP-IDF du fabricant : ADC, SD, DRV2605, encodeur, WiFi AP/STA, audio I2S, LVGL." }
+          ]}
+        ]},
+        { name: ".claude/skills/waveshare-knob/", type: "dir", cat: "skill", desc: "Skills Claude Code specifiques au Knob. Fournit a Claude les connaissances hardware, pinout, et ressources de cet appareil.", children: [
+          { name: "SKILL.md", type: "file", cat: "skill", desc: "Point d'entree de la skill Knob." },
+          { name: "device-hardware.md", type: "file", cat: "skill", desc: "Reference hardware complete : pinout GPIO, peripheriques I2C/SPI, composants montes sur la carte." },
+          { name: "resources.md", type: "file", cat: "skill", desc: "Liens vers les ressources : wiki Waveshare, schemas, datasheets, code de demo." }
+        ]}
+      ]},
+      { name: "amoled/", type: "dir", cat: "device", desc: "ESP32-S3-Touch-AMOLED-1.8 — Carte de dev avec ecran AMOLED 1.8 pouces, tactile (FT3168), IMU 6 axes (QMI8658), RTC (PCF85063), PMIC (AXP2101), codec audio (ES8311), et slot SD.", badge: "device", badgeLabel: "AMOLED", children: [
+        { name: "lib/", type: "dir", cat: "device", desc: "Bibliotheques specifiques au hardware AMOLED.", children: [
+          { name: "amoled_hw/", type: "dir", cat: "source", desc: "HAL de l'AMOLED. Centralise les definitions de broches.", children: [
+            { name: "amoled_pins.h", type: "file", cat: "source", desc: "Definition des broches GPIO de l'AMOLED : SPI ecran, I2C (tactile, IMU, RTC, PMIC), I2S audio, SD." }
+          ]}
+        ]},
+        { name: "docs/", type: "dir", cat: "doc", desc: "Documentation de l'AMOLED : datasheets, demo-code, fiche produit.", children: [
+          { name: "datasheets/", type: "dir", cat: "doc", desc: "Fiches techniques : AXP2101 (PMIC), QMI8658 (IMU), PCF85063 (RTC), FT3168 (tactile), ES8311 (codec audio)." },
+          { name: "demo-code/", type: "dir", cat: "doc", desc: "Code de demo officiel Waveshare pour l'AMOLED.", children: [
+            { name: "Arduino/", type: "dir", cat: "doc", desc: "Exemples Arduino : bibliotheques et sketches." },
+            { name: "ESP-IDF/", type: "dir", cat: "doc", desc: "Exemples ESP-IDF : AXP2101, PCF85063, QMI8658, SD MMC, LVGL avec RAM, codec I2S." }
+          ]},
+          { name: "product.pdf", type: "file", cat: "doc", desc: "Fiche produit officielle de l'ESP32-S3-Touch-AMOLED-1.8." }
+        ]},
+        { name: ".claude/skills/waveshare-amoled/", type: "dir", cat: "skill", desc: "Skills Claude Code specifiques a l'AMOLED.", children: [
+          { name: "SKILL.md", type: "file", cat: "skill", desc: "Point d'entree de la skill AMOLED." },
+          { name: "device-hardware.md", type: "file", cat: "skill", desc: "Reference hardware complete de l'AMOLED : pinout, peripheriques, composants." },
+          { name: "resources.md", type: "file", cat: "skill", desc: "Liens vers les ressources AMOLED : wiki, schemas, datasheets." }
+        ]}
+      ]}
+    ]},
+    { name: "build.ps1", type: "file", cat: "build", desc: "Script de build PowerShell. Permet de compiler et flasher n'importe quel projet du monorepo. Syntaxe : .\\build.ps1 <device> [project] [-Upload]. Supporte aussi -ListDevices pour lister les appareils disponibles.", badge: "build", badgeLabel: "Build" },
+    { name: "CLAUDE.md", type: "file", cat: "config", desc: "Fichier d'instructions pour Claude Code. Decrit la structure du repo, les conventions de code, le systeme de build, et les regles a suivre. C'est le point d'entree que Claude lit en premier pour comprendre le projet." },
+    { name: "README.md", type: "file", cat: "doc", desc: "Documentation principale du repo. Presente le projet, les appareils supportes, et les instructions de demarrage." },
+    { name: ".gitignore", type: "file", cat: "config", desc: "Liste des fichiers et dossiers ignores par Git : inbox/, .pio/, build artifacts, etc." }
+  ]
+};
+
+const icons = {
+  dir_open: "\u{1F4C2}", dir_closed: "\u{1F4C1}",
+  c: "\u{1F9E9}", h: "\u{1F9E9}", cpp: "\u{1F9E9}",
+  md: "\u{1F4DD}", pdf: "\u{1F4D1}", ini: "\u2699\uFE0F",
+  json: "\u2699\uFE0F", ps1: "\u{1F528}", default: "\u{1F4C4}"
+};
+
+function getIcon(node, isOpen) {
+  if (node.type === "dir") return isOpen ? icons.dir_open : icons.dir_closed;
+  const ext = node.name.split('.').pop().toLowerCase();
+  return icons[ext] || icons.default;
+}
+
+const badgeClasses = { shared: "badge-shared", device: "badge-device", skill: "badge-skill", doc: "badge-doc", config: "badge-config", build: "badge-build" };
+
+let selectedRow = null;
+
+function renderNode(node, path, parent) {
+  const el = document.createElement("div");
+  el.className = "node";
+  const isDir = node.type === "dir";
+  let isOpen = node.open || false;
+  const fullPath = path ? path + "/" + node.name : node.name;
+
+  const row = document.createElement("div");
+  row.className = `node-row cat-${node.cat || "config"}`;
+
+  const arrow = document.createElement("span");
+  arrow.className = `arrow ${isDir ? (isOpen ? "open" : "") : "hidden"}`;
+  arrow.textContent = "\u25B6";
+
+  const icon = document.createElement("span");
+  icon.className = "icon";
+  icon.textContent = getIcon(node, isOpen);
+
+  const label = document.createElement("span");
+  label.className = "label";
+  label.textContent = node.name;
+
+  row.appendChild(arrow);
+  row.appendChild(icon);
+  row.appendChild(label);
+  el.appendChild(row);
+
+  let childrenEl = null;
+  if (isDir && node.children) {
+    childrenEl = document.createElement("div");
+    childrenEl.className = `node-children ${isOpen ? "" : "collapsed"}`;
+    node.children.forEach(c => renderNode(c, fullPath, childrenEl));
+    el.appendChild(childrenEl);
+  }
+
+  row.addEventListener("click", (e) => {
+    e.stopPropagation();
+    // Toggle dir
+    if (isDir && childrenEl) {
+      isOpen = !isOpen;
+      childrenEl.classList.toggle("collapsed");
+      arrow.classList.toggle("open");
+      icon.textContent = getIcon(node, isOpen);
+    }
+    // Select
+    if (selectedRow) selectedRow.classList.remove("selected");
+    row.classList.add("selected");
+    selectedRow = row;
+    showDesc(node, fullPath);
+  });
+
+  parent.appendChild(el);
+}
+
+function showDesc(node, fullPath) {
+  const panel = document.getElementById("desc");
+  const badgeCls = badgeClasses[node.badge || node.cat] || "badge-config";
+  const badgeLabel = node.badgeLabel || (node.type === "dir" ? "Dossier" : "Fichier");
+  panel.innerHTML = `
+    <div>
+      <span class="badge ${badgeCls}">${badgeLabel}</span>
+      ${node.type === "dir" && node.children ? `<span class="badge badge-config">${node.children.length} element${node.children.length > 1 ? "s" : ""}</span>` : ""}
+    </div>
+    <h2>${node.name}</h2>
+    <div class="path">${fullPath}</div>
+    <div class="desc-text">${node.desc || "Aucune description disponible."}</div>
+  `;
+}
+
+function expandAll() {
+  document.querySelectorAll(".node-children").forEach(el => el.classList.remove("collapsed"));
+  document.querySelectorAll(".arrow").forEach(el => { if (!el.classList.contains("hidden")) el.classList.add("open"); });
+}
+
+function collapseAll() {
+  document.querySelectorAll(".node-children").forEach(el => el.classList.add("collapsed"));
+  document.querySelectorAll(".arrow").forEach(el => el.classList.remove("open"));
+}
+
+// Init
+renderNode(tree, "", document.getElementById("tree"));
+</script>
+</body>
+</html>
