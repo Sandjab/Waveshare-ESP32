@@ -29,7 +29,7 @@ Shared : `shared/lib/qspi_panel/` (driver `esp_lcd_sh8601` — déjà réutilis�
 | I2C SDA / SCL | 11 / 12 | **9 / 10** |
 | Touch INT / RST | non exposés | 7 / 8 |
 | SD CMD / CLK / D0-D3 | 3 / 4 / 5-6-42-2 | **38 / 39 / 40-41-48-47** |
-| Audio I2S BCK / WS / DO / Mute | (n/a dans Basic_*) | 3 / 45 / 42 / 46 |
+| Audio I2S BCK / WS / DO / SpkEN | (n/a dans Basic_*) | 3 / 45 / 42 / 46 |
 | Mic SCK / Data | (n/a) | 5 / 4 |
 | Battery monitor | — | 6 (DAC) |
 | **RGB ring data** | — | **0** (13 WS2812 GRB) |
@@ -42,6 +42,7 @@ La séquence d'init est **identique** entre Waveshare et Guition (vérifié 181/
 ## Gotchas
 
 - **GPIO 0 dual role** : BOOT strap + RGB ring data. WS2812 idle = low ⇒ pas de conflit tant qu'on n'écrit pas avant la fin du boot.
+- **GPIO 46 = enable de l'ampli speaker (NS4150B), pas mute du DAC** : PCM5100A `XSMT` est tiré sur 3V3 = always unmuted. Le speaker passe par un ampli mono Class D activé par GPIO46 (high = ampli on). Le jack 3.5mm (CN3, PJ-342) a un switch de détection qui ouvre l'entrée du NS4150 quand un casque est inséré → speaker coupé automatiquement, casque reçoit le line-out direct du DAC.
 - **Pas de DRV2605** : tout port direct des projets `Hue_Encoder` du Knob qui utilisent les haptics ne marchera pas tel quel — il faut désactiver / supprimer ces appels.
 - **Pinout 100% différent du Knob Waveshare** malgré l'IC ST77916 commun.
 - **Pas un Guition JC3636W518** non plus (notre repo en parlait à propos du Knob). K718 et W518 sont deux modèles Guition distincts avec des pinouts différents.

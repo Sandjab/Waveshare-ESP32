@@ -8,6 +8,7 @@ Monorepo for Waveshare ESP32-S3 devices — shared platform, per-device projects
 |---|---|---|
 | ESP32-S3-Knob-Touch-LCD-1.8 | `devices/knob/` | `waveshare-knob` |
 | ESP32-S3-Touch-AMOLED-1.8 | `devices/amoled/` | `waveshare-amoled` |
+| Guition JC3636K718 | `devices/guition_knob/` | — |
 
 ## Structure
 
@@ -17,7 +18,8 @@ Waveshare/
 ├── shared/lib/qspi_panel/           # QSPI display driver (used by both devices)
 ├── devices/
 │   ├── knob/                         # Knob device (projects, lib, docs, skills)
-│   └── amoled/                       # AMOLED device (projects, lib, docs, skills)
+│   ├── amoled/                       # AMOLED device (projects, lib, docs, skills)
+│   └── guition_knob/                 # Guition JC3636K718 (projects, lib, docs)
 ├── build.ps1                         # Build script (Windows / PowerShell)
 ├── build.sh                          # Build script (macOS / Linux / bash)
 └── inbox/                            # Staging area (gitignored)
