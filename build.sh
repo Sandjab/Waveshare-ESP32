@@ -50,7 +50,14 @@ while [ $# -gt 0 ]; do
         --monitor)       MONITOR=1 ;;
         --clean)         CLEAN=1 ;;
         --list-devices)  LIST_DEVICES=1 ;;
-        --port)          PORT="${2:-}"; shift ;;
+        --port)
+            if [ -z "${2:-}" ]; then
+                echo "Error: --port requires a value (e.g. /dev/cu.usbmodem*)" >&2
+                exit 1
+            fi
+            PORT="$2"
+            shift
+            ;;
         --help|-h)       usage; exit 0 ;;
         --*)             echo "Unknown option: $1" >&2; usage >&2; exit 1 ;;
         *)
@@ -77,6 +84,25 @@ else
     echo "PlatformIO not found. See docs/install/macos.md" >&2
     exit 1
 fi
+
+# --- Port autodetect (ESP32-S3 native 303A:1001, CH340 fallback 1A86:7523) ---
+detect_port() {
+    "$PIO" device list --json-output 2>/dev/null | python3 -c '
+import json, sys
+try:
+    devs = json.load(sys.stdin)
+except Exception:
+    sys.exit(1)
+# Prefer ESP32-S3 native, fallback to CH340
+for vidpid in ["VID:PID=303A:1001", "VID:PID=1A86:7523"]:
+    for d in devs:
+        hwid = d.get("hwid", "") or ""
+        if vidpid in hwid:
+            print(d.get("port", ""))
+            sys.exit(0)
+sys.exit(1)
+'
+}
 
 # --- List devices ---
 if [ "$LIST_DEVICES" = "1" ]; then
@@ -130,6 +156,19 @@ for p in "${PROJECTS[@]}"; do
         exit 1
     fi
 done
+
+# --- Resolve port if needed ---
+if [ "$UPLOAD" = "1" ] || [ "$FLASH" = "1" ] || [ "$MONITOR" = "1" ]; then
+    if [ -z "$PORT" ]; then
+        printf "%sDetecting ESP32-S3 port (VID:303A PID:1001)...%s\n" "$CYAN" "$RESET"
+        if PORT="$(detect_port)" && [ -n "$PORT" ]; then
+            printf "%sFound: %s%s\n" "$GREEN" "$PORT" "$RESET"
+        else
+            printf "%sNo device found. Plug in the board or use --port /dev/cu.xxx%s\n" "$RED" "$RESET" >&2
+            exit 1
+        fi
+    fi
+fi
 
 # --- Build loop ---
 printf "\n%s[%s]%s\n" "$CYAN" "$DEVICE" "$RESET"
