@@ -48,7 +48,7 @@ La séquence d'init est **identique** entre Waveshare et Guition (vérifié 181/
 
 ## First flash — mode download manuel obligatoire
 
-À la sortie d'usine, la carte tourne le **firmware vendor Guition** qui expose le device comme **USB Mass Storage** (`VID:PID=303A:4001` ou `4002`, "ESP USB DEVICE" / "N7 Workshop", monté en FAT32 sur `/Volumes/NO NAME`). Il n'expose **pas** de port série CDC, donc :
+À la sortie d'usine, la carte tourne le **firmware vendor Guition** qui expose un USB custom (`VID:PID=303A:4001` ou `4002`, "ESP USB DEVICE" / "N7 Workshop") — probablement HID pour piloter leur menu/écran. Il n'expose **pas** de port série CDC, donc :
 - `pio device list` ne voit aucun port utilisable
 - l'auto-detect de `build.sh`/`build.ps1` (qui cherche `VID:PID=303A:1001`) échoue
 - esptool ne peut pas piloter d'auto-reset DTR/RTS
@@ -59,13 +59,15 @@ Solution : forcer le **ROM bootloader** de l'ESP32-S3 en mode download manuel :
 2. Brancher le câble USB (ou appuyer brièvement sur **RESET** si déjà branché)
 3. Relâcher BOOT
 
-La carte ré-énumère alors en `VID:PID=303A:1001` ("USB JTAG_serial debug unit" / Espressif) avec un `/dev/cu.usbmodem*` (ou `COM*`) exposé. `/Volumes/NO NAME` disparaît. À partir de là, `./build.sh guition_knob <projet> --upload` (ou `.\build.ps1 ... -Upload`) trouve le port et flashe normalement.
+La carte ré-énumère alors en `VID:PID=303A:1001` ("USB JTAG_serial debug unit" / Espressif) avec un `/dev/cu.usbmodem*` (ou `COM*`) exposé. À partir de là, `./build.sh guition_knob <projet> --upload` (ou `.\build.ps1 ... -Upload`) trouve le port et flashe normalement.
+
+Note : le firmware vendor a aussi un **mode USB Mass Storage** (monté en FAT32 503 MB sur `/Volumes/NO NAME` côté Mac, `COM*` MSC côté Windows), mais ce n'est **pas** le mode par défaut au boot — il faut l'activer explicitement via une entrée de menu (« reboot to MSC ») sur l'écran. Donc on ne tombe dessus que volontairement.
 
 Une fois notre firmware en place (avec `-DARDUINO_USB_CDC_ON_BOOT=1` dans `platformio.ini`), le CDC est exposé en permanence et l'auto-reset esptool fonctionne — la procédure manuelle n'est plus nécessaire pour les flashs suivants.
 
 ### Restauration du firmware vendor
 
-Le binaire d'usine `JC3636K718_V1.1.bin` n'est **pas** versionné dans le repo. S'il est encore dans `~/Downloads/JC3636K718_knob_EN/9-Burn/Burn operation instructions/`, le flasher à l'offset `0x0` via esptool. Sinon, retélécharger l'archive vendor.
+Le binaire d'usine `JC3636K718_V1.1.bin` est archivé dans [`docs/firmware/`](docs/firmware/). Procédure complète de re-flash (commande esptool, durée, état post-flash, etc.) : [`docs/firmware/README.md`](docs/firmware/README.md).
 
 ## LVGL Documentation
 

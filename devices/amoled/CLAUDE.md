@@ -33,3 +33,7 @@ Shared code lives in `../../shared/lib/` (QSPI driver `esp_lcd_sh8601`).
 - **SD card is 1-wire** — uses SDMMC 1-bit mode (not 4-wire like the Knob). Power is controlled via XCA9554 P7.
 - **AXP2101 PMIC** — the `XPOWERS_CHIP_AXP2101` define is required. Use XPowersLib for battery/charging management.
 - **PA enable** — GPIO 46 must be set HIGH to enable the speaker amplifier for audio output.
+
+## Next steps
+
+- **Archive factory firmware.** No factory firmware is currently versioned for this device (see `devices/guition_knob/docs/firmware/` for the layout used). Check whether Waveshare distributes a pre-built `.bin` for the AMOLED, and if so archive it under `docs/firmware/` with a `README.md` documenting the offsets / flash procedure.

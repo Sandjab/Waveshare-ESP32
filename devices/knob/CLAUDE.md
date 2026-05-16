@@ -57,3 +57,7 @@ The demo code uses LVGL v8.3.11. For up-to-date docs, use Context7:
 - **Not a Guition JC3636W518.** Similar form factor, completely different pinouts. Do not mix configurations.
 - **Display driver mismatch.** The QSPI framework uses `esp_lcd_sh8601`, but the actual panel IC is an **ST77916** with a custom init sequence. Don't assume SH8601 registers apply.
 - **GPIO 0 dual role.** It serves as both BOOT strap pin and audio mux control (HIGH = S3 controls PCM5100A DAC).
+
+## Next steps
+
+- **Archive factory firmware.** Unlike `devices/guition_knob/docs/firmware/`, no factory firmware is currently versioned for this device. Waveshare typically ships demo *source* rather than a single merged `.bin`. Investigate whether a pre-built image is available (Waveshare wiki / GitHub releases), and if so archive it under `docs/firmware/` with a `README.md` mirroring the Guition layout.
