@@ -8,6 +8,7 @@ Development repo for Waveshare ESP32-S3 devices.
 |---|--------|-------------|---------|
 | <img src="devices/knob/docs/images/ESP32-S3-Knob-Touch-LCD-1.8.jpg" width="80"> | [Knob](devices/knob/) | [ESP32-S3-Knob-Touch-LCD-1.8](https://www.waveshare.com/esp32-s3-knob-touch-lcd-1.8.htm) — Rotary knob with round IPS LCD 360x360 | ST77916 QSPI |
 | <img src="devices/amoled/docs/images/ESP32-S3-Touch-AMOLED-1.8.png" width="80"> | [AMOLED](devices/amoled/) | [ESP32-S3-Touch-AMOLED-1.8](https://www.waveshare.com/esp32-s3-touch-amoled-1.8.htm) — AMOLED touch watch 368x448 | SH8601 QSPI |
+| <img src="devices/guition_knob/docs/images/JC3636K718.png" width="80"> | [Guition Knob](devices/guition_knob/) | Guition JC3636K718 — Rotary knob with round IPS LCD 360x360 + **13×WS2812 RGB ring** | ST77916 QSPI |
 
 ## Structure
 
@@ -15,8 +16,9 @@ Development repo for Waveshare ESP32-S3 devices.
 Waveshare/
 ├── shared/lib/qspi_panel/     # Common QSPI display driver
 ├── devices/
-│   ├── knob/                  # Knob: projects, lib, docs
-│   └── amoled/                # AMOLED: projects, lib, docs
+│   ├── knob/                  # Waveshare Knob: projects, lib, docs
+│   ├── amoled/                # Waveshare AMOLED: projects, lib, docs
+│   └── guition_knob/          # Guition JC3636K718: projects, lib, docs (RGB ring)
 ├── build.ps1                 # Build script (Windows / PowerShell)
 └── build.sh                  # Build script (macOS / Linux / bash)
 ```
