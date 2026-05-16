@@ -104,6 +104,22 @@ sys.exit(1)
 '
 }
 
+# --- Upload wrapper: streams output, "Hard resetting" = success regardless of exit code ---
+run_upload() {
+    local flash_ok=0
+    while IFS= read -r line; do
+        if [ "$flash_ok" = "1" ]; then continue; fi
+        printf '%s\n' "$line"
+        case "$line" in *"Hard resetting"*) flash_ok=1 ;; esac
+    done < <("$@" 2>&1)
+    if [ "$flash_ok" = "1" ]; then
+        printf "%sUpload OK%s\n" "$GREEN" "$RESET"
+    else
+        printf "%sUpload FAILED%s\n" "$RED" "$RESET" >&2
+        exit 1
+    fi
+}
+
 # --- List devices ---
 if [ "$LIST_DEVICES" = "1" ]; then
     printf "%sAvailable devices:%s\n" "$CYAN" "$RESET"
@@ -181,8 +197,18 @@ for proj in "${PROJECTS[@]}"; do
         "$PIO" run -d "$dir" -t clean
     fi
 
-    echo "Building..."
-    "$PIO" run -d "$dir"
+    if [ "$UPLOAD" = "1" ]; then
+        echo "Building + uploading..."
+        run_upload "$PIO" run -d "$dir" -t upload --upload-port "$PORT"
+    else
+        echo "Building..."
+        "$PIO" run -d "$dir"
+    fi
+
+    if [ "$MONITOR" = "1" ]; then
+        echo "Monitor (Ctrl-C to exit)..."
+        "$PIO" device monitor -d "$dir" --port "$PORT"
+    fi
 done
 
 printf "\n%sDone.%s\n" "$GREEN" "$RESET"
