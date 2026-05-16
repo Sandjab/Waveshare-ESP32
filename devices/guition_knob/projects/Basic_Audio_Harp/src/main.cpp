@@ -2,18 +2,22 @@
 #include <math.h>
 #include "driver/i2s_std.h"
 #include "guition_pins.h"
+#include "bidi_switch_knob.h"
 
 // Arpège Cmaj7 (C4, E4, G4, B4) en synthèse Karplus-Strong sur le HP onboard.
 // Chaque "corde" est un buffer circulaire de longueur N = SR/freq, initialisé
 // avec du bruit blanc au moment du pluck, puis filtré sample-par-sample par
 // une moyenne glissante (low-pass) avec un facteur de damping. C'est le modèle
 // physique le plus simple d'une corde pincée — ~3 ko de RAM pour 4 voix.
+// Volume reglable via l'encoder : 21 crans (0=mute, 20=max). Demarre a 4.
 
 static constexpr uint32_t SAMPLE_RATE      = 44100;
 static constexpr size_t   FRAMES_PER_BUF   = 256;
 static constexpr float    PLUCK_AMPLITUDE  = 0.30f;
 static constexpr float    DAMPING          = 0.996f;     // 1.0 = corde infinie
-static constexpr float    OUTPUT_GAIN      = 0.50f;      // headroom 4 voies
+static constexpr float    GAIN_MAX         = 0.50f;      // headroom 4 voies
+static constexpr int      VOL_STEPS        = 20;
+static constexpr int      VOL_DEFAULT      = 4;
 static constexpr size_t   MAX_STRING_LEN   = 200;        // >= SR/220Hz
 
 // Cmaj7 ascending: C4 - E4 - G4 - B4
@@ -29,7 +33,9 @@ struct KSVoice {
 
 static KSVoice           strings[4];
 static i2s_chan_handle_t i2s_tx;
-static int16_t          i2s_buf[FRAMES_PER_BUF * 2];
+static int16_t           i2s_buf[FRAMES_PER_BUF * 2];
+static knob_handle_t     knob     = nullptr;
+static int               vol_step = VOL_DEFAULT;
 
 static void string_init(KSVoice& s, float freq) {
     s.len = (size_t)(SAMPLE_RATE / freq + 0.5f);
@@ -84,13 +90,29 @@ void setup() {
     digitalWrite(PIN_PA_MUTE, HIGH);    // active speaker amp
 
     for (int i = 0; i < 4; i++) string_init(strings[i], STRING_FREQ[i]);
+
+    knob_config_t kc = { .gpio_encoder_a = PIN_ENC_A, .gpio_encoder_b = PIN_ENC_B };
+    knob = iot_knob_create(&kc);
+    iot_knob_clear_count_value(knob);
+
     i2s_setup();
+    Serial.printf("Vol initial : %d/%d (0=mute, tourner pour ajuster)\n", vol_step, VOL_STEPS);
 }
 
 void loop() {
     // Arpège : pluck 0,1,2,3 puis silence, puis recommence.
     static int      pluck_step    = 0;
     static uint32_t last_pluck_ms = 0;
+
+    int delta = iot_knob_get_count_value(knob);
+    if (delta != 0) {
+        iot_knob_clear_count_value(knob);
+        vol_step += delta;
+        if (vol_step < 0)         vol_step = 0;
+        if (vol_step > VOL_STEPS) vol_step = VOL_STEPS;
+        Serial.printf("Vol : %d/%d\n", vol_step, VOL_STEPS);
+    }
+    float output_gain = ((float)vol_step / VOL_STEPS) * GAIN_MAX;
 
     uint32_t now = millis();
     uint32_t target = (pluck_step >= 4) ? REST_AFTER_LAST_MS : PLUCK_INTERVAL_MS;
@@ -109,7 +131,7 @@ void loop() {
                   + string_next(strings[1])
                   + string_next(strings[2])
                   + string_next(strings[3]);
-        mix *= OUTPUT_GAIN;
+        mix *= output_gain;
         if (mix > 1.0f)  mix = 1.0f;
         if (mix < -1.0f) mix = -1.0f;
         int16_t s = (int16_t)(mix * 32767.0f);
