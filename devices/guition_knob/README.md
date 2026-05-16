@@ -15,6 +15,7 @@ Variante très proche du [Waveshare ESP32-S3-Knob-Touch-LCD-1.8](https://www.wav
 | [Basic_Audio](projects/Basic_Audio/) | Beep 440 Hz intermittent (vol. via encoder) | I2S → PCM5100A → ampli NS4150B → HP onboard, encoder |
 | [Basic_Audio_Harp](projects/Basic_Audio_Harp/) | Arpège Cmaj7 synthèse Karplus-Strong (vol. via encoder) | I2S → PCM5100A → HP onboard, encoder |
 | [Basic_Audio_Ping](projects/Basic_Audio_Ping/) | "Ping" type cloche (additive synth, vol. via encoder) | I2S → PCM5100A → HP onboard, encoder |
+| [Basic_Audio_Talkie](projects/Basic_Audio_Talkie/) | TTS robotique LPC (phrases iconic US, vol. via encoder) | I2S → PCM5100A → HP onboard, encoder, `TalkiePCM` |
 
 ## Structure
 
@@ -26,7 +27,8 @@ devices/guition_knob/
 │   ├── Basic_RGB_Ring/
 │   ├── Basic_Audio/
 │   ├── Basic_Audio_Harp/
-│   └── Basic_Audio_Ping/
+│   ├── Basic_Audio_Ping/
+│   └── Basic_Audio_Talkie/
 └── docs/
     ├── datasheets/                  # ST77916 INI, PCM5100A, ESP32-S3R8
     ├── demo-code/                   # Demo Guition (Arduino + ESP-IDF, dont led_strip)
