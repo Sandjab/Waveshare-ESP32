@@ -22,12 +22,26 @@ Waveshare/
 
 ## Build
 
-Prerequis : [PlatformIO Core (CLI)](https://docs.platformio.org/en/latest/core/installation.html)
+Prérequis : [PlatformIO Core (CLI)](https://docs.platformio.org/en/latest/core/installation.html)
+- **Windows** → [docs/install/windows.md](docs/install/windows.md)
+- **macOS** → [docs/install/macos.md](docs/install/macos.md)
+
+### Windows (PowerShell)
 
 ```powershell
-.\build.ps1 knob Basic_Blink                   # Build un projet
+.\build.ps1 knob Basic_Blink                   # Build
 .\build.ps1 knob Basic_Blink -Upload           # Build + flash (autodetect port)
-.\build.ps1 knob Basic_Blink -Upload -Monitor  # Build + flash + monitor serie
-.\build.ps1 knob -Clean                   # Clean + rebuild tous les projets du device
-.\build.ps1 -ListDevices                  # Lister les devices disponibles
+.\build.ps1 knob Basic_Blink -Upload -Monitor  # Build + flash + monitor série
+.\build.ps1 knob -Clean                        # Clean + rebuild tous les projets du device
+.\build.ps1 -ListDevices                       # Lister les devices disponibles
+```
+
+### macOS / Linux (bash)
+
+```bash
+./build.sh knob Basic_Blink                    # Build
+./build.sh knob Basic_Blink --upload           # Build + flash (autodetect port)
+./build.sh knob Basic_Blink --upload --monitor # Build + flash + monitor série
+./build.sh knob --clean                        # Clean + rebuild tous les projets du device
+./build.sh --list-devices                      # Lister les devices disponibles
 ```
