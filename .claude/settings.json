@@ -13,27 +13,18 @@
       "Bash(gh search:*)",
       "Bash(gh api:*)",
       "Bash(gh repo:*)",
-      "Bash(pio run:*)",
       "Bash(pio:*)",
-      "Bash(where pio:*)",
-      "Bash(~/.platformio/penv/Scripts/pio.exe run:*)",
-      "Bash(~/.platformio/penv/Scripts/pio.exe pkg:*)",
-      "Bash(~/.platformio/penv/Scripts/python.exe:*)",
-      "Bash(\"$HOME/.platformio/penv/Scripts/pio.exe\" --version)",
-      "Bash(powershell.exe:*)",
-      "Bash(chmod +x:*)",
+      "Bash(pio run:*)",
+      "Bash(git:*)",
+      "Bash(cp:*)",
       "Bash(rm:*)",
+      "Bash(chmod +x:*)",
       "Bash(xxd:*)",
       "Bash(pip show:*)",
-      "Bash(git:*)",
-      "Bash(cd \"D:/DEV/ClaudeCode/Waveshare\" && git:*)",
-      "Bash(cp:*)",
       "Bash(while read d)",
       "Bash(do echo \"=== $d ===\")",
-      "Read(//d/DEV/ClaudeCode/Waveshare/**)",
-      "Write(D:/DEV/ClaudeCode/Waveshare/**)",
-      "Edit(D:/DEV/ClaudeCode/Waveshare/**)",
-      "Bash(powershell -Command:*)"
+      "Bash(./build.sh:*)",
+      "Bash(bash ./build.sh:*)"
     ]
   }
 }

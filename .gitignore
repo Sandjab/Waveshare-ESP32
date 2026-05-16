@@ -13,3 +13,6 @@ __pycache__/
 
 # Inbox (temporary staging, not tracked)
 inbox/
+
+# Claude Code permissions (per-user / per-OS)
+.claude/settings.local.json
