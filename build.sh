@@ -187,22 +187,38 @@ if [ "$UPLOAD" = "1" ] || [ "$FLASH" = "1" ] || [ "$MONITOR" = "1" ]; then
 fi
 
 # --- Build loop ---
+PYTHON_BIN="$HOME/.platformio/penv/bin/python"
+ESPTOOL="$HOME/.platformio/packages/tool-esptoolpy/esptool.py"
+
 printf "\n%s[%s]%s\n" "$CYAN" "$DEVICE" "$RESET"
 for proj in "${PROJECTS[@]}"; do
     dir="$PROJECTS_DIR/$proj"
     printf "\n%s=== %s/%s ===%s\n" "$WHITE" "$DEVICE" "$proj" "$RESET"
 
-    if [ "$CLEAN" = "1" ]; then
-        echo "Cleaning..."
-        "$PIO" run -d "$dir" -t clean
-    fi
-
-    if [ "$UPLOAD" = "1" ]; then
-        echo "Building + uploading..."
-        run_upload "$PIO" run -d "$dir" -t upload --upload-port "$PORT"
+    if [ "$FLASH" = "1" ]; then
+        bin="$dir/.pio/build/esp32s3/firmware.bin"
+        if [ ! -f "$bin" ]; then
+            echo "No firmware found for $proj — build first." >&2
+            exit 1
+        fi
+        echo "Flashing (no rebuild)..."
+        bootloader="$dir/.pio/build/esp32s3/bootloader.bin"
+        partitions="$dir/.pio/build/esp32s3/partitions.bin"
+        run_upload "$PYTHON_BIN" "$ESPTOOL" \
+            --chip esp32s3 --port "$PORT" --baud 921600 \
+            write_flash 0x0000 "$bootloader" 0x8000 "$partitions" 0x10000 "$bin"
     else
-        echo "Building..."
-        "$PIO" run -d "$dir"
+        if [ "$CLEAN" = "1" ]; then
+            echo "Cleaning..."
+            "$PIO" run -d "$dir" -t clean
+        fi
+        if [ "$UPLOAD" = "1" ]; then
+            echo "Building + uploading..."
+            run_upload "$PIO" run -d "$dir" -t upload --upload-port "$PORT"
+        else
+            echo "Building..."
+            "$PIO" run -d "$dir"
+        fi
     fi
 
     if [ "$MONITOR" = "1" ]; then
