@@ -11,6 +11,7 @@ Variante très proche du [Waveshare ESP32-S3-Knob-Touch-LCD-1.8](https://www.wav
 | Projet | Description | Périphériques utilisés |
 |--------|-------------|------------------------|
 | [Basic_Blink](projects/Basic_Blink/) | Écran clignotant (vert/rouge) | Display QSPI, backlight PWM |
+| [Basic_RGB_Ring](projects/Basic_RGB_Ring/) | Rotation arc-en-ciel sur les 13 LEDs | RGB ring (WS2812 sur GPIO 0) |
 
 ## Structure
 
@@ -18,7 +19,8 @@ Variante très proche du [Waveshare ESP32-S3-Knob-Touch-LCD-1.8](https://www.wav
 devices/guition_knob/
 ├── lib/guition_knob_hw/             # Pins, display, LVGL, encoder
 ├── projects/
-│   └── Basic_Blink/
+│   ├── Basic_Blink/
+│   └── Basic_RGB_Ring/
 └── docs/
     ├── datasheets/                  # ST77916 INI, PCM5100A, ESP32-S3R8
     ├── demo-code/                   # Demo Guition (Arduino + ESP-IDF, dont led_strip)
