@@ -17,7 +17,8 @@ Waveshare/
 ├── devices/
 │   ├── knob/                  # Knob: projects, lib, docs
 │   └── amoled/                # AMOLED: projects, lib, docs
-└── build.ps1                  # Build script
+├── build.ps1                 # Build script (Windows / PowerShell)
+└── build.sh                  # Build script (macOS / Linux / bash)
 ```
 
 ## Build

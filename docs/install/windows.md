@@ -55,6 +55,8 @@ Crée `.claude/settings.local.json` (gitignored) avec les permissions spécifiqu
       "Bash(~/.platformio/penv/Scripts/python.exe:*)",
       "Bash(powershell.exe:*)",
       "Bash(powershell -Command:*)",
+      "Bash(powershell -File build.ps1:*)",
+      "Bash(.\\build.ps1:*)",
       "Bash(where pio:*)"
     ]
   }

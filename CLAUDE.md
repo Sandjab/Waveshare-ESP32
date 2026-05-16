@@ -18,7 +18,8 @@ Waveshare/
 ├── devices/
 │   ├── knob/                         # Knob device (projects, lib, docs, skills)
 │   └── amoled/                       # AMOLED device (projects, lib, docs, skills)
-├── build.ps1                         # Build script: .\build.ps1 <device> [project] [-Upload]
+├── build.ps1                         # Build script (Windows / PowerShell)
+├── build.sh                          # Build script (macOS / Linux / bash)
 └── inbox/                            # Staging area (gitignored)
 ```
 
@@ -32,11 +33,24 @@ Waveshare/
 
 ## Build
 
+Prérequis PlatformIO : voir [docs/install/windows.md](docs/install/windows.md) ou [docs/install/macos.md](docs/install/macos.md).
+
+Windows (PowerShell) :
+
 ```powershell
 .\build.ps1 knob Basic_Blink         # Build specific project
 .\build.ps1 knob Basic_Blink -Upload # Build + flash
 .\build.ps1 amoled                   # Build all AMOLED projects
 .\build.ps1 -ListDevices             # Show available devices
+```
+
+macOS / Linux (bash) :
+
+```bash
+./build.sh knob Basic_Blink          # Build specific project
+./build.sh knob Basic_Blink --upload # Build + flash
+./build.sh amoled                    # Build all AMOLED projects
+./build.sh --list-devices            # Show available devices
 ```
 
 ## LVGL Documentation
