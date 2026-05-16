@@ -222,6 +222,11 @@ for proj in "${PROJECTS[@]}"; do
     fi
 
     if [ "$MONITOR" = "1" ]; then
+        # macOS keeps the serial port locked briefly after esptool resets the
+        # board; give it a couple of seconds before opening the monitor.
+        if [ "$UPLOAD" = "1" ] || [ "$FLASH" = "1" ]; then
+            sleep 2
+        fi
         echo "Monitor (Ctrl-C to exit)..."
         "$PIO" device monitor -d "$dir" --port "$PORT"
     fi
