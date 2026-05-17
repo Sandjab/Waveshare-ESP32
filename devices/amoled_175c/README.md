@@ -1,5 +1,7 @@
 # Waveshare ESP32-S3-Touch-AMOLED-1.75C
 
+<img src="docs/images/ESP32-S3-Touch-AMOLED-1.75C.png" width="200" alt="ESP32-S3-Touch-AMOLED-1.75C">
+
 Dev repo pour le [Waveshare ESP32-S3-Touch-AMOLED-1.75C](https://www.waveshare.com/wiki/ESP32-S3-Touch-AMOLED-1.75C) — montre ronde 466×466 (CO5300 QSPI), touch, audio (ES8311 + ES7210 AEC), PMIC AXP2101, IMU, dual-microphone array, speaker onboard.
 
 ## Projets
