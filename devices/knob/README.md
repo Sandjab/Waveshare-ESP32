@@ -35,13 +35,26 @@ Les projets utilisent `lib/knob_hw/` (pins, init display via `knob_display.h`, i
 
 ## Build et flash
 
+> ⚠️ **Switch USB CH445P** : la prise Type-C sélectionne **l'ESP32-S3 ou l'ESP32 secondaire** selon l'orientation du câble. Si `esptool` répond `This chip is ESP32 not ESP32-S3`, retourner le câble (1 clic). Voir le skill `waveshare-knob` pour le détail.
+
 Depuis la racine du monorepo :
 
 ```powershell
-.\build.ps1 knob                           # Build tous les projets Knob
-.\build.ps1 knob Basic_Blink                    # Build Basic_Blink seul
-.\build.ps1 knob Basic_Encoder -Upload          # Build + flash (autodetect port)
+# Windows
+.\build.ps1 knob                                       # Build tous les projets Knob
+.\build.ps1 knob Basic_Blink                           # Build Basic_Blink seul
+.\build.ps1 knob Basic_Encoder -Upload                 # Build + flash (auto-detect port)
 .\build.ps1 knob Basic_Blink -Upload -Port COM13 -Monitor
-.\build.ps1 knob Basic_Blink -Flash             # Flash sans rebuild
-.\build.ps1 knob -Clean                    # Clean + rebuild tout
+.\build.ps1 knob Basic_Blink -Flash                    # Flash sans rebuild
+.\build.ps1 knob -Clean                                # Clean + rebuild tout
+```
+
+```bash
+# macOS / Linux
+./build.sh knob                                        # Build tous les projets Knob
+./build.sh knob Basic_Blink                            # Build Basic_Blink seul
+./build.sh knob Basic_Encoder --upload                 # Build + flash (auto-detect port)
+./build.sh knob Basic_Blink --upload --port /dev/cu.usbmodem* --monitor
+./build.sh knob Basic_Blink --flash                    # Flash sans rebuild
+./build.sh knob --clean                                # Clean + rebuild tout
 ```
