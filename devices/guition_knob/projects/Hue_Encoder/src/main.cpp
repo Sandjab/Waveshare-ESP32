@@ -4,6 +4,7 @@
 #include "guition_lvgl.h"
 #include "bidi_switch_knob.h"
 #include "rgb_ring.h"
+#include "crystal_ping.h"
 
 Adafruit_NeoPixel rgb_ring(RGB_RING_LED_COUNT, PIN_RGB_DATA, NEO_GRB + NEO_KHZ800);
 
@@ -117,6 +118,10 @@ void setup() {
     // RGB ring (mirrors screen color). 128/255 ≈ 50 %, well under USB 500 mA.
     rgb_ring_init(128);
 
+    // Audio (I2S out + synth task) pour le "ping" cristallin a chaque
+    // transition vers FF0000 (hue == 0).
+    crystal_ping::init();
+
     // Build UI
     Serial.println("Build UI...");
 
@@ -199,11 +204,17 @@ void loop() {
         int32_t diff = count - last_count;
         last_count = count;
 
+        int16_t prev_hue = hue;
         hue = (hue + (int)(diff * HUE_STEP)) % 360;
         if (hue < 0) hue += 360;
 
         update_color();
         haptic_tick();
+
+        // Son cristallin a l'entree dans le rouge pur (#FF0000).
+        if (hue == 0 && prev_hue != 0) {
+            crystal_ping::trigger();
+        }
 
         char buf[16];
         snprintf(buf, sizeof(buf), "%ld", (long)count);
