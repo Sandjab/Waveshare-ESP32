@@ -36,6 +36,4 @@ Shared code lives in `../../shared/lib/` (QSPI driver `esp_lcd_sh8601`).
 
 ## Next steps
 
-- **First PIO project.** No PlatformIO project exists yet for this device — a Basic_Blink equivalent is the natural starting point to validate the build/flash chain.
-
-Factory firmware (Waveshare `FactoryXiaozhi_250805`, ~16 MB) is archived in [`firmware/`](firmware/) with the restore procedure documented in [`firmware/README.md`](firmware/README.md).
+Factory firmware (Waveshare `FactoryXiaozhi_250805`, ~16 MB) is archived in [`firmware/`](firmware/) with the restore procedure documented in [`firmware/README.md`](firmware/README.md). The first reflash will also confirm the assumed offset `0x0` (merged image) — if the board doesn't boot, try `0x10000` (app-only).

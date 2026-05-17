@@ -6,15 +6,21 @@ Dev repo pour le [Waveshare ESP32-S3-Touch-AMOLED-1.8](https://www.waveshare.com
 
 ## Projets
 
-Aucun projet pour l'instant. Les exemples de reference sont dans `docs/demo-code/`.
+| Projet | Description | Peripheriques utilises |
+|--------|-------------|------------------------|
+| [Basic_Blink](projects/Basic_Blink/) | Ecran clignotant vert/rouge | Display QSPI (SH8601), brightness via cmd 0x51 |
+
+D'autres exemples de reference (Arduino + ESP-IDF) sont dans `docs/demo-code/`.
 
 ## Structure
 
 ```
 devices/amoled/
 ├── lib/
-│   └── amoled_hw/               # Lib device-specific (pins)
-├── projects/                    # PlatformIO projects (a venir)
+│   └── amoled_hw/               # Lib device-specific (pins, display init)
+├── projects/
+│   └── Basic_Blink/             # Ecran clignotant
+├── firmware/                    # Firmware d'usine archive (FactoryXiaozhi_250805)
 └── docs/
     ├── demo-code/
     │   ├── Arduino/             # 16 exemples Arduino
@@ -23,13 +29,26 @@ devices/amoled/
     └── product.pdf              # Datasheet produit
 ```
 
-## Build
+## Build et flash
 
 Depuis la racine du monorepo :
 
 ```powershell
-.\build.ps1 amoled                     # Build tous les projets AMOLED
-.\build.ps1 amoled MyProject -Upload   # Build + flash
+# Windows
+.\build.ps1 amoled                                     # Build tous les projets AMOLED
+.\build.ps1 amoled Basic_Blink                         # Build Basic_Blink seul
+.\build.ps1 amoled Basic_Blink -Upload                 # Build + flash (auto-detect port)
+.\build.ps1 amoled Basic_Blink -Upload -Port COM13 -Monitor
+.\build.ps1 amoled -Clean                              # Clean + rebuild tout
+```
+
+```bash
+# macOS / Linux
+./build.sh amoled                                      # Build tous les projets AMOLED
+./build.sh amoled Basic_Blink                          # Build Basic_Blink seul
+./build.sh amoled Basic_Blink --upload                 # Build + flash (auto-detect port)
+./build.sh amoled Basic_Blink --upload --port /dev/cu.usbmodem* --monitor
+./build.sh amoled --clean                              # Clean + rebuild tout
 ```
 
 ## Peripheriques
