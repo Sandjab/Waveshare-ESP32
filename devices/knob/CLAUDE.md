@@ -20,6 +20,7 @@ devices/knob/
 ├── projects/
 │   ├── Basic_Blink/                 # Ecran clignotant (raw display)
 │   ├── Basic_Encoder/               # Compteur rotatif ±9999 (LVGL + encoder)
+│   ├── Basic_LVGL_Meter/            # Cadran lv_meter 0..100 pilote par encoder (port du Guition)
 │   ├── Hue_Encoder/                 # Roue de teintes HSV (LVGL + encoder + haptics + touch)
 │   └── Basic_SD_OTG/                # Lecteur SD USB
 ├── docs/

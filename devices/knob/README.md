@@ -10,6 +10,7 @@ Repo de dev pour le [Waveshare ESP32-S3-Knob-Touch-LCD-1.8](https://www.waveshar
 |--------|-------------|----------------------|
 | [Basic_Blink](projects/Basic_Blink/) | Ecran clignotant (vert/rouge) | Display QSPI, backlight PWM |
 | [Basic_Encoder](projects/Basic_Encoder/) | Compteur rotatif ±9999 | Display + LVGL, encoder |
+| [Basic_LVGL_Meter](projects/Basic_LVGL_Meter/) | Cadran type compteur de vitesse 0-100 pilote par encoder (portage du Guition) | Display + LVGL `lv_meter`, encoder |
 | [Hue_Encoder](projects/Hue_Encoder/) | Roue de teintes HSV + toggle haptics | Display + LVGL, encoder, DRV2605 haptics, CST816 touch |
 | [Basic_SD_OTG](projects/Basic_SD_OTG/) | Lecteur SD USB (mass storage) | SD card SDMMC, USB-OTG MSC |
 
@@ -22,6 +23,7 @@ devices/knob/
 ├── projects/
 │   ├── Basic_Blink/             # Ecran clignotant
 │   ├── Basic_Encoder/           # Compteur rotatif
+│   ├── Basic_LVGL_Meter/        # Cadran lv_meter pilote par encoder
 │   ├── Hue_Encoder/             # Roue de teintes HSV
 │   └── Basic_SD_OTG/            # Lecteur SD USB
 └── docs/

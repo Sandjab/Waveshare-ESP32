@@ -15,7 +15,7 @@ description: Development reference for Waveshare ESP32-S3-Knob-Touch-LCD-1.8. Us
 | **Display** | 1.8" IPS LCD, 360x360, ST77916 QSPI, 262K colors, 600 cd/m² |
 | **Touch** | CST816 capacitive, I2C |
 | **Haptics** | DRV2605 + LRA motor, I2C (0x5A) |
-| **Audio Out** | PCM5100A DAC stereo (muxed: GPIO0 selects S3 or ESP32) |
+| **Audio Out** | PCM5100A DAC stereo → 3.5 mm jack line-out (no onboard speaker, no power amp). I2S source muxed via GPIO 0: HIGH = ESP32-S3, LOW = ESP32 secondary |
 | **Audio In** | PDM microphone (I2S on ESP32-S3) |
 | **Encoder** | Rotary encoder on ESP32-S3 (+ 2nd encoder on ESP32) |
 | **Storage** | MicroSD (SDMMC 4-wire) |

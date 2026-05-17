@@ -139,6 +139,12 @@ Standard UART link between the two MCUs. No hardware flow control lines observed
 > Confirmed by demo code (`07_Audio_Test`). No MCLK needed (PCM5100A has internal PLL).
 > GPIO 0 set HIGH selects ESP32-S3 as DAC controller (audio mux). The ESP32 secondary also has I2S lines to the DAC (see secondary pinout) — GPIO 0 switches between the two.
 
+### Audio Output Path
+
+The PCM5100A `OUTL` / `OUTR` lines feed a **3.5 mm jack line-out** — there is **no onboard speaker and no power amplifier IC** on this board. Drive level is standard DAC line-level (~1 Vrms typ), suitable for headphones or active speakers but not for driving a passive speaker directly.
+
+This is the main audio-chain difference from the Guition JC3636K718, which adds an NS4150B Class-D amp + onboard speaker downstream of an equivalent PCM5100A DAC.
+
 ### Other
 
 | Signal | GPIO | Notes |
@@ -155,10 +161,9 @@ Standard UART link between the two MCUs. No hardware flow control lines observed
 
 ### Remaining Unknowns
 
-- **Audio amplifier IC** : visible on schematic but reference illegible (possibly MAX98357 or SGM8903)
-- **PCM5100A XSMT** : soft mute pin destination (ESP32 GPIO or fixed pull-up?) not identified
-- **LED software-controllable** : LED4 is charge indicator driven by charger IC — no software-controllable status LED found
-- **SD card detect** : socket SWITCH pin exists but GPIO not identified
+- **PCM5100A XSMT** : soft mute pin destination (ESP32 GPIO or fixed pull-up?) not yet identified.
+- **LED software-controllable** : LED4 is charge indicator driven by charger IC — no software-controllable status LED found.
+- **SD card detect** : socket SWITCH pin exists but GPIO not identified.
 
 ---
 
