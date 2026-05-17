@@ -1,6 +1,6 @@
 ---
 name: waveshare-amoled
-description: Development reference for Waveshare ESP32-S3-Touch-AMOLED-1.8. Use when working with this device, its AMOLED display (SH8601 QSPI), touch (FT3168), audio (ES8311), power (AXP2101), IMU (QMI8658), RTC (PCF85063), or PlatformIO setup.
+description: Development reference for Waveshare ESP32-S3-Touch-AMOLED-1.8. Use when working with this device, its AMOLED display (SH8601 QSPI), touch (FT3168), audio (ES8311), power (AXP2101), IMU (QMI8658), or RTC (PCF85063).
 ---
 
 # Waveshare ESP32-S3-Touch-AMOLED-1.8

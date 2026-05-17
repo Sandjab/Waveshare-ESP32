@@ -8,12 +8,12 @@
 | **Product page** | https://www.waveshare.com/esp32-s3-knob-touch-lcd-1.8.htm |
 | **Schematic + datasheets** | Downloadable from the wiki page (Documents section) |
 | **Demo code** (Arduino + ESP-IDF) | Downloadable from the wiki page (Demo section) |
-| **Demo ZIP** | https://files.waveshare.com/wiki/ESP32-S3-Knob-Touch-LCD-1.8/ESP32-S3-Knob-Touch-LCD-1.8-Demo.zip |
-| **Firmware BIN** | https://files.waveshare.com/wiki/ESP32-S3-Knob-Touch-LCD-1.8/ESP32-S3-Knob-Touch-LCD-1.8-BIN.zip |
+| **Demo ZIP** (contains `Firmware/*.bin`) | https://files.waveshare.com/wiki/ESP32-S3-Knob-Touch-LCD-1.8/ESP32-S3-Knob-Touch-LCD-1.8-Demo.zip |
 | **Schematics ZIP** | https://files.waveshare.com/wiki/ESP32-S3-Knob-Touch-LCD-1.8/ESP32-S3-Knob-Touch-LCD-1.8-schematic.zip |
+| **Factory firmware** (archived locally) | [`devices/knob/firmware/`](../../../firmware/) — dual-MCU binaries (`WX-ESP32S3-KNOB_V1.2.bin` + `ESP32-KNOB_ESP32_0.bin`) with restore procedure |
 
 > The wiki is the authoritative source for schematics, pin assignments, and demo code.
-> **No dedicated GitHub repo exists** for the Knob — only the wiki ZIP downloads above.
+> **No dedicated GitHub repo exists** for the Knob on `waveshareteam/` — only the wiki ZIP downloads above.
 
 ## GitHub waveshareteam
 
@@ -82,20 +82,6 @@
 | **iHayri1** | [ESP32-S3-1.8inch-Knob-Display](https://github.com/ihayri/ESP32-S3-1.8inch-Knob-Display-Development-Board) | Combination lock UI with rotary encoder |
 | **Muness** | [roon-knob](https://github.com/muness/roon-knob) | Hi-Fi music player (Roon/LMS) remote |
 | **That Project** | [lvgl_kawaii_face](https://github.com/0015/lvgl_kawaii_face) | LVGL animated face (17+ expressions) |
-
-## Pre-Flashed Demo Applications
-
-The device ships with these demo apps accessible via a menu:
-
-- AIDA64 — PC hardware monitoring display
-- Music Player — Bluetooth audio player
-- MJPEG Player — Video playback from SD card
-- Picture Album — Image viewer from SD card
-- Theme Clock — Animated clock faces
-- Spectrum Analyzer — Audio visualization
-- BT Music — Bluetooth A2DP audio
-- Text Reader — Text file reader from SD card
-- HID Volume Control — USB HID volume knob
 
 ## Key Tips from Community
 

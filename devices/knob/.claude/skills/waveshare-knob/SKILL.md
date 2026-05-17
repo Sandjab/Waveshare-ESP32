@@ -1,6 +1,6 @@
 ---
 name: waveshare-knob
-description: Development reference for Waveshare ESP32-S3-Knob-Touch-LCD-1.8. Use when working with this device, its dual-MCU architecture, display (ST77916 QSPI), touch (CST816), haptics (DRV2605), audio, or PlatformIO setup.
+description: Development reference for Waveshare ESP32-S3-Knob-Touch-LCD-1.8. Use when working with this device, its dual-MCU architecture, display (ST77916 QSPI), touch (CST816), haptics (DRV2605), or audio (PCM5100A).
 ---
 
 # Waveshare ESP32-S3-Knob-Touch-LCD-1.8

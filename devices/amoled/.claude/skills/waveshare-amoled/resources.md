@@ -8,6 +8,7 @@
 | **Product page** | https://www.waveshare.com/esp32-s3-touch-amoled-1.8.htm |
 | **Schematic + datasheets** | Downloadable from the wiki page (Documents section) |
 | **Demo code** (Arduino + ESP-IDF) | Downloadable from the wiki page (Demo section) |
+| **Factory firmware** (archived locally) | [`devices/amoled/firmware/`](../../../firmware/) — `FactoryXiaozhi_250805.bin` (16 MB) with restore procedure |
 
 > The wiki is the authoritative source for schematics, pin assignments, and demo code.
 

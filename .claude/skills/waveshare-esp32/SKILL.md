@@ -7,28 +7,33 @@ description: Common ESP32-S3 platform reference for all Waveshare devices in thi
 
 ## Supported Devices
 
-| Device | Directory | Display | Resolution | Key ICs |
-|---|---|---|---|---|
-| **ESP32-S3-Knob-Touch-LCD-1.8** | `devices/knob/` | ST77916 IPS LCD | 360x360 | CST816, DRV2605, PCM5100A |
-| **ESP32-S3-Touch-AMOLED-1.8** | `devices/amoled/` | SH8601 AMOLED | 368x448 | FT3168, ES8311, AXP2101, QMI8658, PCF85063 |
+| Device | Directory | Display | Resolution | Key ICs | Skill |
+|---|---|---|---|---|---|
+| **ESP32-S3-Knob-Touch-LCD-1.8** (Waveshare) | `devices/knob/` | ST77916 IPS LCD | 360×360 | CST816, DRV2605, PCM5100A | `waveshare-knob` |
+| **ESP32-S3-Touch-AMOLED-1.8** (Waveshare) | `devices/amoled/` | SH8601 AMOLED | 368×448 | FT3168, ES8311, AXP2101, QMI8658, PCF85063 | `waveshare-amoled` |
+| **JC3636K718** (Guition) | `devices/guition_knob/` | ST77916 IPS LCD | 360×360 | PCM5100A, NS4150B, 13× WS2812 RGB ring | — (CLAUDE.md only) |
 
-Both devices use the same QSPI display framework (`shared/lib/qspi_panel/esp_lcd_sh8601`).
+All three QSPI display devices share `shared/lib/qspi_panel/esp_lcd_sh8601` (the panel framework is QSPI-generic; the ST77916 init lives in each device's `lib/<name>_hw/`).
 
 ## Monorepo Structure
 
 ```
 Waveshare/
 ├── shared/lib/qspi_panel/     # Common QSPI display driver
-├── devices/knob/              # Knob device (skill: waveshare-knob)
-├── devices/amoled/            # AMOLED device (skill: waveshare-amoled)
-└── build.ps1                  # Build script (-Device param)
+├── devices/knob/              # Waveshare Knob (skill: waveshare-knob)
+├── devices/amoled/            # Waveshare AMOLED (skill: waveshare-amoled)
+├── devices/guition_knob/      # Guition JC3636K718
+├── build.ps1                  # Build (Windows / PowerShell)
+└── build.sh                   # Build (macOS / Linux / bash)
 ```
 
 ## Per-Device Skills
 
-Each device has its own skill with hardware-specific details:
+Each Waveshare device has its own skill with hardware-specific details:
 - **waveshare-knob** — `devices/knob/.claude/skills/waveshare-knob/SKILL.md`
 - **waveshare-amoled** — `devices/amoled/.claude/skills/waveshare-amoled/SKILL.md`
+
+Guition does not (yet) have a dedicated skill — see `devices/guition_knob/CLAUDE.md`.
 
 ## Platform Reference
 
@@ -41,15 +46,18 @@ For PlatformIO setup, toolchain, ESP-IDF, common libraries (LVGL, display driver
 Template:
 ```
 devices/<name>/
-├── .claude/skills/waveshare-<name>/
-│   ├── SKILL.md              # Quick ref + GPIO + progressive disclosure
-│   ├── device-hardware.md    # Architecture, pinout, ICs
-│   └── resources.md          # Wiki, GitHub, datasheets
-├── CLAUDE.md                 # Ref skill + conventions
+├── .claude/skills/<skill-name>/   # Optional (Waveshare devices have one)
+│   ├── SKILL.md                   # Quick ref + GPIO + progressive disclosure
+│   ├── device-hardware.md         # Architecture, pinout, ICs
+│   └── resources.md               # Wiki, GitHub, datasheets
+├── CLAUDE.md                      # Always — conventions, gotchas, skill ref
+├── README.md                      # Build commands (both flavors)
 ├── lib/<name>_hw/
-│   └── <name>_pins.h
-├── projects/                 # PlatformIO projects
-└── docs/demo-code/           # Waveshare demo code (Arduino + ESP-IDF)
+│   ├── <name>_pins.h              # GPIO definitions
+│   └── CLAUDE.md                  # Lib contents
+├── projects/                      # PlatformIO projects
+├── docs/                          # demo-code, datasheets, schematics
+└── firmware/                      # Factory firmware .bin + restore README
 ```
 
-Add the device to root `CLAUDE.md` and `build.ps1` will auto-discover it.
+Add the device row to the root `CLAUDE.md` table; both `build.ps1` and `build.sh` will auto-discover it via `devices/<name>/projects/`.
