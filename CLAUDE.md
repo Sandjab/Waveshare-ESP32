@@ -31,6 +31,7 @@ Waveshare/
 - **Device-specific code** stays in `devices/<name>/lib/<name>_hw/`.
 - **Demo code is authoritative for GPIOs** — `docs/demo-code/` takes precedence over schematics.
 - **Factory firmware** goes in `devices/<name>/firmware/` (sibling of `docs/`, not inside it), with a `README.md` documenting source, version, format, offset, and restore command. See `devices/guition_knob/firmware/` for the canonical layout.
+- **Display orientation** : canonical orientation is **USB connector at the top** when the screen is read upright — so the cable hangs out the back/top, not from under the user's hands. Each device's `*_lcd_init.h` writes the `MADCTL` (0x36) needed to align with this convention; both ST77916 boards in the repo have their panel physically mounted 180° apart, so they end up with different MADCTL values (Knob: `0xC0`, Guition: `0x00`).
 - **`inbox/`** is a temporary drop zone for unprocessed material (gitignored).
 - **Skills** : common platform in `.claude/skills/waveshare-esp32/`, device-specific in `devices/<name>/.claude/skills/`.
 

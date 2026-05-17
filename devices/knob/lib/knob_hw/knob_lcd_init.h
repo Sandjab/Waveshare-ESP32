@@ -188,5 +188,8 @@ static const sh8601_lcd_init_cmd_t lcd_init_cmds[] = {
     {0x21, (uint8_t[]){0x00}, 1, 0},
     {0x11, (uint8_t[]){0x00}, 1, 120},
     {0x29, (uint8_t[]){0x00}, 1, 0},
-    {0x36, (uint8_t[]){0x00}, 1, 0},
+    // MADCTL = 0xC0 (MX=1, MY=1) — rotation 180° par rapport au panel natif,
+    // pour aligner sur la convention "USB en haut" du monorepo (le Guition
+    // K718 est natif USB-en-haut, le Knob Waveshare est natif USB-en-bas).
+    {0x36, (uint8_t[]){0xC0}, 1, 0},
 };
