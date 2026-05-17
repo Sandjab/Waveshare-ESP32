@@ -33,6 +33,7 @@ Shared code lives in `../../shared/lib/` (QSPI driver `esp_lcd_sh8601`).
 - **SD card is 1-wire** — uses SDMMC 1-bit mode (not 4-wire like the Knob). Power is controlled via XCA9554 P7.
 - **AXP2101 PMIC** — the `XPOWERS_CHIP_AXP2101` define is required. Use XPowersLib for battery/charging management.
 - **PA enable** — GPIO 46 must be set HIGH to enable the speaker amplifier for audio output.
+- **Single-MCU, USB-C orientation indifferent.** Unlike the Waveshare Knob (dual-MCU, see [`../knob/CLAUDE.md`](../knob/CLAUDE.md)), this board exposes the same ESP32-S3 on both USB-C orientations. Same MAC, same port, native USB-CDC (`cu.usbmodem*`, VID:303A PID:1001). Confirmed 2026-05-17.
 
 ## Next steps
 

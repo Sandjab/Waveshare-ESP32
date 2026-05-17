@@ -20,6 +20,7 @@ MONITOR=0
 CLEAN=0
 LIST_DEVICES=0
 PORT=""
+NO_DEVICE_CHECK=0
 
 usage() {
     cat <<EOF
@@ -32,6 +33,7 @@ Options:
   --port PATH       Override port autodetect (e.g. /dev/cu.usbmodem*)
   --monitor         Open serial monitor after build/upload
   --clean           Clean before rebuilding
+  --no-device-check Skip the devices.local.yaml MAC ↔ device_dir check
   --list-devices    List available devices and exit
   --help, -h        Show this help
 
@@ -49,6 +51,7 @@ while [ $# -gt 0 ]; do
         --flash)         FLASH=1 ;;
         --monitor)       MONITOR=1 ;;
         --clean)         CLEAN=1 ;;
+        --no-device-check) NO_DEVICE_CHECK=1 ;;
         --list-devices)  LIST_DEVICES=1 ;;
         --port)
             if [ -z "${2:-}" ]; then
@@ -181,6 +184,22 @@ if [ "$UPLOAD" = "1" ] || [ "$FLASH" = "1" ] || [ "$MONITOR" = "1" ]; then
             printf "%sFound: %s%s\n" "$GREEN" "$PORT" "$RESET"
         else
             printf "%sNo device found. Plug in the board or use --port /dev/cu.xxx%s\n" "$RED" "$RESET" >&2
+            exit 1
+        fi
+    fi
+fi
+
+# --- Device check (devices.local.yaml MAC ↔ device_dir) ---
+# Exit codes from device_mac.py check :
+#   0 = match OK, 1 = explicit refusal (mismatch / secondary), 2 = skip (no MAC read)
+# We abort only on 1.
+if [ "$NO_DEVICE_CHECK" = "0" ] && { [ "$UPLOAD" = "1" ] || [ "$FLASH" = "1" ]; }; then
+    if [ -f "$REPO_DIR/devices.local.yaml" ]; then
+        printf "%sChecking device identity...%s\n" "$CYAN" "$RESET"
+        CHECK_RC=0
+        python3 "$REPO_DIR/tools/device_mac.py" check "$DEVICE" --port "$PORT" || CHECK_RC=$?
+        if [ "$CHECK_RC" = "1" ]; then
+            printf "%sAborted. Use --no-device-check to override.%s\n" "$RED" "$RESET" >&2
             exit 1
         fi
     fi

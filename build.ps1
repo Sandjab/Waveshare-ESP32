@@ -18,7 +18,8 @@ param(
     [string]$Port,
     [switch]$Monitor,
     [switch]$Clean,
-    [switch]$ListDevices
+    [switch]$ListDevices,
+    [switch]$NoDeviceCheck
 )
 
 $ErrorActionPreference = 'Stop'
@@ -123,6 +124,24 @@ if (($Upload -or $Flash -or $Monitor) -and -not $Port) {
         }
         else {
             Write-Error 'No device found. Plug in the board or specify -Port COMx'
+        }
+    }
+}
+
+# Device check (devices.local.yaml MAC ↔ device_dir)
+# Exit codes from device_mac.py check :
+#   0 = match OK, 1 = explicit refusal (mismatch / secondary), 2 = skip (no MAC read)
+# We abort only on 1.
+if (-not $NoDeviceCheck -and ($Upload -or $Flash)) {
+    $inventory = Join-Path $RepoDir 'devices.local.yaml'
+    if (Test-Path $inventory) {
+        Write-Host 'Checking device identity...' -ForegroundColor Cyan
+        $checker = Join-Path $RepoDir 'tools\device_mac.py'
+        $pyExe = Join-Path $env:USERPROFILE '.platformio\penv\Scripts\python.exe'
+        & $pyExe $checker check $Device --port $Port
+        if ($LASTEXITCODE -eq 1) {
+            Write-Host "Aborted. Use -NoDeviceCheck to override." -ForegroundColor Red
+            exit 1
         }
     }
 }

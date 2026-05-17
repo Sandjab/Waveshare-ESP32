@@ -16,3 +16,6 @@ inbox/
 
 # Claude Code permissions (per-user / per-OS)
 .claude/settings.local.json
+
+# Personal device inventory (MAC addresses, per-user)
+devices.local.yaml

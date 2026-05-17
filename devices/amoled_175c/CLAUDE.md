@@ -29,6 +29,7 @@ Shared code may live in `../../shared/lib/` in the future — the CO5300 panel w
 - **No SD card** on this board, unlike the AMOLED 1.8 — projects ported from there need to drop SDMMC.
 - **No 3.5 mm jack** — audio output goes directly to the on-board speaker via `PIN_PA_EN` (GPIO 46).
 - **Different display driver** than the AMOLED 1.8 (CO5300 vs SH8601) — no shared init / driver yet.
+- **Single-MCU, USB-C orientation indifferent.** Like the AMOLED 1.8 and unlike the Waveshare Knob (dual-MCU), this board exposes the same ESP32-S3 on both USB-C orientations. Same MAC, same port, native USB-CDC (`cu.usbmodem*`, VID:303A PID:1001). Confirmed 2026-05-17.
 
 ## Display driver
 

@@ -24,6 +24,8 @@ Waveshare/
 │   └── guition_knob/                 # Guition JC3636K718 (projects, lib, docs, firmware, skills)
 ├── build.ps1                         # Build script (Windows / PowerShell)
 ├── build.sh                          # Build script (macOS / Linux / bash)
+├── tools/device_mac.py               # MAC ↔ device_dir inventory helper
+├── devices.local.yaml                # Per-user device inventory (gitignored)
 └── inbox/                            # Staging area (gitignored)
 ```
 
@@ -38,6 +40,7 @@ Waveshare/
   - Rectangular AMOLED 1.8" with USB on a long edge : **USB on the right**. The current `amoled_lcd_init.h` leaves `MADCTL` at the panel default (effectively `0x00`); the exact value to satisfy "USB on the right" is to be validated with the first oriented demo (text or LVGL widget) — see the outstanding-followups memory.
 - **`inbox/`** is a temporary drop zone for unprocessed material (gitignored).
 - **Skills** : common platform in `.claude/skills/waveshare-esp32/`, device-specific in `devices/<name>/.claude/skills/`.
+- **Device identity check** : several devices in this monorepo share `VID:303A PID:1001`, so `build.sh` / `build.ps1` cannot tell them apart by port alone — flashing the wrong board is easy. The per-user inventory `devices.local.yaml` (gitignored) maps each physical MAC to a `device_dir`. `tools/device_mac.py check <device_dir>` runs before every `--upload` / `--flash` and aborts on mismatch (override with `--no-device-check` / `-NoDeviceCheck`). To enrol a new device : plug it in, run `python3 tools/device_mac.py scan`, copy the printed MAC into the right entry of `devices.local.yaml`.
 
 ## Build
 

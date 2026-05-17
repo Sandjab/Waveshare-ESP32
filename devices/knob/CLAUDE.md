@@ -58,6 +58,7 @@ The demo code uses LVGL v8.3.11. For up-to-date docs, use Context7:
 - **Not a Guition JC3636W518.** Similar form factor, completely different pinouts. Do not mix configurations.
 - **Display driver mismatch.** The QSPI framework uses `esp_lcd_sh8601`, but the actual panel IC is an **ST77916** with a custom init sequence. Don't assume SH8601 registers apply.
 - **GPIO 0 dual role.** It serves as both BOOT strap pin and audio mux control (HIGH = S3 controls PCM5100A DAC).
+- **Dual-MCU + USB-C orientation = 2 visible MACs.** The board carries an ESP32-S3 (main, our firmware target) AND a secondary ESP32-U4WDH. The single USB-C jack is wired so each cable orientation routes D+/D- to a different USB chip : one side exposes the S3 over native USB-CDC (`cu.usbmodem*`, VID:303A PID:1001) — this is what we flash ; the other side exposes the secondary ESP32 over a CH340 UART bridge (`cu.usbserial-*`, VID:1A86 PID:7523). Each MCU has its own MAC. If a `--upload` fails with *"This chip is ESP32 not ESP32-S3"*, flip the USB-C cable and retry.
 
 ## Next steps
 
