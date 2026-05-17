@@ -15,13 +15,19 @@ Le firmware d'usine est livré en **deux binaires séparés** car la carte porte
 
 Extraits de l'archive officielle [`ESP32-S3-Knob-Touch-LCD-1.8-Demo.zip`](https://files.waveshare.com/wiki/ESP32-S3-Knob-Touch-LCD-1.8/ESP32-S3-Knob-Touch-LCD-1.8-Demo.zip) (Waveshare wiki, ~65.5 MB, daté 2025-06-20), dossier `ESP32-S3-Knob-Touch-LCD-1.8-Demo/Firmware/`. Le pré-fixe `WX` correspond probablement à « Waveshare » ; `V1.2` est la version applicative.
 
-## Format et offset — à valider
+## Format et offset
 
-> **Non documenté par Waveshare dans l'archive** (pas de README de flash dans le ZIP démo). Vu la taille, ces binaires sont vraisemblablement des images **app-only**, pas des images merged. L'hypothèse retenue est l'offset standard ESP-IDF pour la partition app = **`0x10000`**.
->
-> Le firmware vendor ne contient probablement **pas** de bootloader / table de partitions de remplacement — la carte garde donc le bootloader + table actuels (de notre projet, le cas échéant). Si tu veux un état strictement « as-shipped », il faudrait aussi flasher bootloader + partitions, qui ne sont pas distribués séparément.
->
-> À confirmer par observation au premier flash.
+`WX-ESP32S3-KNOB_V1.2.bin` est en réalité une **image merged complète** à flasher à **`0x0`** (validé en session 2026-05-17 par lecture flash + analyse du fichier source). Le binaire contient :
+
+| Offset dans le fichier | Contenu | Signature |
+|---|---|---|
+| `0x0` | Bootloader 2nd-stage ESP-IDF | header `e9 04 02 4f`, entry `0x403c98ac`, chaînes `"load partition table error!"`, `"Factory app partition"` |
+| `0x8000` | Table de partitions vendor | magic `aa 50`, layout : `nvs / otadata / app0=3M @ 0x10000 / app1=3M @ 0x310000 / spiffs / coredump` |
+| `0x10000` | App principale | header `e9 06 02 4f`, entry `0x4037f3dc` |
+
+L'hypothèse initiale "app-only à `0x10000`" était fausse : flasher à `0x10000` écrit le bootloader vendor à la place de l'app → écran noir, l'ancien bootloader cherche une app valide et n'en trouve pas.
+
+Table de partitions vendor différente de celle de nos projets PlatformIO (`app0` = 3 MB chez Waveshare vs 6.25 MB chez nous) — sans incidence, le merged.bin réinstalle bootloader + partitions + app de façon cohérente.
 
 ## Note sur l'ESP32 secondaire
 
@@ -38,7 +44,7 @@ PlatformIO Core installé (voir [docs/install/macos.md](../../../docs/install/ma
 ```bash
 ~/.platformio/penv/bin/python ~/.platformio/packages/tool-esptoolpy/esptool.py \
     --chip esp32s3 --port /dev/cu.usbmodem* --baud 921600 \
-    write_flash 0x10000 devices/knob/firmware/WX-ESP32S3-KNOB_V1.2.bin
+    write_flash 0x0 devices/knob/firmware/WX-ESP32S3-KNOB_V1.2.bin
 ```
 
 ### Windows (PowerShell)
@@ -47,7 +53,7 @@ PlatformIO Core installé (voir [docs/install/macos.md](../../../docs/install/ma
 & "$env:USERPROFILE\.platformio\penv\Scripts\python.exe" `
     "$env:USERPROFILE\.platformio\packages\tool-esptoolpy\esptool.py" `
     --chip esp32s3 --port COM<n> --baud 921600 `
-    write_flash 0x10000 devices\knob\firmware\WX-ESP32S3-KNOB_V1.2.bin
+    write_flash 0x0 devices\knob\firmware\WX-ESP32S3-KNOB_V1.2.bin
 ```
 
 ## Pour re-flasher l'un de nos projets ensuite

@@ -37,4 +37,4 @@ Shared code lives in `../../shared/lib/` (QSPI driver `esp_lcd_sh8601`).
 
 ## Next steps
 
-Factory firmware (Waveshare `FactoryXiaozhi_250805`, ~16 MB) is archived in [`firmware/`](firmware/) with the restore procedure documented in [`firmware/README.md`](firmware/README.md). The first reflash will also confirm the assumed offset `0x0` (merged image) — if the board doesn't boot, try `0x10000` (app-only).
+Factory firmware (Waveshare `FactoryXiaozhi_250805`, ~16 MB) is archived in [`firmware/`](firmware/) with the restore procedure documented in [`firmware/README.md`](firmware/README.md). Merged image @ `0x0` validated 2026-05-17.

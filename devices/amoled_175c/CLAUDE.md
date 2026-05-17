@@ -38,4 +38,4 @@ The CO5300 is driven through the **shared `esp_lcd_sh8601`** host in `shared/lib
 ## Status
 
 - `Basic_Blink` flashed and verified — green/red full-screen blink, no white sliver, panel native USB-on-top orientation.
-- Factory firmware (`ESP32-S3-Touch-AMOLED-1.75C-FactoryOnly-260114.bin`, ~33.5 MB) archived in [`firmware/`](firmware/) with the restore procedure in [`firmware/README.md`](firmware/README.md).
+- Factory firmware (`ESP32-S3-Touch-AMOLED-1.75C-FactoryOnly-260114.bin`, ~32 MB) archived in [`firmware/`](firmware/) with the restore procedure in [`firmware/README.md`](firmware/README.md). Merged image @ `0x0` validated 2026-05-17.

@@ -12,12 +12,18 @@ Procédure pour remettre la carte dans son état d'origine — typiquement aprè
 | Source | [`waveshareteam/ESP32-S3-Touch-AMOLED-1.75C`](https://github.com/waveshareteam/ESP32-S3-Touch-AMOLED-1.75C/tree/main/Firmware) — dépôt officiel Waveshare |
 | Version | Suffixe `260114` (probablement 2026-01-14 d'après le pattern de nommage Waveshare) |
 
-## Format et offset — à valider
+## Format et offset
 
-> **Non documenté par Waveshare dans l'archive.** L'hypothèse retenue est qu'il s'agit d'une **image merged** (bootloader + partitions + app + assets) à flasher à l'offset `0x0`, par analogie avec :
-> - le firmware AMOLED 1.8 (`FactoryXiaozhi_250805.bin`, 16 MB merged @ 0x0, hypothèse non encore vérifiée),
-> - et le firmware Guition (`JC3636K718_V1.1.bin`, 12 MB merged @ 0x0, **observé OK**).
-> À confirmer par observation au premier flash — si la carte ne boote pas, essayer `0x10000` (app-only).
+Image **merged** complète à flasher à **`0x0`** (validé en session 2026-05-17 sur `amoled175Silver`). Contenu vérifié :
+
+| Offset dans le fichier | Contenu |
+|---|---|
+| `0x0` | Bootloader 2nd-stage ESP-IDF v5.5.2 (entry `0x403c8930`) |
+| `0x8000` | Table de partitions vendor |
+| `0x110000` | App `factory` (9 MB) |
+| `0x11F0000` + `0x1AF0000` | Assets + storage (2 partitions spiffs, 9 MB + 5 MB) |
+
+Table de partitions vendor : `nvsfactory` (200K @ 0x9000) — `nvs` (840K @ 0x3B000) — `otadata` (8K @ 0x10D000) — `phy_init` (4K @ 0x10F000) — `factory` (9M @ 0x110000) — `ota_0` (4032K @ 0xA10000) — `ota_1` (4032K @ 0xE00000) — `assets` spiffs (9M @ 0x11F0000) — `storage` spiffs (5M @ 0x1AF0000). Total ≈ 32 MB cohérent avec la flash du device.
 
 ## Pré-requis
 
@@ -42,13 +48,9 @@ PlatformIO Core installé (voir [docs/install/macos.md](../../../docs/install/ma
     write_flash 0x0 devices\amoled_175c\firmware\ESP32-S3-Touch-AMOLED-1.75C-FactoryOnly-260114.bin
 ```
 
-## État de la carte avant flash
-
-Non observé sur cette carte à ce stade.
-
 ## Après flash
 
-Non observé.
+Validé 2026-05-17 sur `amoled175Silver` : auto-reset esptool OK, démo factory démarre.
 
 ## Pour re-flasher l'un de nos projets ensuite
 
