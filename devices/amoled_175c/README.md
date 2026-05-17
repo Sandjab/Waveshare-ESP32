@@ -4,7 +4,11 @@ Dev repo pour le [Waveshare ESP32-S3-Touch-AMOLED-1.75C](https://www.waveshare.c
 
 ## Projets
 
-Aucun projet pour l'instant. Les exemples de référence vendor sont sur GitHub : [waveshareteam/ESP32-S3-Touch-AMOLED-1.75C](https://github.com/waveshareteam/ESP32-S3-Touch-AMOLED-1.75C/tree/main/examples) (Arduino + ESP-IDF).
+| Projet | Description | Périphériques utilisés |
+|--------|-------------|------------------------|
+| [Basic_Blink](projects/Basic_Blink/) | Écran clignotant vert/rouge | Display CO5300 QSPI |
+
+D'autres exemples de référence vendor sont sur GitHub : [waveshareteam/ESP32-S3-Touch-AMOLED-1.75C](https://github.com/waveshareteam/ESP32-S3-Touch-AMOLED-1.75C/tree/main/examples) (Arduino + ESP-IDF).
 
 ## Structure
 

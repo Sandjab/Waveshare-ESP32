@@ -53,4 +53,7 @@ description: Development reference for Waveshare ESP32-S3-Touch-AMOLED-1.75C (ro
 
 ## Status
 
-This is a **fresh device** — no PlatformIO project has been created yet. The structure is in place, but the CO5300 display driver is not yet wired into the monorepo (the existing shared `esp_lcd_sh8601` is for the SH8601 used by the AMOLED 1.8). First project will likely need a CO5300 driver, derivable from the Waveshare Arduino demo (`Arduino_CO5300` in `GFX_Library_for_Arduino`).
+- **Basic_Blink** works (green/red full-screen). Display driver wired through the shared `esp_lcd_sh8601` generic QSPI host with a CO5300 `init_cmds` table.
+- **Display offset** : the visible 466×466 area is offset by 6 columns inside the CO5300 RAM (4-col `set_gap(6, 0)` in `amoled_175c_display_init()`). Confirmed against the Waveshare `Arduino_CO5300` demo which uses `col_offset1 = 6`.
+- **Native orientation** : USB-on-top is correct out of the box (MADCTL = 0x00 default).
+- **Touch / audio / IMU / PMIC** : not yet exercised — see device-hardware.md for I2C addresses and audio bus layout.

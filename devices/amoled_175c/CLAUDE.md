@@ -30,7 +30,11 @@ Shared code may live in `../../shared/lib/` in the future — the CO5300 panel w
 - **No 3.5 mm jack** — audio output goes directly to the on-board speaker via `PIN_PA_EN` (GPIO 46).
 - **Different display driver** than the AMOLED 1.8 (CO5300 vs SH8601) — no shared init / driver yet.
 
-## Next steps
+## Display driver
 
-- First PlatformIO project (e.g. `Basic_Blink`) once we have a CO5300 driver wired into the monorepo. The Waveshare demo code (`waveshareteam/ESP32-S3-Touch-AMOLED-1.75C`, `examples/Arduino-v3.3.5`) is the natural starting point — its `01_HelloWorld` uses `Arduino_GFX_Library` with an `Arduino_CO5300` class.
-- Factory firmware (`ESP32-S3-Touch-AMOLED-1.75C-FactoryOnly-260114.bin`, ~33.5 MB) is archived in [`firmware/`](firmware/) with the restore procedure in [`firmware/README.md`](firmware/README.md).
+The CO5300 is driven through the **shared `esp_lcd_sh8601`** host in `shared/lib/qspi_panel/` (which is in fact a generic QSPI host, also reused for the ST77916 boards). The CO5300-specific init lives in `lib/amoled_175c_hw/amoled_175c_lcd_init.h`; the visible 466×466 area is offset 6 columns inside the CO5300 RAM, handled by `esp_lcd_panel_set_gap(panel, 6, 0)` in `amoled_175c_display_init()`. Confirmed by cross-checking against Waveshare's `Arduino_CO5300` demo (which passes `col_offset1 = 6` to its constructor).
+
+## Status
+
+- `Basic_Blink` flashed and verified — green/red full-screen blink, no white sliver, panel native USB-on-top orientation.
+- Factory firmware (`ESP32-S3-Touch-AMOLED-1.75C-FactoryOnly-260114.bin`, ~33.5 MB) archived in [`firmware/`](firmware/) with the restore procedure in [`firmware/README.md`](firmware/README.md).
