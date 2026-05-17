@@ -52,12 +52,13 @@ Authoritative source: [`lib/guition_knob_hw/guition_pins.h`](../../../lib/guitio
 
 ### Rotary Encoder
 
-| Signal | GPIO |
-|---|---|
-| A | 2 |
-| B | 1 |
+| Signal | GPIO | Notes |
+|---|---|---|
+| A (in code) | 1 | **GPIO swapped vs vendor silkscreen** (see below) |
+| B (in code) | 2 | |
 
 - **Not quadrature** — two independent contacts. Use the `bidi_switch_knob` driver in `lib/guition_knob_hw/` (timer-polled at 3 ms, debounced). Same driver as the Waveshare Knob.
+- **Phases A/B swapped vs silkscreen / vendor `pinconfig.h`** : the vendor labels GPIO 2 = phase A and GPIO 1 = phase B, but with that mapping the `bidi_switch_knob` driver counts down on CW rotation (because the driver convention is A → `+1`, B → `-1`, calibrated against the Waveshare Knob). Confirmed by cross-test on 2026-05-17: with the swap, CW rotation increments correctly on both the Waveshare Knob and this Guition. The swap is applied in [`guition_pins.h`](../../../lib/guition_knob_hw/guition_pins.h) rather than in the driver, so the driver stays generic and shared across devices.
 
 ### Touch — CST816 (header-exposed)
 

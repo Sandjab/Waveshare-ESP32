@@ -28,7 +28,7 @@ description: Development reference for Guition JC3636K718 (ESP32-S3, round 1.8" 
 |---|---|---|
 | Display (ST77916) | CLK:11 CS:12 D0:13 D1:14 D2:15 D3:16 RST:17 TE:18 BL:21 | QSPI, TE exposed (unused), BL via LEDC PWM |
 | Touch (CST816) | SDA:9 SCL:10 INT:7 RST:8 | I2C, not wired in any project yet |
-| Rotary Encoder | A:2 B:1 | bidi_switch, timer-polled 3 ms |
+| Rotary Encoder | A:1 B:2 | bidi_switch, timer-polled 3 ms — **swapped vs vendor silkscreen** to fix CW direction (see device-hardware.md) |
 | Audio I2S out | BCLK:3 WS:45 DOUT:42 PA:46 | PA HIGH = NS4150B amp on (not DAC mute) |
 | Microphone I2S | SCK:5 DATA:4 | I2S in |
 | SD Card (SDMMC 4-wire) | CMD:38 CLK:39 D0:40 D1:41 D2:48 D3:47 | |

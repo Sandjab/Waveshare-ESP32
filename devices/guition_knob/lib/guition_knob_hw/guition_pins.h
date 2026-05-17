@@ -6,6 +6,11 @@
 //    du Waveshare ESP32-S3-Knob-Touch-LCD-1.8. Même IC ST77916, autre pinout.
 //  - PIN_RGB_DATA est sur GPIO0, qui sert AUSSI de BOOT strap. Le WS2812 idle = low,
 //    donc tant qu'on n'envoie rien avant que le SoC ait booté, pas de conflit.
+//  - Encoder : le silkscreen vendor étiquette GPIO 2 = A et GPIO 1 = B, mais on les
+//    swap ci-dessous pour que la convention "A = phase qui s'incrémente en CW" du
+//    driver bidi_switch_knob (partagé avec le Waveshare Knob) marche. Sans ce swap,
+//    le sens du compteur est inversé (CW fait diminuer). Confirmé par test croisé
+//    avec le Waveshare Knob — 2026-05-17.
 
 // --- LCD (QSPI ST77916) ---
 #define PIN_LCD_CS    12
@@ -23,8 +28,10 @@
 #define LCD_BPP       16
 
 // --- Rotary Encoder (bidi switch, non-quadrature) ---
-#define PIN_ENC_A     2
-#define PIN_ENC_B     1
+// Cf. note d'en-tete : phases A/B swappées par rapport au silkscreen pour aligner
+// le sens du compteur avec la convention du driver.
+#define PIN_ENC_A     1
+#define PIN_ENC_B     2
 
 // --- I2C (Touch CST816 — pas de DRV2605 sur ce board) ---
 #define PIN_I2C_SDA   9

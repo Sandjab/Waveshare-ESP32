@@ -25,7 +25,7 @@ Shared : `shared/lib/qspi_panel/` (driver `esp_lcd_sh8601` — déjà réutilis�
 | Aspect | Waveshare Knob | Guition K718 |
 |---|---|---|
 | LCD CS / CLK / D0-D3 / RST / BL | 14 / 13 / 15-18 / 21 / 47 | 12 / 11 / 13-16 / 17 / 21 |
-| Encoder A / B | 8 / 7 | **2 / 1** |
+| Encoder A / B (driver convention) | 8 / 7 | **1 / 2** (silkscreen labels GPIO 2 = A and 1 = B, swapped in `guition_pins.h` — see Gotchas) |
 | I2C SDA / SCL | 11 / 12 | **9 / 10** |
 | Touch INT / RST | non exposés | 7 / 8 |
 | SD CMD / CLK / D0-D3 | 3 / 4 / 5-6-42-2 | **38 / 39 / 40-41-48-47** |
@@ -41,6 +41,7 @@ La séquence d'init est **identique** entre Waveshare et Guition (vérifié 181/
 
 ## Gotchas
 
+- **Encoder phases A/B swappées** : le silkscreen et le `pinconfig.h` vendor étiquettent GPIO 2 = A et GPIO 1 = B, mais avec ce mapping le driver `bidi_switch_knob` (convention A→`+1`, B→`-1`, calibrée sur le Waveshare Knob) compte à l'envers — CW fait diminuer. On swap dans [`lib/guition_knob_hw/guition_pins.h`](lib/guition_knob_hw/guition_pins.h) : `PIN_ENC_A = 1`, `PIN_ENC_B = 2`. Confirmé par test croisé avec le Waveshare Knob (`Basic_LVGL_Meter`) — 2026-05-17.
 - **GPIO 0 dual role** : BOOT strap + RGB ring data. WS2812 idle = low ⇒ pas de conflit tant qu'on n'écrit pas avant la fin du boot.
 - **GPIO 46 = enable de l'ampli speaker (NS4150B), pas mute du DAC** : PCM5100A `XSMT` est tiré sur 3V3 = always unmuted. Le speaker passe par un ampli mono Class D activé par GPIO46 (high = ampli on). Le jack 3.5mm (CN3, PJ-342) a un switch de détection qui ouvre l'entrée du NS4150 quand un casque est inséré → speaker coupé automatiquement, casque reçoit le line-out direct du DAC.
 - **Pas de DRV2605** : tout port direct des projets `Hue_Encoder` du Knob qui utilisent les haptics ne marchera pas tel quel — il faut désactiver / supprimer ces appels.
