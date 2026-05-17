@@ -36,4 +36,6 @@ Shared code lives in `../../shared/lib/` (QSPI driver `esp_lcd_sh8601`).
 
 ## Next steps
 
-- **Archive factory firmware.** No factory firmware is currently versioned for this device (see `devices/guition_knob/docs/firmware/` for the layout used). Check whether Waveshare distributes a pre-built `.bin` for the AMOLED, and if so archive it under `docs/firmware/` with a `README.md` documenting the offsets / flash procedure.
+- **First PIO project.** No PlatformIO project exists yet for this device — a Basic_Blink equivalent is the natural starting point to validate the build/flash chain.
+
+Factory firmware (Waveshare `FactoryXiaozhi_250805`, ~16 MB) is archived in [`firmware/`](firmware/) with the restore procedure documented in [`firmware/README.md`](firmware/README.md).

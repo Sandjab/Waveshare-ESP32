@@ -68,7 +68,7 @@ Une fois notre firmware en place (avec `-DARDUINO_USB_CDC_ON_BOOT=1` dans `platf
 
 ### Restauration du firmware vendor
 
-Le binaire d'usine `JC3636K718_V1.1.bin` est archivé dans [`docs/firmware/`](docs/firmware/). Procédure complète de re-flash (commande esptool, durée, état post-flash, etc.) : [`docs/firmware/README.md`](docs/firmware/README.md).
+Le binaire d'usine `JC3636K718_V1.1.bin` est archivé dans [`firmware/`](firmware/). Procédure complète de re-flash (commande esptool, durée, état post-flash, etc.) : [`firmware/README.md`](firmware/README.md).
 
 ## LVGL Documentation
 

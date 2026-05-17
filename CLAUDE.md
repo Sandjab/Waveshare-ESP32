@@ -17,9 +17,9 @@ Waveshare/
 ├── .claude/skills/waveshare-esp32/   # Common ESP32-S3 platform skill
 ├── shared/lib/qspi_panel/           # QSPI display driver (used by both devices)
 ├── devices/
-│   ├── knob/                         # Knob device (projects, lib, docs, skills)
-│   ├── amoled/                       # AMOLED device (projects, lib, docs, skills)
-│   └── guition_knob/                 # Guition JC3636K718 (projects, lib, docs)
+│   ├── knob/                         # Knob device (projects, lib, docs, firmware, skills)
+│   ├── amoled/                       # AMOLED device (projects, lib, docs, firmware, skills)
+│   └── guition_knob/                 # Guition JC3636K718 (projects, lib, docs, firmware)
 ├── build.ps1                         # Build script (Windows / PowerShell)
 ├── build.sh                          # Build script (macOS / Linux / bash)
 └── inbox/                            # Staging area (gitignored)
@@ -30,6 +30,7 @@ Waveshare/
 - **Shared code** goes in `shared/lib/`. Each device's `platformio.ini` references it via `lib_extra_dirs`.
 - **Device-specific code** stays in `devices/<name>/lib/<name>_hw/`.
 - **Demo code is authoritative for GPIOs** — `docs/demo-code/` takes precedence over schematics.
+- **Factory firmware** goes in `devices/<name>/firmware/` (sibling of `docs/`, not inside it), with a `README.md` documenting source, version, format, offset, and restore command. See `devices/guition_knob/firmware/` for the canonical layout.
 - **`inbox/`** is a temporary drop zone for unprocessed material (gitignored).
 - **Skills** : common platform in `.claude/skills/waveshare-esp32/`, device-specific in `devices/<name>/.claude/skills/`.
 

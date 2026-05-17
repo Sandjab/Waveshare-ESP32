@@ -60,4 +60,4 @@ The demo code uses LVGL v8.3.11. For up-to-date docs, use Context7:
 
 ## Next steps
 
-- **Archive factory firmware.** Unlike `devices/guition_knob/docs/firmware/`, no factory firmware is currently versioned for this device. Waveshare typically ships demo *source* rather than a single merged `.bin`. Investigate whether a pre-built image is available (Waveshare wiki / GitHub releases), and if so archive it under `docs/firmware/` with a `README.md` mirroring the Guition layout.
+Factory firmware (Waveshare demo archive, version 1.2 dual-MCU) is archived in [`firmware/`](firmware/) with the restore procedure documented in [`firmware/README.md`](firmware/README.md).

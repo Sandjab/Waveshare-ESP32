@@ -30,7 +30,7 @@ Deux cas :
 ```bash
 ~/.platformio/penv/bin/python ~/.platformio/packages/tool-esptoolpy/esptool.py \
     --chip esp32s3 --port /dev/cu.usbmodem* --baud 921600 \
-    write_flash 0x0 devices/guition_knob/docs/firmware/JC3636K718_V1.1.bin
+    write_flash 0x0 devices/guition_knob/firmware/JC3636K718_V1.1.bin
 ```
 
 Remplacer `/dev/cu.usbmodem*` par le port réel si le shell ne l'expand pas, ou laisser esptool deviner avec `--port AUTO`.
@@ -41,7 +41,7 @@ Remplacer `/dev/cu.usbmodem*` par le port réel si le shell ne l'expand pas, ou 
 & "$env:USERPROFILE\.platformio\penv\Scripts\python.exe" `
     "$env:USERPROFILE\.platformio\packages\tool-esptoolpy\esptool.py" `
     --chip esp32s3 --port COM<n> --baud 921600 `
-    write_flash 0x0 devices\guition_knob\docs\firmware\JC3636K718_V1.1.bin
+    write_flash 0x0 devices\guition_knob\firmware\JC3636K718_V1.1.bin
 ```
 
 ## Durée
