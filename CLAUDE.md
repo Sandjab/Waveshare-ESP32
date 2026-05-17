@@ -8,7 +8,7 @@ Monorepo for Waveshare ESP32-S3 devices — shared platform, per-device projects
 |---|---|---|
 | ESP32-S3-Knob-Touch-LCD-1.8 | `devices/knob/` | `waveshare-knob` |
 | ESP32-S3-Touch-AMOLED-1.8 | `devices/amoled/` | `waveshare-amoled` |
-| Guition JC3636K718 | `devices/guition_knob/` | — |
+| Guition JC3636K718 | `devices/guition_knob/` | `guition-k718` |
 
 ## Structure
 
