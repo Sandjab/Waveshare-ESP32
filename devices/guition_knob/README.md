@@ -2,7 +2,7 @@
 
 <img src="docs/images/JC3636K718.png" width="200" alt="Guition JC3636K718">
 
-Carte rotative ESP32-S3 avec écran rond 1.8" 360×360 (ST77916 QSPI), encoder bidirectionnel, audio DAC, micro, SD card, et **anneau de 13 LEDs WS2812 pilotable** (GRB, data sur GPIO 0).
+Carte rotative ESP32-S3 avec écran rond 1.8" 360×360 (ST77916 QSPI), encoder bidirectionnel, audio DAC, micro, SD card, haptics DRV2605 + LRA, et **anneau de 13 LEDs WS2812 pilotable** (GRB, data sur GPIO 0).
 
 Variante très proche du [Waveshare ESP32-S3-Knob-Touch-LCD-1.8](https://www.waveshare.com/esp32-s3-knob-touch-lcd-1.8.htm) mais avec pinout entièrement différent et l'ajout de l'anneau RGB.
 

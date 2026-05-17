@@ -1,6 +1,6 @@
 # Guition JC3636K718 — Knob avec anneau RGB
 
-Carte rotative 1.8" 360×360 (ST77916 QSPI) avec encoder, audio DAC PCM5100A, micro I2S, SD card, et **anneau 13 WS2812 (GRB) sur GPIO 0** — fonctionnellement très proche du Waveshare ESP32-S3-Knob-Touch-LCD-1.8, mais avec un pinout entièrement différent et l'anneau RGB en plus.
+Carte rotative 1.8" 360×360 (ST77916 QSPI) avec encoder, audio DAC PCM5100A, micro I2S, SD card, haptics DRV2605 + LRA, et **anneau 13 WS2812 (GRB) sur GPIO 0** — fonctionnellement très proche du Waveshare ESP32-S3-Knob-Touch-LCD-1.8, mais avec un pinout entièrement différent et l'anneau RGB en plus.
 
 ## Repo Structure
 
@@ -33,7 +33,7 @@ Shared : `shared/lib/qspi_panel/` (driver `esp_lcd_sh8601` — déjà réutilis�
 | Mic SCK / Data | (n/a) | 5 / 4 |
 | Battery monitor | — | 6 (DAC) |
 | **RGB ring data** | — | **0** (13 WS2812 GRB) |
-| Haptic DRV2605 | présent (I2C) | **absent** |
+| Haptic DRV2605 + LRA | présent (I2C, 0x5A) | présent (I2C 0x5A sur bus partagé avec touch SDA:9 SCL:10 — confirmé schéma `JC3636K718.pdf`. GPIOs `HAPTIC_TRIG` / `HAPTIC_EN` existent mais leur assignation n'est pas dans le pinconfig vendor — à valider) |
 
 ## Init ST77916
 
@@ -44,7 +44,7 @@ La séquence d'init est **identique** entre Waveshare et Guition (vérifié 181/
 - **Encoder phases A/B swappées** : le silkscreen et le `pinconfig.h` vendor étiquettent GPIO 2 = A et GPIO 1 = B, mais avec ce mapping le driver `bidi_switch_knob` (convention A→`+1`, B→`-1`, calibrée sur le Waveshare Knob) compte à l'envers — CW fait diminuer. On swap dans [`lib/guition_knob_hw/guition_pins.h`](lib/guition_knob_hw/guition_pins.h) : `PIN_ENC_A = 1`, `PIN_ENC_B = 2`. Confirmé par test croisé avec le Waveshare Knob (`Basic_LVGL_Meter`) — 2026-05-17.
 - **GPIO 0 dual role** : BOOT strap + RGB ring data. WS2812 idle = low ⇒ pas de conflit tant qu'on n'écrit pas avant la fin du boot.
 - **GPIO 46 = enable de l'ampli speaker (NS4150B), pas mute du DAC** : PCM5100A `XSMT` est tiré sur 3V3 = always unmuted. Le speaker passe par un ampli mono Class D activé par GPIO46 (high = ampli on). Le jack 3.5mm (CN3, PJ-342) a un switch de détection qui ouvre l'entrée du NS4150 quand un casque est inséré → speaker coupé automatiquement, casque reçoit le line-out direct du DAC.
-- **Pas de DRV2605** : tout port direct des projets `Hue_Encoder` du Knob qui utilisent les haptics ne marchera pas tel quel — il faut désactiver / supprimer ces appels.
+- **DRV2605 + LRA présents** (sur le bus I2C partagé avec touch, adresse 0x5A) bien que **non utilisés par la démo vendor** — j'ai initialement et à tort répété que le Guition n'avait pas d'haptics. Le port de `Hue_Encoder` Waveshare → Guition est donc à priori jouable sans retirer les appels haptics. Restera à valider : les pins `HAPTIC_TRIG` et `HAPTIC_EN` du schéma n'ont pas d'assignation GPIO dans le pinconfig vendor — soit elles sont laissées flottantes (auto-trigger via I2C uniquement, possible), soit elles sont câblées et il faudra les retrouver sur le schéma.
 - **Pinout 100% différent du Knob Waveshare** malgré l'IC ST77916 commun.
 - **Pas un Guition JC3636W518** non plus (notre repo en parlait à propos du Knob). K718 et W518 sont deux modèles Guition distincts avec des pinouts différents.
 

@@ -64,12 +64,24 @@ Authoritative source: [`lib/guition_knob_hw/guition_pins.h`](../../../lib/guitio
 
 | Signal | GPIO | Notes |
 |---|---|---|
-| SDA | 9 | I2C bus |
-| SCL | 10 | I2C bus |
+| SDA | 9 | I2C bus (shared with DRV2605 haptics) |
+| SCL | 10 | I2C bus (shared with DRV2605 haptics) |
 | INT | 7 | Touch interrupt |
 | RST | 8 | Touch reset |
 
 > Wired on the board but **not exercised** in any project we have today. The vendor demo code (`docs/demo-code/Demo_arduino/`) does use it — port from there if you need touch.
+
+### Haptics — DRV2605 + LRA
+
+| Signal | GPIO | Notes |
+|---|---|---|
+| SDA | 9 | I2C bus (shared with CST816 touch) |
+| SCL | 10 | I2C bus (shared with CST816 touch) |
+
+- I2C address: **0x5A** (DRV2605 standard, fixed)
+- Motor: **LRA** (Linear Resonant Actuator) — visible on the schematic as `LRA_N` / `LRA_P` pads driven by the DRV2605.
+- The schematic also defines `HAPTIC_TRIG` and `HAPTIC_EN` nets but **the vendor `pinconfig.h` does not assign GPIOs to them**, so for now they are best treated as "to be re-derived from the schematic" if a project needs hardware enable or PWM-trigger mode. The standard I2C "internal trigger" mode (Mode 4 etc.) should work without them.
+- **The vendor demo does not exercise the haptics** — we initially documented the Guition as "no DRV2605", which was wrong. The IC is on the PCB.
 
 ### Audio I2S Output
 
@@ -124,6 +136,7 @@ Authoritative source: [`lib/guition_knob_hw/guition_pins.h`](../../../lib/guitio
 | **PCM5100APW** | Stereo audio DAC | I2S | 32-bit/384 kHz, `XSMT` tied to 3V3 (always unmuted) |
 | **NS4150B** | Mono Class-D speaker amp | analog in from DAC | Enable on GPIO 46; output drives onboard speaker |
 | **CST816** | Capacitive touch | I2C | Header-wired, unused in our projects so far |
+| **DRV2605LDGSR** | Haptic driver | I2C (0x5A) | Drives an on-board LRA (linear resonant actuator). Same shared I2C bus as CST816. Unused by the vendor demo. |
 | **WS2812** ×13 | Addressable RGB LEDs | 1-wire data (GPIO 0) | GRB color order |
 
 ---
@@ -158,7 +171,7 @@ Key points :
 - **PCM5100A `XSMT` is pulled to 3V3 on the board** — the DAC is **always unmuted**. Software muting via DAC pin is not possible.
 - **GPIO 46 enables the speaker amplifier (NS4150B), not the DAC**. HIGH = amp ON, LOW = silent (speaker only).
 - **Jack detect (CN3 — PJ-342)** : inserting headphones flips a mechanical switch on the jack that **opens the NS4150B input path**, so the speaker is automatically cut. The headphones receive the line-out level directly from the DAC.
-- **No haptic motor** : unlike the Waveshare Knob, there is **no DRV2605** on this board. Any project ported from the Knob that calls haptics has to drop those calls.
+- **Haptics ARE present** (DRV2605 + LRA on the shared I2C bus, I2C address 0x5A). The vendor demo does not use them, so an early version of this skill mistakenly listed "no DRV2605". Confirmed against `docs/schematics/JC3636K718.pdf` (nets `DRV2605LDGSR`, `LRA_N`, `LRA_P`, `HAPTIC_SDA`, `HAPTIC_SCL`).
 
 ---
 
