@@ -24,8 +24,11 @@ NO_DEVICE_CHECK=0
 
 usage() {
     cat <<EOF
-Usage: ./build.sh <device> [project...] [options]
+Usage: ./build.sh <device|auto> [project...] [options]
        ./build.sh --list-devices
+
+Use `auto` instead of a device name to identify the connected device
+from its MAC (read from devices.local.yaml).
 
 Options:
   --upload          Build then flash (auto-detect port unless --port)
@@ -142,6 +145,27 @@ fi
 if [ -z "$DEVICE" ]; then
     usage >&2
     exit 1
+fi
+
+# --- Auto-resolve from MAC if DEVICE='auto' ---
+if [ "$DEVICE" = "auto" ]; then
+    if [ -z "$PORT" ]; then
+        printf "%sDetecting ESP32-S3 port for auto-resolve...%s\n" "$CYAN" "$RESET"
+        if PORT="$(detect_port)" && [ -n "$PORT" ]; then
+            printf "%sFound: %s%s\n" "$GREEN" "$PORT" "$RESET"
+        else
+            printf "%sNo device found. Plug in the board or use --port /dev/cu.xxx%s\n" "$RED" "$RESET" >&2
+            exit 1
+        fi
+    fi
+    printf "%sResolving device from MAC...%s\n" "$CYAN" "$RESET"
+    RESOLVED=""
+    RESOLVED=$(python3 "$REPO_DIR/tools/device_mac.py" resolve --port "$PORT") || true
+    if [ -z "$RESOLVED" ]; then
+        printf "%sCould not auto-resolve device — aborting.%s\n" "$RED" "$RESET" >&2
+        exit 1
+    fi
+    DEVICE="$RESOLVED"
 fi
 
 DEVICE_DIR="$DEVICES_DIR/$DEVICE"

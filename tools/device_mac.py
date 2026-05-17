@@ -12,8 +12,17 @@ Subcommands:
       Used by build.sh / build.ps1 just before upload.
       Exit codes :
         0 = MAC matches DEVICE_DIR, or MAC unknown to inventory (warn-only)
-        1 = MAC matches a different DEVICE_DIR (refuse to flash)
+        1 = MAC matches a different DEVICE_DIR, or it's the secondary chip
         2 = MAC could not be read (port absent, chip not responding)
+
+  resolve [--port PORT]
+      Print the device_dir of the connected device on stdout, deduced from
+      the MAC. Used by build.sh / build.ps1 when `auto` is given instead
+      of an explicit device name.
+      Exit codes :
+        0 = primary match (device_dir printed to stdout)
+        1 = secondary chip (hint printed to stderr)
+        2 = MAC unknown to inventory, or could not be read
 
 The YAML parser is deliberately minimal — only the documented schema is
 supported (top-level `devices:` list of flat dicts, 2-space indent, no
@@ -188,6 +197,40 @@ def cmd_check(args) -> int:
     return 0
 
 
+def cmd_resolve(args) -> int:
+    port = args.port or detect_port()
+    if not port:
+        print("No ESP32-S3 port detected", file=sys.stderr)
+        return 2
+    mac = read_mac(port)
+    if not mac:
+        print(f"Failed to read MAC on {port}", file=sys.stderr)
+        return 2
+    entry, role = lookup_mac(parse_inventory(), mac)
+    if entry is None:
+        print(
+            f"MAC {mac} not in devices.local.yaml — cannot auto-resolve. "
+            f"Run `tools/device_mac.py scan` to enrol.",
+            file=sys.stderr,
+        )
+        return 2
+    if role == "secondary":
+        hint = entry.get("secondary_hint") or "this MAC belongs to a secondary, non-flashable chip"
+        print(
+            f"This is the SECONDARY chip of {entry.get('label')} "
+            f"(device_dir={entry.get('device_dir')}). {hint}",
+            file=sys.stderr,
+        )
+        return 1
+    # stdout = the device_dir, parseable by the caller. nothing else.
+    print(entry.get("device_dir", ""))
+    print(
+        f"Auto-resolved: {entry.get('label')} → device_dir={entry.get('device_dir')}",
+        file=sys.stderr,
+    )
+    return 0
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -200,6 +243,10 @@ def main() -> None:
     p_check.add_argument("device_dir")
     p_check.add_argument("--port")
     p_check.set_defaults(func=cmd_check)
+
+    p_resolve = sub.add_parser("resolve", help="Print the device_dir of the connected device")
+    p_resolve.add_argument("--port")
+    p_resolve.set_defaults(func=cmd_resolve)
 
     args = parser.parse_args()
     sys.exit(args.func(args))

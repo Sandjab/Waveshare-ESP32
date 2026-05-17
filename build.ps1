@@ -53,6 +53,19 @@ $RepoDir = $PSScriptRoot
 $DevicesDir = Join-Path $RepoDir 'devices'
 $Pio = Join-Path $env:USERPROFILE '.platformio\penv\Scripts\pio.exe'
 
+# ESP32-S3 native first, CH340 fallback. Returns COM string or $null.
+function Find-EspPort {
+    $dev = Get-CimInstance Win32_PnPEntity |
+        Where-Object { $_.DeviceID -match 'VID_303A&PID_1001' -and $_.Name -match 'COM\d+' } |
+        Select-Object -First 1
+    if ($dev -and $dev.Name -match '(COM\d+)') { return $Matches[1] }
+    $dev = Get-CimInstance Win32_PnPEntity |
+        Where-Object { $_.DeviceID -match 'VID_1A86&PID_7523' -and $_.Name -match 'COM\d+' } |
+        Select-Object -First 1
+    if ($dev -and $dev.Name -match '(COM\d+)') { return $Matches[1] }
+    return $null
+}
+
 # List devices mode
 if ($ListDevices) {
     Write-Host 'Available devices:' -ForegroundColor Cyan
@@ -64,7 +77,27 @@ if ($ListDevices) {
 }
 
 if (-not $Device) {
-    Write-Error "Usage: .\build.ps1 <device> [project...] [-Upload] [-Flash] [-Port COMx] [-Monitor] [-Clean]`nUse -ListDevices to see available devices."
+    Write-Error "Usage: .\build.ps1 <device|auto> [project...] [-Upload] [-Flash] [-Port COMx] [-Monitor] [-Clean]`nUse -ListDevices to see available devices. Use 'auto' to identify device from MAC."
+}
+
+# Auto-resolve device from MAC if requested
+if ($Device -eq 'auto') {
+    if (-not $Port) {
+        Write-Host 'Detecting ESP32-S3 port for auto-resolve...' -ForegroundColor Cyan
+        $Port = Find-EspPort
+        if (-not $Port) {
+            Write-Error 'No device found. Plug in the board or specify -Port COMx'
+        }
+        Write-Host "Found: $Port" -ForegroundColor Green
+    }
+    Write-Host 'Resolving device from MAC...' -ForegroundColor Cyan
+    $checker = Join-Path $RepoDir 'tools\device_mac.py'
+    $pyExe = Join-Path $env:USERPROFILE '.platformio\penv\Scripts\python.exe'
+    $resolved = & $pyExe $checker resolve --port $Port
+    if ($LASTEXITCODE -ne 0 -or -not $resolved) {
+        Write-Error 'Could not auto-resolve device.'
+    }
+    $Device = $resolved.Trim()
 }
 
 # Resolve device directory
@@ -102,30 +135,11 @@ foreach ($p in $Projects) {
 # Auto-detect port
 if (($Upload -or $Flash -or $Monitor) -and -not $Port) {
     Write-Host 'Detecting ESP32-S3 port (VID:303A PID:1001)...' -ForegroundColor Cyan
-
-    $dev = Get-CimInstance Win32_PnPEntity |
-        Where-Object { $_.DeviceID -match 'VID_303A&PID_1001' -and $_.Name -match 'COM\d+' } |
-        Select-Object -First 1
-
-    if ($dev -and $dev.Name -match '(COM\d+)') {
-        $Port = $Matches[1]
-        Write-Host "Found: $Port" -ForegroundColor Green
+    $Port = Find-EspPort
+    if (-not $Port) {
+        Write-Error 'No device found. Plug in the board or specify -Port COMx'
     }
-    else {
-        Write-Host 'ESP32-S3 not detected. Trying CH340 (VID:1A86 PID:7523)...' -ForegroundColor Yellow
-
-        $dev = Get-CimInstance Win32_PnPEntity |
-            Where-Object { $_.DeviceID -match 'VID_1A86&PID_7523' -and $_.Name -match 'COM\d+' } |
-            Select-Object -First 1
-
-        if ($dev -and $dev.Name -match '(COM\d+)') {
-            $Port = $Matches[1]
-            Write-Host "Found CH340: $Port (flip USB-C cable for ESP32-S3 side)" -ForegroundColor Yellow
-        }
-        else {
-            Write-Error 'No device found. Plug in the board or specify -Port COMx'
-        }
-    }
+    Write-Host "Found: $Port" -ForegroundColor Green
 }
 
 # Device check (devices.local.yaml MAC ↔ device_dir)
