@@ -12,8 +12,8 @@ description: Development reference for Guition JC3636K718 (ESP32-S3, round 1.8" 
 | **MCU** | ESP32-S3R8 — Xtensa LX7 dual-core 240 MHz, WiFi + BLE 5 |
 | **Flash / PSRAM** | 16 MB Flash (Quad SPI) / 8 MB PSRAM (Octal SPI) |
 | **Display** | 1.8" IPS LCD, 360×360, ST77916 QSPI, with TE pin |
-| **Touch** | CST816 capacitive, I2C (header pins exposed, not used in our projects yet) |
-| **Haptics** | DRV2605 + LRA, I2C (0x5A) on the **shared** SDA:9 / SCL:10 bus. Present on the PCB (schematic-confirmed) but **unused by the vendor demo** — see device-hardware.md |
+| **Touch** | CST816 capacitive, I2C (0x15) on the shared SDA:9 / SCL:10 bus — exercised by `Hue_Encoder` |
+| **Haptics** | DRV2605 + LRA, I2C (0x5A) on the same shared bus — exercised by `Hue_Encoder` (Adafruit_DRV2605, INTTRIG mode, no GPIO enable/trig needed in practice) |
 | **Audio Out** | PCM5100APW DAC stereo → NS4150B mono Class-D amp → onboard speaker + 3.5 mm jack (auto-switch via jack detect) |
 | **Audio In** | I2S microphone (SCK:5, DATA:4) |
 | **Encoder** | Rotary encoder, **bidi switch** (not quadrature — same driver as Waveshare Knob) |

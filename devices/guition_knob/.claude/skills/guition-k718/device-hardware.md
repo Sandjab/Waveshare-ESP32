@@ -69,7 +69,7 @@ Authoritative source: [`lib/guition_knob_hw/guition_pins.h`](../../../lib/guitio
 | INT | 7 | Touch interrupt |
 | RST | 8 | Touch reset |
 
-> Wired on the board but **not exercised** in any project we have today. The vendor demo code (`docs/demo-code/Demo_arduino/`) does use it — port from there if you need touch.
+> I2C address `0x15` (same as the Waveshare Knob's CST816). Exercised by `projects/Hue_Encoder` — tap-to-toggle haptics works via direct register read (poll register `0x00`, byte index 2 = finger count).
 
 ### Haptics — DRV2605 + LRA
 
@@ -80,8 +80,9 @@ Authoritative source: [`lib/guition_knob_hw/guition_pins.h`](../../../lib/guitio
 
 - I2C address: **0x5A** (DRV2605 standard, fixed)
 - Motor: **LRA** (Linear Resonant Actuator) — visible on the schematic as `LRA_N` / `LRA_P` pads driven by the DRV2605.
-- The schematic also defines `HAPTIC_TRIG` and `HAPTIC_EN` nets but **the vendor `pinconfig.h` does not assign GPIOs to them**, so for now they are best treated as "to be re-derived from the schematic" if a project needs hardware enable or PWM-trigger mode. The standard I2C "internal trigger" mode (Mode 4 etc.) should work without them.
-- **The vendor demo does not exercise the haptics** — we initially documented the Guition as "no DRV2605", which was wrong. The IC is on the PCB.
+- Exercised by `projects/Hue_Encoder` (ported from the Waveshare Knob). Confirmed working at 0x5A using `Adafruit_DRV2605` in `DRV2605_MODE_INTTRIG` with library 6 (LRA effects) — no need to drive `HAPTIC_EN` or `HAPTIC_TRIG` in this mode.
+- The schematic defines `HAPTIC_TRIG` and `HAPTIC_EN` nets but the vendor `pinconfig.h` does not assign GPIOs to them. They might be needed for hardware enable / PWM-trigger usage; not required for the I2C-internal-trigger mode used in `Hue_Encoder`.
+- **The vendor demo does not exercise the haptics** — we initially documented the Guition as "no DRV2605", which was wrong. The IC is on the PCB; that bug is documented in [[feedback-verify-hardware-presence-via-schematic]].
 
 ### Audio I2S Output
 
@@ -135,8 +136,8 @@ Authoritative source: [`lib/guition_knob_hw/guition_pins.h`](../../../lib/guitio
 | **ST77916** | LCD driver | QSPI (4-wire data) | 360×360, IPS, with TE output |
 | **PCM5100APW** | Stereo audio DAC | I2S | 32-bit/384 kHz, `XSMT` tied to 3V3 (always unmuted) |
 | **NS4150B** | Mono Class-D speaker amp | analog in from DAC | Enable on GPIO 46; output drives onboard speaker |
-| **CST816** | Capacitive touch | I2C | Header-wired, unused in our projects so far |
-| **DRV2605LDGSR** | Haptic driver | I2C (0x5A) | Drives an on-board LRA (linear resonant actuator). Same shared I2C bus as CST816. Unused by the vendor demo. |
+| **CST816** | Capacitive touch | I2C (0x15) | Same shared bus as DRV2605. Exercised by `projects/Hue_Encoder`. |
+| **DRV2605LDGSR** | Haptic driver | I2C (0x5A) | Drives an on-board LRA (linear resonant actuator). Same shared bus as CST816. Exercised by `projects/Hue_Encoder` (Adafruit_DRV2605, INTTRIG, lib 6). |
 | **WS2812** ×13 | Addressable RGB LEDs | 1-wire data (GPIO 0) | GRB color order |
 
 ---

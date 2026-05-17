@@ -18,6 +18,7 @@ Variante très proche du [Waveshare ESP32-S3-Knob-Touch-LCD-1.8](https://www.wav
 | [Basic_Audio_Talkie](projects/Basic_Audio_Talkie/) | TTS robotique LPC (phrases iconic US, vol. via encoder) | I2S → PCM5100A → HP onboard, encoder, `TalkiePCM` |
 | [Basic_Audio_Speak](projects/Basic_Audio_Speak/) | TTS sample-based multilingue (Thomas/Amélie/Samantha/Alice, vol. via encoder) | I2S → PCM5100A → HP onboard, encoder, PCM embed |
 | [Basic_LVGL_Meter](projects/Basic_LVGL_Meter/) | Cadran type compteur de vitesse 0-100 pilote par encoder | Display QSPI, LVGL `lv_meter`, encoder |
+| [Hue_Encoder](projects/Hue_Encoder/) | Roue de teintes HSV avec hex live ; tap pour toggle haptics | Display + LVGL, encoder, **DRV2605 haptics**, **CST816 touch** (port du Knob) |
 
 ## Structure
 
