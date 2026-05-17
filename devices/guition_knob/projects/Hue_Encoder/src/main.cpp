@@ -3,6 +3,9 @@
 #include <Adafruit_DRV2605.h>
 #include "guition_lvgl.h"
 #include "bidi_switch_knob.h"
+#include "rgb_ring.h"
+
+Adafruit_NeoPixel rgb_ring(RGB_RING_LED_COUNT, PIN_RGB_DATA, NEO_GRB + NEO_KHZ800);
 
 // Port du Hue_Encoder Knob -> Guition K718. Code identique sauf les deux
 // includes device-specific (guition_lvgl.h + guition_pins.h via le header).
@@ -98,6 +101,10 @@ static void update_color() {
     char hex[10];
     snprintf(hex, sizeof(hex), "#%02X%02X%02X", r, g, b);
     lv_label_set_text(hex_label, hex);
+
+    // Mirror the screen color onto the 13-LED ring
+    rgb_ring_set_all(r, g, b);
+    rgb_ring_show();
 }
 
 // ---- Setup ----
@@ -106,6 +113,9 @@ void setup() {
     Serial.println("Guition JC3636K718 — Hue_Encoder: Hue Wheel + Haptic Toggle");
 
     panel_handle = guition_lvgl_init();
+
+    // RGB ring (mirrors screen color). 128/255 ≈ 50 %, well under USB 500 mA.
+    rgb_ring_init(128);
 
     // Build UI
     Serial.println("Build UI...");
@@ -146,6 +156,9 @@ void setup() {
     lv_obj_set_style_text_font(haptic_icon, &lv_font_montserrat_20, 0);
     lv_obj_set_style_text_color(haptic_icon, lv_color_white(), 0);
     lv_label_set_text(haptic_icon, LV_SYMBOL_VOLUME_MID);
+
+    // Paint screen + ring with the initial hue (0 = red)
+    update_color();
 
     // Encoder (bidi_switch_knob driver, timer-polled)
     Serial.println("Init encoder...");
