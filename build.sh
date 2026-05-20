@@ -23,7 +23,7 @@ PORT=""
 NO_DEVICE_CHECK=0
 
 usage() {
-    cat <<EOF
+    cat <<'EOF'
 Usage: ./build.sh <device|auto> [project...] [options]
        ./build.sh --list-devices
 
