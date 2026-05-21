@@ -1,15 +1,77 @@
 #include <Arduino.h>
+#include "lvgl.h"
 #include "guition_lvgl.h"
+#include "guition_pins.h"
+#include "bidi_switch_knob.h"
+#include "rgb_ring.h"
+#include "viz_api.h"
+#include "audio_pipeline.h"
+
+// Instance globale de l'anneau (déclarée extern dans rgb_ring.h)
+Adafruit_NeoPixel rgb_ring(RGB_RING_LED_COUNT, PIN_RGB_DATA, NEO_GRB + NEO_KHZ800);
+
+// Forward decls des vizs (chacune dans son propre .cpp)
+extern const Visualizer VIZ_SPECTRUM_RADIAL;
+
+// Registry — ordre = ordre de cyclage
+static const Visualizer* visualizers[] = {
+    &VIZ_SPECTRUM_RADIAL,
+};
+static constexpr int N_VIZ = sizeof(visualizers) / sizeof(visualizers[0]);
+
+static int current_viz = 0;
+
+// Encoder delta (modifié dans ISR-context via callback, lu/reset dans loop)
+static volatile int32_t enc_delta = 0;
+
+static int32_t encoder_consume_delta() {
+    int32_t d = enc_delta;
+    enc_delta = 0;
+    return d;
+}
+
+static void switch_viz(int delta) {
+    visualizers[current_viz]->deinit();
+    current_viz = (current_viz + delta + N_VIZ) % N_VIZ;
+    visualizers[current_viz]->init();
+    Serial.printf("Switch -> %d/%d  %s\n", current_viz + 1, N_VIZ,
+                  visualizers[current_viz]->name);
+}
 
 void setup() {
     Serial.begin(115200);
     delay(200);
-    Serial.println("Basic_Audio_Multiviz scaffolding OK");
+    Serial.println("Basic_Audio_Multiviz starting...");
+
     guition_lvgl_init(72);
     lv_obj_set_style_bg_color(lv_scr_act(), lv_color_black(), 0);
+    rgb_ring_init(200);
+
+    audio_pipeline_init();
+
+    // Encoder
+    knob_config_t enc_cfg = {
+        .gpio_encoder_a = PIN_ENC_A,
+        .gpio_encoder_b = PIN_ENC_B,
+    };
+    knob_handle_t knob = iot_knob_create(&enc_cfg);
+    iot_knob_register_cb(knob, KNOB_RIGHT, [](void *, void *) { enc_delta = enc_delta + 1; }, NULL);
+    iot_knob_register_cb(knob, KNOB_LEFT,  [](void *, void *) { enc_delta = enc_delta - 1; }, NULL);
+
+    // Démarre sur viz #1
+    visualizers[current_viz]->init();
+
+    Serial.printf("Ready. Active viz: %s\n", visualizers[current_viz]->name);
 }
 
 void loop() {
+    const AudioFrame& af = audio_pipeline_tick();
+
+    int32_t d = encoder_consume_delta();
+    if (d != 0) switch_viz(d);
+
+    visualizers[current_viz]->render(af);
+    rgb_ring_show();
+
     lv_timer_handler();
-    delay(5);
 }
