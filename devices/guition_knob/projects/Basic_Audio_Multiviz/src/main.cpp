@@ -6,6 +6,7 @@
 #include "rgb_ring.h"
 #include "viz_api.h"
 #include "audio_pipeline.h"
+#include "osd.h"
 
 // Instance globale de l'anneau (déclarée extern dans rgb_ring.h)
 Adafruit_NeoPixel rgb_ring(RGB_RING_LED_COUNT, PIN_RGB_DATA, NEO_GRB + NEO_KHZ800);
@@ -34,6 +35,7 @@ static void switch_viz(int delta) {
     visualizers[current_viz]->deinit();
     current_viz = (current_viz + delta + N_VIZ) % N_VIZ;
     visualizers[current_viz]->init();
+    osd_show(current_viz, visualizers[current_viz]->name);
     Serial.printf("Switch -> %d/%d  %s\n", current_viz + 1, N_VIZ,
                   visualizers[current_viz]->name);
 }
@@ -48,6 +50,8 @@ void setup() {
     rgb_ring_init(200);
 
     audio_pipeline_init();
+
+    osd_init(N_VIZ);
 
     // Encoder
     knob_config_t enc_cfg = {
@@ -73,5 +77,6 @@ void loop() {
     visualizers[current_viz]->render(af);
     rgb_ring_show();
 
+    osd_tick();
     lv_timer_handler();
 }
