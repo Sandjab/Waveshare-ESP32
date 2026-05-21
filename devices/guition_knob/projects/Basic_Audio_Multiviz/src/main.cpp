@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include <Wire.h>
+#include <Adafruit_DRV2605.h>
 #include "lvgl.h"
 #include "guition_lvgl.h"
 #include "guition_pins.h"
@@ -10,6 +12,9 @@
 
 // Instance globale de l'anneau (déclarée extern dans rgb_ring.h)
 Adafruit_NeoPixel rgb_ring(RGB_RING_LED_COUNT, PIN_RGB_DATA, NEO_GRB + NEO_KHZ800);
+
+static Adafruit_DRV2605 drv;
+static bool drv_ok = false;
 
 // Forward decls des vizs (chacune dans son propre .cpp)
 extern const Visualizer VIZ_SPECTRUM_RADIAL;
@@ -36,6 +41,11 @@ static void switch_viz(int delta) {
     current_viz = (current_viz + delta + N_VIZ) % N_VIZ;
     visualizers[current_viz]->init();
     osd_show(current_viz, visualizers[current_viz]->name);
+    if (drv_ok) {
+        drv.setWaveform(0, 7);  // Soft Bump
+        drv.setWaveform(1, 0);
+        drv.go();
+    }
     Serial.printf("Switch -> %d/%d  %s\n", current_viz + 1, N_VIZ,
                   visualizers[current_viz]->name);
 }
@@ -50,6 +60,17 @@ void setup() {
     rgb_ring_init(200);
 
     audio_pipeline_init();
+
+    Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
+    if (drv.begin()) {
+        drv.useLRA();
+        drv.selectLibrary(6);
+        drv.setMode(DRV2605_MODE_INTTRIG);
+        drv_ok = true;
+        Serial.println("DRV2605 OK");
+    } else {
+        Serial.println("DRV2605 not found - haptics disabled");
+    }
 
     osd_init(N_VIZ);
 
