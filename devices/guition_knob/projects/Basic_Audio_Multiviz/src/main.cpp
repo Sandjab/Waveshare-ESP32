@@ -19,11 +19,13 @@ static bool drv_ok = false;
 // Forward decls des vizs (chacune dans son propre .cpp)
 extern const Visualizer VIZ_SPECTRUM_RADIAL;
 extern const Visualizer VIZ_OSCILLO;
+extern const Visualizer VIZ_SPECTRUM_BARS;
 
 // Registry — ordre = ordre de cyclage
 static const Visualizer* visualizers[] = {
     &VIZ_SPECTRUM_RADIAL,
     &VIZ_OSCILLO,
+    &VIZ_SPECTRUM_BARS,
 };
 static constexpr int N_VIZ = sizeof(visualizers) / sizeof(visualizers[0]);
 
