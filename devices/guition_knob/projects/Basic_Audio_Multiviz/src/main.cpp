@@ -25,6 +25,7 @@ extern const Visualizer VIZ_LISSAJOUS;
 extern const Visualizer VIZ_TUNNEL;
 extern const Visualizer VIZ_BEAT_BLOOM;
 extern const Visualizer VIZ_STARFIELD;
+extern const Visualizer VIZ_GEISS_STRIPES;
 
 // Registry — ordre = ordre de cyclage
 static const Visualizer* visualizers[] = {
@@ -36,6 +37,7 @@ static const Visualizer* visualizers[] = {
     &VIZ_TUNNEL,
     &VIZ_BEAT_BLOOM,
     &VIZ_STARFIELD,
+    &VIZ_GEISS_STRIPES,
 };
 static constexpr int N_VIZ = sizeof(visualizers) / sizeof(visualizers[0]);
 
