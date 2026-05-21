@@ -20,12 +20,14 @@ static bool drv_ok = false;
 extern const Visualizer VIZ_SPECTRUM_RADIAL;
 extern const Visualizer VIZ_OSCILLO;
 extern const Visualizer VIZ_SPECTRUM_BARS;
+extern const Visualizer VIZ_PEAK_METER;
 
 // Registry — ordre = ordre de cyclage
 static const Visualizer* visualizers[] = {
     &VIZ_SPECTRUM_RADIAL,
     &VIZ_OSCILLO,
     &VIZ_SPECTRUM_BARS,
+    &VIZ_PEAK_METER,
 };
 static constexpr int N_VIZ = sizeof(visualizers) / sizeof(visualizers[0]);
 
