@@ -28,10 +28,15 @@ static void viz_init() {
 }
 
 static void viz_render(const AudioFrame& af) {
+    // PDM mic a un offset DC : on retire la moyenne avant scaling, sinon
+    // augmenter le gain décale la ligne de base au lieu d'étirer le signal.
+    int32_t sum = 0;
+    for (int i = 0; i < N_POINTS; i++) sum += af.wave[i];
+    int16_t dc = (int16_t)(sum / N_POINTS);
+
     for (int i = 0; i < N_POINTS; i++) {
-        int16_t s = af.wave[i];
-        // Scale s (~int16) en pixels — diviseur empirique, à tuner.
-        int dy = (int)((float)s * AMPLITUDE / 12000.0f);
+        int32_t s = (int32_t)af.wave[i] - dc;
+        int dy = (int)((float)s * AMPLITUDE / 1500.0f);
         if (dy > AMPLITUDE)  dy = AMPLITUDE;
         if (dy < -AMPLITUDE) dy = -AMPLITUDE;
         pts[i].y = CENTER_Y + dy;
