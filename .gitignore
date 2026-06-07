@@ -19,3 +19,6 @@ inbox/
 
 # Personal device inventory (MAC addresses, per-user)
 devices.local.yaml
+
+# WiFi credentials (per-user, never committed) — see *.example siblings
+**/secrets.h
