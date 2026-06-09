@@ -13,6 +13,7 @@ description: Common ESP32-S3 platform reference for all Waveshare devices in thi
 | **ESP32-S3-Touch-AMOLED-1.8** (Waveshare) | `devices/amoled/` | SH8601 AMOLED | 368×448 | FT3168, ES8311, AXP2101, QMI8658, PCF85063 | `waveshare-amoled` |
 | **ESP32-S3-Touch-AMOLED-1.75C** (Waveshare) | `devices/amoled_175c/` | CO5300 AMOLED (round) | 466×466 | CST9217, ES8311+ES7210, AXP2101, QMI8658 | `waveshare-amoled-175c` |
 | **JC3636K718** (Guition) | `devices/guition_knob/` | ST77916 IPS LCD | 360×360 | PCM5100A, NS4150B, 13× WS2812 RGB ring | `guition-k718` |
+| **ESP32-S3-ePaper-1.54G** (Waveshare) | `devices/epaper_154g/` | e-paper 4 couleurs (SPI) | 200×200 | ES8311, SHTC3, PCF85063, ETA6098 | `waveshare-epaper-154g` |
 
 All three QSPI display devices share `shared/lib/qspi_panel/esp_lcd_sh8601` (the panel framework is QSPI-generic; the ST77916 init lives in each device's `lib/<name>_hw/`).
 
@@ -35,6 +36,7 @@ Each device has its own skill with hardware-specific details:
 - **waveshare-amoled** — `devices/amoled/.claude/skills/waveshare-amoled/SKILL.md`
 - **waveshare-amoled-175c** — `devices/amoled_175c/.claude/skills/waveshare-amoled-175c/SKILL.md`
 - **guition-k718** — `devices/guition_knob/.claude/skills/guition-k718/SKILL.md`
+- **waveshare-epaper-154g** — `devices/epaper_154g/.claude/skills/waveshare-epaper-154g/SKILL.md`
 
 ## Platform Reference
 

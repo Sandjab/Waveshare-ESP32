@@ -10,6 +10,7 @@ Monorepo for Waveshare ESP32-S3 devices — shared platform, per-device projects
 | ESP32-S3-Touch-AMOLED-1.8 | `devices/amoled/` | `waveshare-amoled` |
 | ESP32-S3-Touch-AMOLED-1.75C | `devices/amoled_175c/` | `waveshare-amoled-175c` |
 | Guition JC3636K718 | `devices/guition_knob/` | `guition-k718` |
+| ESP32-S3-ePaper-1.54G | `devices/epaper_154g/` | `waveshare-epaper-154g` |
 
 ## Structure
 
@@ -21,7 +22,8 @@ Waveshare/
 │   ├── knob/                         # Waveshare Knob (projects, lib, docs, firmware, skills)
 │   ├── amoled/                       # Waveshare AMOLED 1.8 (projects, lib, docs, firmware, skills)
 │   ├── amoled_175c/                  # Waveshare AMOLED 1.75C — round (lib, docs, firmware, skills)
-│   └── guition_knob/                 # Guition JC3636K718 (projects, lib, docs, firmware, skills)
+│   ├── guition_knob/                 # Guition JC3636K718 (projects, lib, docs, firmware, skills)
+│   └── epaper_154g/                  # Waveshare ePaper 1.54G — 4 couleurs (projects, lib, docs, firmware, skills)
 ├── build.ps1                         # Build script (Windows / PowerShell)
 ├── build.sh                          # Build script (macOS / Linux / bash)
 ├── tools/device_mac.py               # MAC ↔ device_dir inventory helper
