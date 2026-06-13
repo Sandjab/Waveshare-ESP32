@@ -119,6 +119,24 @@ void view_rebuild(Dashboard* d) {
             }
         }
     }
+    // points indicateurs (au-dessus des conteneurs de page)
+    if (s_dots) { lv_obj_del(s_dots); s_dots = nullptr; }
+    if (d->page_count > 1) {
+        s_dots = lv_obj_create(scr);
+        lv_obj_remove_style_all(s_dots);
+        lv_obj_set_size(s_dots, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+        lv_obj_set_flex_flow(s_dots, LV_FLEX_FLOW_ROW);
+        lv_obj_set_style_pad_column(s_dots, 8, 0);
+        lv_obj_align(s_dots, LV_ALIGN_BOTTOM_MID, 0, -10);
+        for (int p = 0; p < d->page_count; p++) {
+            lv_obj_t* dot = lv_obj_create(s_dots);
+            lv_obj_remove_style_all(dot);
+            lv_obj_set_size(dot, 9, 9);
+            lv_obj_set_style_radius(dot, 5, 0);
+            lv_obj_set_style_bg_opa(dot, LV_OPA_COVER, 0);
+            lv_obj_set_style_bg_color(dot, lv_color_hex(0x374151), 0);
+        }
+    }
     view_show_page(d, d->active_page);
     d->layout_dirty = false;
     for (int i = 0; i < d->comp_count; i++) d->components[i].dirty = true;
@@ -131,6 +149,12 @@ void view_show_page(Dashboard* d, int idx) {
     for (int p = 0; p < d->page_count; p++) {
         if (p == idx) lv_obj_clear_flag(s_page_cont[p], LV_OBJ_FLAG_HIDDEN);
         else          lv_obj_add_flag(s_page_cont[p], LV_OBJ_FLAG_HIDDEN);
+    }
+    if (s_dots) {
+        uint32_t n = lv_obj_get_child_cnt(s_dots);
+        for (uint32_t p = 0; p < n; p++)
+            lv_obj_set_style_bg_color(lv_obj_get_child(s_dots, p),
+                lv_color_hex((int)p == idx ? 0xE5E7EB : 0x374151), 0);
     }
 }
 
