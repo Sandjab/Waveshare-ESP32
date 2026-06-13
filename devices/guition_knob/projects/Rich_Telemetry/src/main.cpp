@@ -11,6 +11,7 @@
 static WebServer server(HTTP_PORT);
 static Dashboard g_dash;
 static bool g_wifi_up = false;
+String g_layout_json;
 
 static bool wifi_connect() {
     WiFi.mode(WIFI_STA);
@@ -40,7 +41,8 @@ void setup() {
     guition_lvgl_init();
     lv_timer_handler();
     char err[80];
-    dash_set_layout(&g_dash, view_default_layout(), err, sizeof(err));
+    g_layout_json = view_default_layout();
+    dash_set_layout(&g_dash, g_layout_json.c_str(), err, sizeof(err));
     view_rebuild(&g_dash);
     g_wifi_up = wifi_connect();
     if (g_wifi_up) {

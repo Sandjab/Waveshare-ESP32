@@ -4,6 +4,8 @@
 #include <ArduinoJson.h>
 #include "config.h"
 
+extern String g_layout_json;
+
 static Dashboard* D = nullptr;
 static WebServer* S = nullptr;
 
@@ -43,10 +45,28 @@ static void h_root() {
     S->send(200, "text/html", html);
 }
 
+static void h_set_layout() {
+    if (!S->hasArg("plain")) { S->send(400, "text/plain", "Empty body\n"); return; }
+    String body = S->arg("plain");
+    char err[80];
+    if (!dash_set_layout(D, body.c_str(), err, sizeof(err))) {
+        S->send(400, "application/json", String("{\"ok\":false,\"error\":\"") + err + "\"}\n");
+        return;
+    }
+    g_layout_json = body;
+    S->send(200, "application/json", "{\"ok\":true}\n");
+}
+
+static void h_get_layout() {
+    S->send(200, "application/json", g_layout_json.length() ? g_layout_json : String("{}"));
+}
+
 void api_register(WebServer& server, Dashboard* d) {
     S = &server; D = d;
     server.on("/update", HTTP_POST, h_update);
     server.on("/status", HTTP_GET,  h_status);
+    server.on("/layout", HTTP_POST, h_set_layout);
+    server.on("/layout", HTTP_GET,  h_get_layout);
     server.on("/",       HTTP_GET,  h_root);
     server.onNotFound([](){ S->send(404, "text/plain", "Not found\n"); });
 }
