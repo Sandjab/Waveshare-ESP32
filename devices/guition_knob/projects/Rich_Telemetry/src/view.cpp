@@ -29,8 +29,18 @@ const char* view_default_layout() {
         "\"w7d\":{\"type\":\"ring\",\"color\":\"#A78BFA\",\"pill\":true,\"countdown\":true},"
         "\"led\":{\"type\":\"led_ring\"},\"buzz\":{\"type\":\"sound\"}},"
       "\"pages\":[{\"name\":\"usage\",\"place\":["
-        "{\"ref\":\"w5h\",\"radius\":140,\"thickness\":16,\"gap_deg\":70},"
-        "{\"ref\":\"w7d\",\"radius\":105,\"thickness\":16,\"gap_deg\":70}]}]}";
+        "{\"ref\":\"w5h\",\"radius\":176,\"thickness\":16,\"gap_deg\":70},"
+        "{\"ref\":\"w7d\",\"radius\":141,\"thickness\":16,\"gap_deg\":70}]}]}";
+}
+
+// Place les labels d'une couronne : légende dans l'ouverture du bas, pastille sur le haut
+// de la bande. Offset = rayon - épaisseur (bord interne de la bande) -> suit le diamètre.
+// À rappeler après chaque set_text : LVGL recalcule alors le centrage sur la taille réelle
+// du label (sinon il grandit vers la droite depuis sa position posée à vide -> décalé).
+static void ring_place_labels(lv_obj_t* arc, lv_obj_t* cap, lv_obj_t* pill, const Placement& q) {
+    int off = q.radius - q.thickness;
+    if (cap)  lv_obj_align_to(cap,  arc, LV_ALIGN_CENTER, 0,  off);   // bas
+    if (pill) lv_obj_align_to(pill, arc, LV_ALIGN_CENTER, 0, -off);   // haut
 }
 
 static void build_ring(lv_obj_t* parent, Component& c, Placement& q,
@@ -51,7 +61,6 @@ static void build_ring(lv_obj_t* parent, Component& c, Placement& q,
     lv_obj_set_style_text_font(*cap, &lv_font_montserrat_14, 0);
     lv_obj_set_style_text_color(*cap, lv_color_hex(c.color), 0);
     lv_label_set_text(*cap, "");
-    lv_obj_align_to(*cap, arc, LV_ALIGN_CENTER, 0, q.radius - q.thickness - 14);
 
     if (c.pill) {
         *pill = lv_label_create(parent);
@@ -61,8 +70,8 @@ static void build_ring(lv_obj_t* parent, Component& c, Placement& q,
         lv_obj_set_style_radius(*pill, 13, 0);
         lv_obj_set_style_pad_hor(*pill, 8, 0); lv_obj_set_style_pad_ver(*pill, 3, 0);
         lv_label_set_text(*pill, "0%");
-        lv_obj_align_to(*pill, arc, LV_ALIGN_TOP_MID, 0, -2);
     }
+    ring_place_labels(arc, *cap, c.pill ? *pill : nullptr, q);
 }
 
 void view_rebuild(Dashboard* d) {
@@ -151,6 +160,7 @@ void view_sync(Dashboard* d) {
                         lv_label_set_text(s_sub2[p][i], pb);
                         lv_obj_set_style_bg_color(s_sub2[p][i], lv_color_hex(col), 0);
                     }
+                    ring_place_labels(w, s_sub1[p][i], s_sub2[p][i], q);  // re-centre après set_text
                     break;
                 }
                 default: break;
