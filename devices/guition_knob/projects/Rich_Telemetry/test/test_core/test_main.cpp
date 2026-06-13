@@ -3,6 +3,7 @@
 #include "format.h"
 #include "color.h"
 #include "nav_logic.h"
+#include "dashboard.h"
 
 static char buf[32];
 
@@ -34,6 +35,47 @@ void test_threshold_over(void) {
     Threshold t[3] = {{70,0x22C55E},{90,0xF59E0B},{100,0xEF4444}};
     TEST_ASSERT_EQUAL_HEX32(0xEF4444, threshold_color(t,3,95,0x000000));
 }
+static const char* LAYOUT_OK =
+  "{\"title\":\"T\",\"background\":\"#0B0B0F\",\"nav\":{\"wrap\":true},"
+  "\"components\":{"
+    "\"w5h\":{\"type\":\"ring\",\"color\":\"#38BDF8\",\"countdown\":true,"
+             "\"thresholds\":[[70,\"#22C55E\"],[90,\"#F59E0B\"]]},"
+    "\"cpu\":{\"type\":\"readout\",\"label\":\"CPU\",\"unit\":\"%\"}},"
+  "\"pages\":[{\"name\":\"usage\",\"place\":["
+    "{\"ref\":\"w5h\",\"radius\":140,\"thickness\":16,\"gap_deg\":70},"
+    "{\"ref\":\"cpu\",\"anchor\":\"CENTER\"}]}]}";
+
+void test_layout_parse_counts(void) {
+    Dashboard d{}; char err[80];
+    TEST_ASSERT_TRUE(dash_set_layout(&d, LAYOUT_OK, err, sizeof(err)));
+    TEST_ASSERT_EQUAL_INT(2, d.comp_count);
+    TEST_ASSERT_EQUAL_INT(1, d.page_count);
+    TEST_ASSERT_EQUAL_INT(2, d.pages[0].place_count);
+    TEST_ASSERT_TRUE(d.nav_wrap);
+}
+void test_layout_types_and_geom(void) {
+    Dashboard d{}; char err[80];
+    dash_set_layout(&d, LAYOUT_OK, err, sizeof(err));
+    int iw = dash_find(&d, "w5h");
+    TEST_ASSERT_EQUAL_INT(COMP_RING, d.components[iw].type);
+    TEST_ASSERT_TRUE(d.components[iw].countdown);
+    TEST_ASSERT_EQUAL_INT(2, d.components[iw].threshold_count);
+    TEST_ASSERT_EQUAL_HEX32(0x38BDF8, d.components[iw].color);
+    TEST_ASSERT_EQUAL_INT(140, d.pages[0].places[0].radius);
+    TEST_ASSERT_EQUAL_INT(A_CENTER, d.pages[0].places[1].anchor);
+}
+void test_layout_unknown_type_rejected(void) {
+    Dashboard d{}; char err[80];
+    const char* bad = "{\"components\":{\"x\":{\"type\":\"frobnicator\"}},\"pages\":[]}";
+    TEST_ASSERT_FALSE(dash_set_layout(&d, bad, err, sizeof(err)));
+}
+void test_layout_invalid_keeps_old(void) {
+    Dashboard d{}; char err[80];
+    dash_set_layout(&d, LAYOUT_OK, err, sizeof(err));
+    dash_set_layout(&d, "{ not json", err, sizeof(err));
+    TEST_ASSERT_EQUAL_INT(2, d.comp_count);
+}
+
 void test_next_mid(void)     { TEST_ASSERT_EQUAL_INT(2, nav_next(1, 3, true)); }
 void test_next_wrap(void)    { TEST_ASSERT_EQUAL_INT(0, nav_next(2, 3, true)); }
 void test_next_clamp(void)   { TEST_ASSERT_EQUAL_INT(2, nav_next(2, 3, false)); }
@@ -59,6 +101,10 @@ int main(int, char**) {
     RUN_TEST(test_value_unit);
     RUN_TEST(test_value_float);
     RUN_TEST(test_value_no_unit);
+    RUN_TEST(test_layout_parse_counts);
+    RUN_TEST(test_layout_types_and_geom);
+    RUN_TEST(test_layout_unknown_type_rejected);
+    RUN_TEST(test_layout_invalid_keeps_old);
     RUN_TEST(test_hex_parse);
     RUN_TEST(test_hex_no_hash);
     RUN_TEST(test_hex_fallback);
