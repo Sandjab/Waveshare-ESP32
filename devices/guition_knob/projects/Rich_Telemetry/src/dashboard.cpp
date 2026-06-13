@@ -39,7 +39,8 @@ bool dash_set_layout(Dashboard* d, const char* json, char* err, size_t errn) {
     DeserializationError e = deserializeJson(doc, json);
     if (e) { snprintf(err, errn, "JSON: %s", e.c_str()); return false; }
 
-    Dashboard t{};
+    static Dashboard t;          // ~10.4 KB — keep off the 8 KB loop-task stack
+    memset(&t, 0, sizeof(t));
     strlcpy(t.title, doc["title"] | "", sizeof(t.title));
     t.background = parse_hex_color(doc["background"] | "#000000", 0x000000);
     t.nav_wrap   = doc["nav"]["wrap"] | true;
