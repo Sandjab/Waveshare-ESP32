@@ -63,6 +63,8 @@ void loop() {
         g_wifi_up = now;
     }
     if (g_dash.layout_dirty) view_rebuild(&g_dash);
+    static uint32_t last_sec = 0;
+    if (millis() - last_sec >= 1000) { last_sec = millis(); dash_tick_countdown(&g_dash, 1); }
     if (g_dash.values_dirty) view_sync(&g_dash);
     lv_timer_handler();
     delay(5);
