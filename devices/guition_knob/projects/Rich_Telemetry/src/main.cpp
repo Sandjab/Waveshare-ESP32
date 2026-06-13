@@ -9,6 +9,7 @@
 #include "api.h"
 #include "led_ring_comp.h"
 #include "sound_comp.h"
+#include "nav_input.h"
 
 static WebServer server(HTTP_PORT);
 static Dashboard g_dash;
@@ -48,6 +49,7 @@ void setup() {
     view_rebuild(&g_dash);
     led_ring_begin();
     sound_begin();
+    nav_begin();
     g_wifi_up = wifi_connect();
     if (g_wifi_up) {
         Serial.printf("[wifi] IP=%s\n", WiFi.localIP().toString().c_str());
@@ -73,6 +75,7 @@ void loop() {
     static uint32_t last_led = 0;
     if (millis() - last_led >= 33) { last_led = millis(); led_ring_tick(&g_dash, millis()); }
     sound_tick(&g_dash);
+    nav_tick(&g_dash);
     lv_timer_handler();
     delay(5);
 }

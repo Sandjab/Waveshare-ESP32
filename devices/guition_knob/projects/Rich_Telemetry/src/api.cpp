@@ -2,7 +2,10 @@
 #include <WiFi.h>
 #include <ESPmDNS.h>
 #include <ArduinoJson.h>
+#include <string.h>
 #include "config.h"
+#include "nav_input.h"
+#include "view.h"
 
 extern String g_layout_json;
 
@@ -61,12 +64,32 @@ static void h_get_layout() {
     S->send(200, "application/json", g_layout_json.length() ? g_layout_json : String("{}"));
 }
 
+static void h_page() {
+    JsonDocument doc;
+    if (!S->hasArg("plain") || deserializeJson(doc, S->arg("plain"))) {
+        S->send(400, "text/plain", "Invalid JSON\n"); return;
+    }
+    if (doc["dir"].is<const char*>()) {
+        nav_goto_dir(D, strcmp(doc["dir"], "prev") == 0 ? -1 : +1);
+    } else if (doc["index"].is<int>()) {
+        view_show_page(D, doc["index"]);
+    } else if (doc["name"].is<const char*>()) {
+        for (int p = 0; p < D->page_count; p++)
+            if (strcmp(D->pages[p].name, doc["name"]) == 0) { view_show_page(D, p); break; }
+    }
+    JsonDocument res; res["page"] = D->active_page;
+    res["name"] = D->pages[D->active_page].name;
+    String out; serializeJson(res, out); out += "\n";
+    S->send(200, "application/json", out);
+}
+
 void api_register(WebServer& server, Dashboard* d) {
     S = &server; D = d;
     server.on("/update", HTTP_POST, h_update);
     server.on("/status", HTTP_GET,  h_status);
     server.on("/layout", HTTP_POST, h_set_layout);
     server.on("/layout", HTTP_GET,  h_get_layout);
+    server.on("/page",   HTTP_POST, h_page);
     server.on("/",       HTTP_GET,  h_root);
     server.onNotFound([](){ S->send(404, "text/plain", "Not found\n"); });
 }
