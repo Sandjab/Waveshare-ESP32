@@ -10,6 +10,7 @@
 #include "led_ring_comp.h"
 #include "sound_comp.h"
 #include "nav_input.h"
+#include "touch_cst816.h"
 
 static WebServer server(HTTP_PORT);
 static Dashboard g_dash;
@@ -42,6 +43,7 @@ void setup() {
     Serial.begin(115200); delay(200);
     Serial.println("\nGuition JC3636K718 - Rich_Telemetry");
     guition_lvgl_init();
+    touch_begin();
     lv_timer_handler();
     char err[80];
     g_layout_json = view_default_layout();

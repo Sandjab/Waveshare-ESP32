@@ -1,5 +1,6 @@
 #include "view.h"
 #include "color.h"
+#include "nav_input.h"
 #include <lvgl.h>
 #include <string.h>
 #include <cstdio>
@@ -74,11 +75,27 @@ static void build_ring(lv_obj_t* parent, Component& c, Placement& q,
     ring_place_labels(arc, *cap, c.pill ? *pill : nullptr, q);
 }
 
+// Swipe -> navigation. L'objet ecran persiste a travers les rebuilds (lv_obj_clean
+// ne supprime que ses enfants), donc on n'enregistre le callback gesture qu'une fois.
+static Dashboard* s_dash_for_gesture = nullptr;
+static void gesture_cb(lv_event_t* e) {
+    lv_dir_t dir = lv_indev_get_gesture_dir(lv_indev_get_act());
+    if (!s_dash_for_gesture) return;
+    if (dir == LV_DIR_LEFT || dir == LV_DIR_TOP)          nav_goto_dir(s_dash_for_gesture, +1);
+    else if (dir == LV_DIR_RIGHT || dir == LV_DIR_BOTTOM) nav_goto_dir(s_dash_for_gesture, -1);
+}
+
 void view_rebuild(Dashboard* d) {
     lv_obj_t* scr = lv_scr_act();
     lv_obj_clean(scr);
     lv_obj_set_style_bg_color(scr, lv_color_hex(d->background), 0);
     lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
+    s_dash_for_gesture = d;
+    static bool s_gesture_cb_added = false;
+    if (!s_gesture_cb_added) {
+        lv_obj_add_event_cb(scr, gesture_cb, LV_EVENT_GESTURE, nullptr);
+        s_gesture_cb_added = true;
+    }
     memset(s_widget, 0, sizeof(s_widget));
     memset(s_sub1, 0, sizeof(s_sub1)); memset(s_sub2, 0, sizeof(s_sub2));
 
