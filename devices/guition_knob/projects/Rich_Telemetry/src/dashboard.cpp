@@ -167,3 +167,15 @@ int dash_apply_update(Dashboard* d, const char* json, char* unknown_csv, size_t 
     }
     return updated;
 }
+
+void dash_tick_countdown(Dashboard* d, uint32_t elapsed_s) {
+    for (int i = 0; i < d->comp_count; i++) {
+        Component& c = d->components[i];
+        if (c.type != COMP_RING || !c.countdown) continue;
+        if (c.reset_in_s == 0) continue;
+        c.reset_in_s = (c.reset_in_s > elapsed_s) ? c.reset_in_s - elapsed_s : 0;
+        format_remaining(c.reset_in_s, c.caption, sizeof(c.caption));
+        c.dirty = true;
+        d->values_dirty = true;
+    }
+}

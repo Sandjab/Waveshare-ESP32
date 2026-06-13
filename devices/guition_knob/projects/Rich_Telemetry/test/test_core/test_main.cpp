@@ -76,6 +76,25 @@ void test_layout_invalid_keeps_old(void) {
     TEST_ASSERT_EQUAL_INT(2, d.comp_count);
 }
 
+void test_countdown_decrements_and_formats(void) {
+    Dashboard d{}; char err[80], unk[UNKNOWN_CSV_LEN];
+    dash_set_layout(&d, LAYOUT_OK, err, sizeof(err));
+    dash_apply_update(&d, "{\"w5h\":{\"pct\":63,\"reset_in_s\":3601}}", unk, sizeof(unk));
+    int iw = dash_find(&d,"w5h");
+    d.components[iw].dirty = false;
+    dash_tick_countdown(&d, 1);
+    TEST_ASSERT_EQUAL_UINT32(3600, d.components[iw].reset_in_s);
+    TEST_ASSERT_EQUAL_STRING("1h00", d.components[iw].caption);
+    TEST_ASSERT_TRUE(d.components[iw].dirty);
+}
+void test_countdown_floor_zero(void) {
+    Dashboard d{}; char err[80], unk[UNKNOWN_CSV_LEN];
+    dash_set_layout(&d, LAYOUT_OK, err, sizeof(err));
+    dash_apply_update(&d, "{\"w5h\":{\"pct\":99,\"reset_in_s\":3}}", unk, sizeof(unk));
+    dash_tick_countdown(&d, 10);
+    TEST_ASSERT_EQUAL_UINT32(0, d.components[dash_find(&d,"w5h")].reset_in_s);
+}
+
 void test_update_partial_leaves_others(void) {
     Dashboard d{}; char err[80], unk[UNKNOWN_CSV_LEN];
     dash_set_layout(&d, LAYOUT_OK, err, sizeof(err));
@@ -129,6 +148,8 @@ int main(int, char**) {
     RUN_TEST(test_value_unit);
     RUN_TEST(test_value_float);
     RUN_TEST(test_value_no_unit);
+    RUN_TEST(test_countdown_decrements_and_formats);
+    RUN_TEST(test_countdown_floor_zero);
     RUN_TEST(test_update_partial_leaves_others);
     RUN_TEST(test_update_ring_object);
     RUN_TEST(test_update_unknown_reported_not_applied);
