@@ -2,6 +2,7 @@
 #include <string.h>
 #include "format.h"
 #include "color.h"
+#include "nav_logic.h"
 
 static char buf[32];
 
@@ -33,6 +34,14 @@ void test_threshold_over(void) {
     Threshold t[3] = {{70,0x22C55E},{90,0xF59E0B},{100,0xEF4444}};
     TEST_ASSERT_EQUAL_HEX32(0xEF4444, threshold_color(t,3,95,0x000000));
 }
+void test_next_mid(void)     { TEST_ASSERT_EQUAL_INT(2, nav_next(1, 3, true)); }
+void test_next_wrap(void)    { TEST_ASSERT_EQUAL_INT(0, nav_next(2, 3, true)); }
+void test_next_clamp(void)   { TEST_ASSERT_EQUAL_INT(2, nav_next(2, 3, false)); }
+void test_prev_wrap(void)    { TEST_ASSERT_EQUAL_INT(2, nav_prev(0, 3, true)); }
+void test_prev_clamp(void)   { TEST_ASSERT_EQUAL_INT(0, nav_prev(0, 3, false)); }
+void test_single_page(void)  { TEST_ASSERT_EQUAL_INT(0, nav_next(0, 1, true)); }
+void test_empty(void)        { TEST_ASSERT_EQUAL_INT(0, nav_next(0, 0, true)); }
+
 void test_threshold_none(void) {
     Threshold t[1] = {{70,0x22C55E}};
     TEST_ASSERT_EQUAL_HEX32(0xABCDEF, threshold_color(t,0,50,0xABCDEF));
@@ -57,5 +66,12 @@ int main(int, char**) {
     RUN_TEST(test_threshold_mid);
     RUN_TEST(test_threshold_over);
     RUN_TEST(test_threshold_none);
+    RUN_TEST(test_next_mid);
+    RUN_TEST(test_next_wrap);
+    RUN_TEST(test_next_clamp);
+    RUN_TEST(test_prev_wrap);
+    RUN_TEST(test_prev_clamp);
+    RUN_TEST(test_single_page);
+    RUN_TEST(test_empty);
     return UNITY_END();
 }
