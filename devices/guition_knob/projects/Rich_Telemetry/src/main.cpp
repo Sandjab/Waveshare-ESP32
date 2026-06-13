@@ -6,6 +6,7 @@
 #include "config.h"
 #include "secrets.h"
 #include "view.h"
+#include "api.h"
 
 static WebServer server(HTTP_PORT);
 static Dashboard g_dash;
@@ -28,6 +29,7 @@ static void start_services() {
     if (started) return;
     started = true;
     if (MDNS.begin(MDNS_HOST)) MDNS.addService("http", "tcp", HTTP_PORT);
+    api_register(server, &g_dash);
     server.begin();
     Serial.printf("[http] :%d  http://%s.local\n", HTTP_PORT, MDNS_HOST);
 }
