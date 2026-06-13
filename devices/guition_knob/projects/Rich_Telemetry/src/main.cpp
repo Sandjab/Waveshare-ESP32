@@ -5,8 +5,10 @@
 #include "guition_lvgl.h"
 #include "config.h"
 #include "secrets.h"
+#include "view.h"
 
 static WebServer server(HTTP_PORT);
+static Dashboard g_dash;
 static bool g_wifi_up = false;
 
 static bool wifi_connect() {
@@ -35,6 +37,9 @@ void setup() {
     Serial.println("\nGuition JC3636K718 - Rich_Telemetry");
     guition_lvgl_init();
     lv_timer_handler();
+    char err[80];
+    dash_set_layout(&g_dash, view_default_layout(), err, sizeof(err));
+    view_rebuild(&g_dash);
     g_wifi_up = wifi_connect();
     if (g_wifi_up) {
         Serial.printf("[wifi] IP=%s\n", WiFi.localIP().toString().c_str());
@@ -53,6 +58,8 @@ void loop() {
         if (now && !g_wifi_up) start_services();
         g_wifi_up = now;
     }
+    if (g_dash.layout_dirty) view_rebuild(&g_dash);
+    if (g_dash.values_dirty) view_sync(&g_dash);
     lv_timer_handler();
     delay(5);
 }
