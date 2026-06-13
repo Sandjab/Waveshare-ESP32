@@ -22,3 +22,6 @@ devices.local.yaml
 
 # WiFi credentials (per-user, never committed) — see *.example siblings
 **/secrets.h
+
+# Superpowers brainstorming companion (mockups, transient)
+.superpowers/
