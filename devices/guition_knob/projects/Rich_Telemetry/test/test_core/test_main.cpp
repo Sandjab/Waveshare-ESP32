@@ -76,6 +76,34 @@ void test_layout_invalid_keeps_old(void) {
     TEST_ASSERT_EQUAL_INT(2, d.comp_count);
 }
 
+void test_update_partial_leaves_others(void) {
+    Dashboard d{}; char err[80], unk[UNKNOWN_CSV_LEN];
+    dash_set_layout(&d, LAYOUT_OK, err, sizeof(err));
+    int icpu = dash_find(&d,"cpu"), iw = dash_find(&d,"w5h");
+    d.components[iw].value = 10;
+    int nupd = dash_apply_update(&d, "{\"cpu\":42}", unk, sizeof(unk));
+    TEST_ASSERT_EQUAL_INT(1, nupd);
+    TEST_ASSERT_EQUAL_STRING("42 %", d.components[icpu].vstr);
+    TEST_ASSERT_EQUAL_INT(10, d.components[iw].value);
+    TEST_ASSERT_TRUE(d.values_dirty);
+}
+void test_update_ring_object(void) {
+    Dashboard d{}; char err[80], unk[UNKNOWN_CSV_LEN];
+    dash_set_layout(&d, LAYOUT_OK, err, sizeof(err));
+    int iw = dash_find(&d,"w5h");
+    dash_apply_update(&d, "{\"w5h\":{\"pct\":63,\"reset_in_s\":6600}}", unk, sizeof(unk));
+    TEST_ASSERT_EQUAL_INT(63, d.components[iw].value);
+    TEST_ASSERT_EQUAL_UINT32(6600, d.components[iw].reset_in_s);
+    TEST_ASSERT_EQUAL_STRING("1h50", d.components[iw].caption);
+}
+void test_update_unknown_reported_not_applied(void) {
+    Dashboard d{}; char err[80], unk[UNKNOWN_CSV_LEN];
+    dash_set_layout(&d, LAYOUT_OK, err, sizeof(err));
+    int nupd = dash_apply_update(&d, "{\"ghost\":1,\"cpu\":5}", unk, sizeof(unk));
+    TEST_ASSERT_EQUAL_INT(1, nupd);
+    TEST_ASSERT_EQUAL_STRING("ghost", unk);
+}
+
 void test_next_mid(void)     { TEST_ASSERT_EQUAL_INT(2, nav_next(1, 3, true)); }
 void test_next_wrap(void)    { TEST_ASSERT_EQUAL_INT(0, nav_next(2, 3, true)); }
 void test_next_clamp(void)   { TEST_ASSERT_EQUAL_INT(2, nav_next(2, 3, false)); }
@@ -101,6 +129,9 @@ int main(int, char**) {
     RUN_TEST(test_value_unit);
     RUN_TEST(test_value_float);
     RUN_TEST(test_value_no_unit);
+    RUN_TEST(test_update_partial_leaves_others);
+    RUN_TEST(test_update_ring_object);
+    RUN_TEST(test_update_unknown_reported_not_applied);
     RUN_TEST(test_layout_parse_counts);
     RUN_TEST(test_layout_types_and_geom);
     RUN_TEST(test_layout_unknown_type_rejected);
