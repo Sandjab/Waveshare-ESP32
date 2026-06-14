@@ -81,8 +81,10 @@ static Dashboard* s_dash_for_gesture = nullptr;
 static void gesture_cb(lv_event_t* e) {
     lv_dir_t dir = lv_indev_get_gesture_dir(lv_indev_get_act());
     if (!s_dash_for_gesture) return;
-    if (dir == LV_DIR_LEFT || dir == LV_DIR_TOP)          nav_goto_dir(s_dash_for_gesture, +1);
-    else if (dir == LV_DIR_RIGHT || dir == LV_DIR_BOTTOM) nav_goto_dir(s_dash_for_gesture, -1);
+    // Seuls les swipes latéraux naviguent : droite = suivant, gauche = précédent.
+    // Haut/bas volontairement ignorés (réservés à une future page de config par swipe haut).
+    if (dir == LV_DIR_RIGHT)     nav_goto_dir(s_dash_for_gesture, +1);
+    else if (dir == LV_DIR_LEFT) nav_goto_dir(s_dash_for_gesture, -1);
 }
 
 void view_rebuild(Dashboard* d) {
