@@ -46,8 +46,8 @@ Un même `id` peut être placé sur plusieurs pages : il n'existe qu'en un seul 
 | Type | Config | Valeur `/update` | Notes |
 |------|--------|-----------------|-------|
 | `label` | `text`, `font` (14/20/28), `color` | string (optionnel) | Texte statique ou mis à jour |
-| `readout` | `label`, `unit`, `font`, `color` | nombre ou string | Affiché « 42 % » |
-| `bar` | `label`, `min`, `max`, `color` | nombre | Géométrie : `width`, `height` |
+| `readout` | `label`, `unit`, `font`, `color` | nombre ou string | Affiché « CPU 42 % » (label + valeur) |
+| `bar` | `label`, `min`, `max`, `color` | nombre | Géométrie : `width`, `height`. Label affiché au-dessus de la barre. |
 | `ring` | `color`, `pill`, `countdown`, `min`, `max`, `thresholds` | `{"pct":0-100,"reset_in_s":N}` | Voir ci-dessous |
 | `led_ring` | *(physique, pas de géométrie)* | objet mode | Anneau 13 WS2812 |
 | `sound` | *(physique, pas de géométrie)* | objet tone/name | Tir unique |
@@ -58,12 +58,12 @@ Anneau circulaire avec ouverture en bas. Paramètres de config :
 
 - `color` : couleur par défaut (hex).
 - `pill` : `true` → affiche un pill de pourcentage sur la partie haute de la bande.
-- `center_pct` : `true` → affiche le % au centre.
+- `center_pct` : réservé (non rendu en v1).
 - `countdown` : `true` → décrémente `reset_in_s` d'une unité par seconde et l'affiche dans l'ouverture (ex. `1h50`, `5j6h`, `45s`). On peut aussi pousser une `"caption"` littérale.
 - `min` / `max` : plage (défaut 0/100).
 - `thresholds` : liste `[[limite, "#hex"], ...]` — la couleur change quand la valeur passe sous la limite.
 
-Géométrie (sur le placement dans `pages`) : `radius`, `thickness`, `gap_deg` (angle d'ouverture en bas), `start_angle`.
+Géométrie (sur le placement dans `pages`) : `radius`, `thickness`, `gap_deg` (angle d'ouverture). L'ouverture est fixée en bas en v1.
 
 Deux anneaux concentriques = même centre, `radius` différents :
 
@@ -116,7 +116,7 @@ Port 80 par défaut. mDNS `guition.local` (sur certains LAN le mDNS est filtré 
 | `POST` | `/update` | Mise à jour partielle des valeurs. Corps `{"id": valeur, ...}`. Réponse `{"ok":true,"updated":N,"unknown":[...]}`. JSON invalide → 400. |
 | `POST` | `/layout` | Remplace le layout complet (validé avant swap, persisté en flash). Réponse `{"ok":true}` ou 400 + message d'erreur. |
 | `GET` | `/layout` | Layout actif au format JSON. |
-| `POST` | `/page` | Navigation : `{"dir":"next"\|"prev"}`, `{"index":N}` ou `{"name":"..."}`. Réponse `{"page":N,"name":"..."}`. |
+| `POST` | `/page` | Navigation : `{"dir":"next"\|"prev"}`, `{"index":N}` ou `{"name":"..."}`. Réponse `{"page":N,"name":"..."}`. Index hors plage ou nom inconnu → 404. |
 | `GET` | `/status` | ip, hostname, rssi, uptime_s, page courante, liste des pages, composants. |
 | `GET` | `/` | Page d'aide HTML. |
 

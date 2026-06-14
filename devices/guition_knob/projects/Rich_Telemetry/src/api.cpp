@@ -74,10 +74,18 @@ static void h_page() {
     if (doc["dir"].is<const char*>()) {
         nav_goto_dir(D, strcmp(doc["dir"], "prev") == 0 ? -1 : +1);
     } else if (doc["index"].is<int>()) {
-        view_show_page(D, doc["index"]);
+        int idx = doc["index"];
+        if (idx < 0 || idx >= D->page_count) {
+            S->send(404, "text/plain", "page index out of range\n"); return;
+        }
+        view_show_page(D, idx);
     } else if (doc["name"].is<const char*>()) {
+        const char* nm = doc["name"];
+        int found = -1;
         for (int p = 0; p < D->page_count; p++)
-            if (strcmp(D->pages[p].name, doc["name"]) == 0) { view_show_page(D, p); break; }
+            if (strcmp(D->pages[p].name, nm) == 0) { found = p; break; }
+        if (found < 0) { S->send(404, "text/plain", "page name not found\n"); return; }
+        view_show_page(D, found);
     }
     JsonDocument res; res["page"] = D->active_page;
     res["name"] = D->pages[D->active_page].name;

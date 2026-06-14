@@ -133,6 +133,14 @@ void view_rebuild(Dashboard* d) {
                     lv_obj_set_style_bg_color(b, lv_color_hex(c.color), LV_PART_INDICATOR);
                     lv_obj_align(b, ALIGN_MAP[q.anchor], q.dx, q.dy);
                     s_widget[p][i] = b;
+                    if (c.label[0]) {
+                        lv_obj_t* bl = lv_label_create(cont);
+                        lv_obj_set_style_text_font(bl, &lv_font_montserrat_14, 0);
+                        lv_obj_set_style_text_color(bl, lv_color_hex(0x9AA0AA), 0);
+                        lv_label_set_text(bl, c.label);
+                        lv_obj_align_to(bl, b, LV_ALIGN_OUT_TOP_MID, 0, -6);
+                        s_sub1[p][i] = bl;
+                    }
                     break;
                 }
                 default: break;
@@ -187,9 +195,18 @@ void view_sync(Dashboard* d) {
             if (!w) continue;
             switch (c.type) {
                 case COMP_LABEL:
-                case COMP_READOUT:
                     lv_label_set_text(w, c.vstr);
                     break;
+                case COMP_READOUT: {
+                    if (c.label[0]) {
+                        char rb[TEXT_LEN * 2];
+                        snprintf(rb, sizeof(rb), "%s %s", c.label, c.vstr);
+                        lv_label_set_text(w, rb);
+                    } else {
+                        lv_label_set_text(w, c.vstr);
+                    }
+                    break;
+                }
                 case COMP_BAR:
                     lv_bar_set_value(w, c.value, LV_ANIM_OFF);
                     break;
