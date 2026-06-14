@@ -11,6 +11,7 @@
 #include "sound_comp.h"
 #include "nav_input.h"
 #include "touch_cst816.h"
+#include "persist.h"
 
 static WebServer server(HTTP_PORT);
 static Dashboard g_dash;
@@ -46,8 +47,12 @@ void setup() {
     touch_begin();
     lv_timer_handler();
     char err[80];
-    g_layout_json = view_default_layout();
-    dash_set_layout(&g_dash, g_layout_json.c_str(), err, sizeof(err));
+    persist_begin();
+    if (!persist_load(g_layout_json) ||
+        !dash_set_layout(&g_dash, g_layout_json.c_str(), err, sizeof(err))) {
+        g_layout_json = view_default_layout();          // fallback compile
+        dash_set_layout(&g_dash, g_layout_json.c_str(), err, sizeof(err));
+    }
     view_rebuild(&g_dash);
     led_ring_begin();
     sound_begin();

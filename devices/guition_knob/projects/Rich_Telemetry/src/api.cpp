@@ -6,6 +6,7 @@
 #include "config.h"
 #include "nav_input.h"
 #include "view.h"
+#include "persist.h"
 
 extern String g_layout_json;
 
@@ -57,6 +58,7 @@ static void h_set_layout() {
         return;
     }
     g_layout_json = body;
+    if (!persist_save(g_layout_json)) { S->send(500, "text/plain", "FS write failed\n"); return; }
     S->send(200, "application/json", "{\"ok\":true}\n");
 }
 
