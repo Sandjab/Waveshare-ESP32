@@ -1,0 +1,180 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "rich-telemetry/layout.schema.json",
+  "title": "Rich_Telemetry layout",
+  "description": "Contrat partage du layout.json entre le firmware embarque (consommateur, src/dashboard.cpp) et le designer WYSIWYG (producteur, designer/). SOURCE DE VERITE UNIQUE. Derive du parser dash_set_layout() + du README. Le firmware est tolerant (il ignore les cles inconnues) ; ce schema est volontairement plus strict (additionalProperties:false) pour que le designer attrape les fautes de frappe. Toute evolution du contrat = un commit dedie ici, merge sur master, puis rebase des branches embarque/designer.",
+  "type": "object",
+  "required": ["components", "pages"],
+  "additionalProperties": false,
+  "properties": {
+    "title": { "type": "string", "description": "Titre du dashboard (defaut \"\")." },
+    "background": { "$ref": "#/$defs/hexColor", "description": "Couleur de fond (defaut #000000)." },
+    "nav": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "wrap": { "type": "boolean", "description": "Navigation circulaire (derniere page -> premiere). Defaut true." }
+      }
+    },
+    "components": {
+      "type": "object",
+      "description": "Map id -> definition. AUCUNE position ici (la position vit dans pages[].place[]). Un meme id place sur plusieurs pages = un seul exemplaire, etat partage.",
+      "minProperties": 1,
+      "additionalProperties": { "$ref": "#/$defs/component" }
+    },
+    "pages": {
+      "type": "array",
+      "description": "Liste ordonnee de pages.",
+      "items": { "$ref": "#/$defs/page" }
+    }
+  },
+  "$defs": {
+    "hexColor": {
+      "type": "string",
+      "pattern": "^#[0-9A-Fa-f]{6}$",
+      "description": "Couleur #RRGGBB."
+    },
+    "ascii": {
+      "type": "string",
+      "pattern": "^[\\x00-\\x7F]*$",
+      "description": "ASCII uniquement : les polices Montserrat embarquees ne couvrent pas les accents/symboles non-ASCII."
+    },
+    "font": {
+      "enum": [14, 20, 28],
+      "description": "Taille de police LVGL embarquee. Defaut 20. Une autre valeur retombe sur le defaut cote firmware."
+    },
+    "threshold": {
+      "type": "array",
+      "description": "[limite, \"#hex\"] : la couleur s'applique quand la valeur passe SOUS la limite.",
+      "items": [
+        { "type": "number" },
+        { "$ref": "#/$defs/hexColor" }
+      ],
+      "minItems": 2,
+      "maxItems": 2,
+      "additionalItems": false
+    },
+    "anchor": {
+      "enum": [
+        "CENTER",
+        "TOP_MID", "BOTTOM_MID", "LEFT_MID", "RIGHT_MID",
+        "TOP_LEFT", "TOP_RIGHT", "BOTTOM_LEFT", "BOTTOM_RIGHT"
+      ],
+      "description": "Ancrage LVGL du placement. Defaut CENTER. (parse_anchor, dashboard.cpp)"
+    },
+    "component": {
+      "type": "object",
+      "required": ["type"],
+      "oneOf": [
+        { "$ref": "#/$defs/comp_label" },
+        { "$ref": "#/$defs/comp_readout" },
+        { "$ref": "#/$defs/comp_bar" },
+        { "$ref": "#/$defs/comp_ring" },
+        { "$ref": "#/$defs/comp_led_ring" },
+        { "$ref": "#/$defs/comp_sound" }
+      ]
+    },
+    "comp_label": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "label" },
+        "text": { "$ref": "#/$defs/ascii", "description": "Texte statique (peut etre remplace via /update avec une string)." },
+        "font": { "$ref": "#/$defs/font" },
+        "color": { "$ref": "#/$defs/hexColor" }
+      }
+    },
+    "comp_readout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "readout" },
+        "label": { "$ref": "#/$defs/ascii", "description": "Libelle affiche devant la valeur (ex. \"CPU\")." },
+        "unit": { "$ref": "#/$defs/ascii", "description": "Unite ASCII (%, GB, C, Mbps)." },
+        "font": { "$ref": "#/$defs/font" },
+        "color": { "$ref": "#/$defs/hexColor" }
+      }
+    },
+    "comp_bar": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "bar" },
+        "label": { "$ref": "#/$defs/ascii", "description": "Libelle affiche au-dessus de la barre." },
+        "min": { "type": "number", "description": "Defaut 0." },
+        "max": { "type": "number", "description": "Defaut 100." },
+        "color": { "$ref": "#/$defs/hexColor" }
+      }
+    },
+    "comp_ring": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "ring" },
+        "color": { "$ref": "#/$defs/hexColor" },
+        "pill": { "type": "boolean", "description": "Affiche un pill de pourcentage sur la partie haute de la bande." },
+        "countdown": { "type": "boolean", "description": "Decremente reset_in_s d'une unite/s et l'affiche dans l'ouverture." },
+        "min": { "type": "number", "description": "Defaut 0." },
+        "max": { "type": "number", "description": "Defaut 100." },
+        "thresholds": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/threshold" }
+        },
+        "center_pct": { "type": "boolean", "description": "RESERVE : non rendu en v1 (choix delibere, ne pas \"corriger\")." }
+      }
+    },
+    "comp_led_ring": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "led_ring" },
+        "color": { "$ref": "#/$defs/hexColor", "description": "Couleur par defaut." },
+        "brightness": { "type": "integer", "minimum": 0, "maximum": 255, "description": "Luminosite par defaut (defaut 64). Anneau physique 13x WS2812. Mode/valeur pousses via /update : off|solid|progress|spinner|blink|breathe." }
+      }
+    },
+    "comp_sound": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "sound" }
+      },
+      "description": "Buzzer physique, tir unique. Pas de geometrie. Declenche via /update : {\"tone\":Hz,\"ms\":N} ou {\"name\":\"ok|alert|error\"}."
+    },
+    "page": {
+      "type": "object",
+      "required": ["name", "place"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "description": "Nom de page (cible de POST /page {\"name\":...})." },
+        "place": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/placement" }
+        }
+      }
+    },
+    "placement": {
+      "type": "object",
+      "required": ["ref"],
+      "additionalProperties": false,
+      "description": "Place un composant (par ref) sur une page, avec sa geometrie. led_ring et sound n'ont pas de geometrie.",
+      "properties": {
+        "ref": { "type": "string", "description": "id d'un composant declare dans components. Doit resoudre, sinon le firmware rejette le layout." },
+        "anchor": { "$ref": "#/$defs/anchor" },
+        "dx": { "type": "integer", "description": "Offset horizontal depuis l'ancrage (defaut 0)." },
+        "dy": { "type": "integer", "description": "Offset vertical depuis l'ancrage (defaut 0)." },
+        "width": { "type": "integer", "description": "Largeur (bar). Defaut 0." },
+        "height": { "type": "integer", "description": "Hauteur (bar). Defaut 0." },
+        "radius": { "type": "integer", "description": "Rayon (ring). Anneaux concentriques = meme centre, radius differents. Defaut 0." },
+        "thickness": { "type": "integer", "description": "Epaisseur de bande (ring). Defaut 16." },
+        "gap_deg": { "type": "integer", "description": "Angle d'ouverture en bas (ring). Defaut 70." },
+        "start_angle": { "type": "integer", "description": "RESERVE : non utilise en v1 (l'ouverture est fixee en bas). Defaut 0." }
+      }
+    }
+  }
+}
