@@ -20,6 +20,7 @@ Variante très proche du [Waveshare ESP32-S3-Knob-Touch-LCD-1.8](https://www.wav
 | [Basic_LVGL_Meter](projects/Basic_LVGL_Meter/) | Cadran type compteur de vitesse 0-100 pilote par encoder | Display QSPI, LVGL `lv_meter`, encoder |
 | [Hue_Encoder](projects/Hue_Encoder/) | Roue de teintes HSV avec hex live ; tap pour toggle haptics | Display + LVGL, encoder, **DRV2605 haptics**, **CST816 touch** (port du Knob) |
 | [Basic_Audio_Multiviz](projects/Basic_Audio_Multiviz/) | 12 visualisations audio cyclées à la molette (esprit Winamp AVS) : spectrum radial, oscillo, bars, peak meter, lissajous, tunnel, beat bloom, starfield, geiss stripes, g-wave, kaléidoscope, matrix rain. OSD + tick haptique sur switch. | Mic PDM + FFT + 13 bandes log, display + LVGL, anneau 13 LEDs, encoder, DRV2605 haptics |
+| [Rich_Telemetry](projects/Rich_Telemetry/) | Dashboard config-driven (JSON) multi-pages : anneaux concentriques countdown, labels, readouts, barres ; anneau LED + son ; navigation encoder / swipe lateral / REST ; layout persiste en LittleFS | Display + LVGL, anneau 13 LEDs, WiFi STA, encoder, CST816 touch |
 
 ## Structure
 
@@ -35,7 +36,8 @@ devices/guition_knob/
 │   ├── Basic_Audio_Talkie/
 │   ├── Basic_Audio_Speak/
 │   ├── Basic_LVGL_Meter/
-│   └── Basic_Audio_Multiviz/
+│   ├── Basic_Audio_Multiviz/
+│   └── Rich_Telemetry/
 └── docs/
     ├── datasheets/                  # ST77916 INI, PCM5100A, ESP32-S3R8
     ├── demo-code/                   # Demo Guition (Arduino + ESP-IDF, dont led_strip)
