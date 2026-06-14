@@ -90,6 +90,7 @@ static void gesture_cb(lv_event_t* e) {
 void view_rebuild(Dashboard* d) {
     lv_obj_t* scr = lv_scr_act();
     lv_obj_clean(scr);
+    s_dots = nullptr;  // freed by lv_obj_clean above; drop stale pointer
     lv_obj_set_style_bg_color(scr, lv_color_hex(d->background), 0);
     lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
     s_dash_for_gesture = d;
@@ -139,7 +140,6 @@ void view_rebuild(Dashboard* d) {
         }
     }
     // points indicateurs (au-dessus des conteneurs de page)
-    if (s_dots) { lv_obj_del(s_dots); s_dots = nullptr; }
     if (d->page_count > 1) {
         s_dots = lv_obj_create(scr);
         lv_obj_remove_style_all(s_dots);
