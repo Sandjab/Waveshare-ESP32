@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rich_Telemetry — Designer (squelette)</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Rich_Telemetry — Designer <span class="tag">squelette</span></h1>
+    <div class="device">
+      <label>Device <input id="base" type="text" placeholder="http://192.168.1.35" size="22" /></label>
+      <button id="load">Charger depuis le device</button>
+      <button id="push">Pousser vers le device</button>
+      <span id="status" class="status"></span>
+    </div>
+  </header>
+
+  <main>
+    <section class="preview">
+      <h2>Aperçu (structure)</h2>
+      <!-- Le device Guition K718 est rond 360x360. Cet aperçu montre la STRUCTURE
+           des placements (marqueurs aux ancrages), pas le rendu fidèle des widgets.
+           TODO (session C) : remplacer par le vrai canvas WYSIWYG drag-and-drop. -->
+      <canvas id="canvas" width="360" height="360"></canvas>
+      <p class="hint">Page : <select id="page"></select></p>
+    </section>
+
+    <section class="editor">
+      <h2>layout.json</h2>
+      <textarea id="json" spellcheck="false" placeholder="Charge depuis le device, ou colle un layout…"></textarea>
+      <div class="row">
+        <button id="validate">Valider</button>
+        <button id="render">Rafraîchir l'aperçu</button>
+      </div>
+      <pre id="errors" class="errors"></pre>
+    </section>
+  </main>
+
+  <footer>
+    Contrat : <code>../schema/layout.schema.json</code> — source de vérité partagée avec le firmware.
+    Endpoints : <code>GET/POST /layout</code>, <code>POST /update</code>, <code>POST /page</code>, <code>GET /status</code>.
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
