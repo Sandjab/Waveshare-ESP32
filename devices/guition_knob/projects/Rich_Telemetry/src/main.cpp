@@ -76,8 +76,15 @@ void loop() {
         g_wifi_up = now;
     }
     if (g_dash.layout_dirty) view_rebuild(&g_dash);
+    // Décompte basé sur le temps réellement écoulé (pas un pas fixe de 1 s) : si la boucle
+    // ralentit (WiFi, LittleFS, HTTP), on rattrape les secondes perdues -> pas de dérive.
     static uint32_t last_sec = 0;
-    if (millis() - last_sec >= 1000) { last_sec = millis(); dash_tick_countdown(&g_dash, 1); }
+    uint32_t now_ms = millis();
+    if (now_ms - last_sec >= 1000) {
+        uint32_t elapsed = (now_ms - last_sec) / 1000;
+        last_sec += elapsed * 1000;
+        dash_tick_countdown(&g_dash, elapsed);
+    }
     if (g_dash.values_dirty) view_sync(&g_dash);
     static uint32_t last_led = 0;
     if (millis() - last_led >= 33) { last_led = millis(); led_ring_tick(&g_dash, millis()); }

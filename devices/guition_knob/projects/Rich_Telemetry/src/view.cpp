@@ -99,6 +99,7 @@ void view_rebuild(Dashboard* d) {
         lv_obj_add_event_cb(scr, gesture_cb, LV_EVENT_GESTURE, nullptr);
         s_gesture_cb_added = true;
     }
+    memset(s_page_cont, 0, sizeof(s_page_cont));
     memset(s_widget, 0, sizeof(s_widget));
     memset(s_sub1, 0, sizeof(s_sub1)); memset(s_sub2, 0, sizeof(s_sub2));
 

@@ -42,7 +42,10 @@ void touch_begin() {
     tcfg.x_max = LCD_H_RES; tcfg.y_max = LCD_V_RES;
     tcfg.rst_gpio_num = (gpio_num_t)PIN_TOUCH_RST;
     tcfg.int_gpio_num = (gpio_num_t)PIN_TOUCH_INT;
-    esp_lcd_touch_new_i2c_cst816s(io, &tcfg, &tp);
+    if (esp_lcd_touch_new_i2c_cst816s(io, &tcfg, &tp) != ESP_OK) {
+        tp = nullptr;
+        return;   // CST816 absent/échec : pas d'indev tactile (encodeur + REST restent dispos)
+    }
 
     static lv_indev_drv_t drv;
     lv_indev_drv_init(&drv);
