@@ -54,3 +54,5 @@ reste l'arbitre final.** Conséquences à connaître :
 - Le **ring est toujours centré** (le firmware fait `lv_obj_center`) : `anchor`/`dx`/`dy` sont ignorés pour un ring ;
   dans l'éditeur il n'est que redimensionnable (radius / thickness / gap_deg).
 - Tout changement de rendu firmware (nouveau widget, nouveau style) **doit être répliqué** dans `js/render.js`.
+- Le **positionnement vertical de la pastille `%` et de la légende countdown** du ring est approximatif :
+  l'offset diffère légèrement de l'alignement firmware (`lv_obj_align`, view.cpp:42-44). Cosmétique.
