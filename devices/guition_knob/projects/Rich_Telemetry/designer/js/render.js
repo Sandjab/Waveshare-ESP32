@@ -153,7 +153,7 @@ export function buildRing(comp, placement, mock = MOCKS.ring) {
   if (comp.pill) {                            // pastille % en haut de bande (view.cpp:66-74)
     const pill = document.createElement('div');
     pill.className = 'w-ring-pill';
-    pill.textContent = `${Math.round(mock.value)}%`;
+    pill.textContent = `${Math.trunc(mock.value)}%`; // tronque comme (long)c.value, view.cpp:220
     pill.style.background = col;
     pill.style.top = th + 'px';
     wrap.appendChild(pill);

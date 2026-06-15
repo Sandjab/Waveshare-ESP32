@@ -9,6 +9,7 @@ test('pickFontPx retombe sur les 3 tailles LVGL', () => {
   assert.equal(pickFontPx(28), 28);
   assert.equal(pickFontPx(20), 20);
   assert.equal(pickFontPx(14), 14);
+  assert.equal(pickFontPx(27), 20); // entre 20 et 28 → 20
   assert.equal(pickFontPx(11), 14); // toute autre valeur → 14
 });
 
@@ -34,6 +35,7 @@ test('formatValue : entier brut, sinon 1 décimale, + unité', () => {
 });
 
 test('formatRemaining miroir du firmware', () => {
+  assert.equal(formatRemaining(0), '0s');
   assert.equal(formatRemaining(45), '45s');
   assert.equal(formatRemaining(90), '1m');
   assert.equal(formatRemaining(3661), '1h01');
