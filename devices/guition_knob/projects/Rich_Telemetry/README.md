@@ -58,12 +58,12 @@ Anneau circulaire avec ouverture en bas. Paramètres de config :
 
 - `color` : couleur par défaut (hex).
 - `pill` : `true` → affiche un pill de pourcentage sur la partie haute de la bande.
-- `center_pct` : réservé (non rendu en v1).
+- `center_pct` : `true` → affiche `valeur + unité` au centre de l'anneau, en grand (police = champ `font` du composant, p. ex. `28`). Exclusif avec `pill` (si les deux sont à `true`, `center_pct` gagne). Limite : unités non-ASCII (`°`, `µ`) non rendues — utiliser `%`, `C`, `V`, `rpm`…
 - `countdown` : `true` → décrémente `reset_in_s` d'une unité par seconde et l'affiche dans l'ouverture (ex. `1h50`, `5j6h`, `45s`). On peut aussi pousser une `"caption"` littérale.
 - `min` / `max` : plage (défaut 0/100).
 - `thresholds` : liste `[[limite, "#hex"], ...]` — la couleur change quand la valeur passe sous la limite.
 
-Géométrie (sur le placement dans `pages`) : `radius`, `thickness`, `gap_deg` (angle d'ouverture). L'ouverture est fixée en bas en v1.
+Géométrie (sur le placement dans `pages`) : `radius`, `thickness`, `gap_deg` (angle d'ouverture), `start_angle` (oriente l'ouverture : offset en degrés horaire depuis le bas — `0`=bas, `90`=gauche, `180`=haut, `270`=droite ; défaut `0`).
 
 Deux anneaux concentriques = même centre, `radius` différents :
 
