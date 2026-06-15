@@ -43,3 +43,14 @@ Le firmware (`WebServer` ESP32) ne renvoie pas d'en-têtes CORS. Depuis un autre
 ## ASCII uniquement
 
 `text`/`label`/`unit` doivent rester ASCII (polices Montserrat embarquées). Le designer devra le signaler (le schéma le contraint déjà via `$defs/ascii`).
+
+## Aperçu : indicatif, pas pixel-exact
+
+Le canvas est une **2e implémentation** du rendu (la 1re étant le firmware, `src/view.cpp` + `src/dashboard.cpp`).
+Il vise le « best-effort » : positions et métriques à quelques pixels près, polices approchées. **Le device
+reste l'arbitre final.** Conséquences à connaître :
+
+- Les **valeurs affichées sont des mocks** (voir `MOCKS` dans `js/render.js`) ; à l'exécution, `/update` les remplace.
+- Le **ring est toujours centré** (le firmware fait `lv_obj_center`) : `anchor`/`dx`/`dy` sont ignorés pour un ring ;
+  dans l'éditeur il n'est que redimensionnable (radius / thickness / gap_deg).
+- Tout changement de rendu firmware (nouveau widget, nouveau style) **doit être répliqué** dans `js/render.js`.
