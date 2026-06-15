@@ -67,7 +67,9 @@ Solution : forcer le **ROM bootloader** de l'ESP32-S3 en mode download manuel :
 2. Brancher le câble USB (ou appuyer brièvement sur **RESET** si déjà branché)
 3. Relâcher BOOT
 
-La carte ré-énumère alors en `VID:PID=303A:1001` ("USB JTAG_serial debug unit" / Espressif) avec un `/dev/cu.usbmodem*` (ou `COM*`) exposé. À partir de là, `./build.sh guition_knob <projet> --upload` (ou `.\build.ps1 ... -Upload`) trouve le port et flashe normalement.
+La carte ré-énumère alors en `VID:PID=303A:1001` ("USB JTAG_serial debug unit" / Espressif) avec un `/dev/cu.usbmodem*` (ou `COM*`) exposé. À partir de là, `./build.sh guition_knob <projet> --upload` (ou `.\build.ps1 ... -Upload`) trouve le port et flashe.
+
+> **Gotcha premier flash — ne pas re-lire le MAC entre le mode download et le flash.** Toute lecture du MAC par esptool (`tools/device_mac.py scan`, ou le device-check que `build.sh --upload` lance par défaut) se termine par un **hard reset** ; sur un device encore en firmware vendor, ce reset rebascule sur le vendor (303A:4001, pas de CDC) et le port `usbmodem` du mode download **disparaît**. Donc pour le tout premier flash d'un device neuf : (1) repérer le MAC une fois via `scan` et l'enregistrer dans `devices.local.yaml`, (2) **remettre la carte en mode download**, (3) flasher **en un seul coup** avec `--no-device-check` (le MAC est déjà confirmé) — sans re-scan ni device-check intermédiaire. Confirmé sur l'enrôlement d'un 2ᵉ Guition noir — 2026-06-15.
 
 Note : le firmware vendor a aussi un **mode USB Mass Storage** (monté en FAT32 503 MB sur `/Volumes/NO NAME` côté Mac, `COM*` MSC côté Windows), mais ce n'est **pas** le mode par défaut au boot — il faut l'activer explicitement via une entrée de menu (« reboot to MSC ») sur l'écran. Donc on ne tombe dessus que volontairement.
 
