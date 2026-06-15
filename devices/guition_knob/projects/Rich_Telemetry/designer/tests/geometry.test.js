@@ -47,3 +47,39 @@ test('nearestAnchor près du coin bas-droit → BOTTOM_RIGHT', () => {
   // coin bas-droit du widget proche de (360,360)
   assert.equal(nearestAnchor(275, 315, 80, 40), 'BOTTOM_RIGHT');
 });
+
+import {
+  resizeBox, ringRadiusAt, ringThicknessAt, gapDegAt, cornersOutsideCircle
+} from '../js/geometry.js';
+
+test('resizeBox agrandit selon le delta pointeur', () => {
+  assert.deepEqual(resizeBox(200, 16, 40, 10), { width: 240, height: 26 });
+});
+
+test('resizeBox clampe au minimum', () => {
+  assert.deepEqual(resizeBox(200, 16, -1000, -1000, 8), { width: 8, height: 8 });
+});
+
+test('ringRadiusAt = distance centre→pointeur', () => {
+  assert.equal(ringRadiusAt(180, 0), 180); // centre (180,180), pointeur en haut → 180
+});
+
+test('ringThicknessAt = rayon − distance centre→pointeur', () => {
+  assert.equal(ringThicknessAt(180, 30, 176), 26); // dist=150, 176-150=26
+});
+
+test('gapDegAt = 0 quand le pointeur est droit en bas', () => {
+  assert.equal(gapDegAt(180, 300), 0);
+});
+
+test('gapDegAt = 2× écart à la verticale basse', () => {
+  assert.equal(gapDegAt(130, 230), 90); // angle 135°, |135−90|=45, ×2=90
+});
+
+test('cornersOutsideCircle : boîte centrée → dedans', () => {
+  assert.equal(cornersOutsideCircle(160, 170, 40, 20), false);
+});
+
+test('cornersOutsideCircle : coin TOP_LEFT → dehors (écran rond)', () => {
+  assert.equal(cornersOutsideCircle(0, 0, 40, 20), true);
+});

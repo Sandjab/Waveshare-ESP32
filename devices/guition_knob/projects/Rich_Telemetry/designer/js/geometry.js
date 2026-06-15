@@ -47,3 +47,39 @@ export function placeAt(anchor, dx, dy, w, h) {
   const y = py - (anchor.startsWith('TOP') ? 0 : anchor.startsWith('BOTTOM') ? h : h / 2);
   return { x: Math.round(x), y: Math.round(y) };
 }
+
+// --- Plan B : redimensionnement + conscience de l'écran rond (net-new, consommé par canvas.js) ---
+
+// Bar : redim depuis la poignée bas-droite. dxPx/dyPx = déplacement pointeur en px écran (1:1).
+export function resizeBox(startW, startH, dxPx, dyPx, min = 8) {
+  return {
+    width:  Math.max(min, Math.round(startW + dxPx)),
+    height: Math.max(min, Math.round(startH + dyPx))
+  };
+}
+
+// Ring : rayon = distance centre→pointeur (poignée bord externe).
+export function ringRadiusAt(px, py, cx = SCREEN / 2, cy = SCREEN / 2, min = 8) {
+  return Math.max(min, Math.round(Math.hypot(px - cx, py - cy)));
+}
+
+// Ring : épaisseur de bande = rayon − distance centre→pointeur (poignée bord interne).
+export function ringThicknessAt(px, py, radius, cx = SCREEN / 2, cy = SCREEN / 2, min = 1) {
+  return Math.max(min, Math.round(radius - Math.hypot(px - cx, py - cy)));
+}
+
+// Ring : ouverture = 2×|angle(pointeur) − bas|. L'ouverture est centrée en bas (90°,
+// convention écran y-vers-le-bas = convention LVGL). cf. lv_arc_set_bg_angles (view.cpp:54).
+export function gapDegAt(px, py, cx = SCREEN / 2, cy = SCREEN / 2) {
+  const deg = Math.atan2(py - cy, px - cx) * 180 / Math.PI; // 0=droite, 90=bas
+  const fromBottom = Math.abs(deg - 90);
+  return Math.max(0, Math.min(180, Math.round(2 * fromBottom)));
+}
+
+// Écran rond / parent carré : un coin de la boîte sort-il du cercle visible
+// (centre SCREEN/2, rayon SCREEN/2) ? Rappel pédagogique (spec § « écran rond »).
+export function cornersOutsideCircle(x, y, w, h, screen = SCREEN) {
+  const c = screen / 2, R = screen / 2;
+  const corners = [[x, y], [x + w, y], [x, y + h], [x + w, y + h]];
+  return corners.some(([px, py]) => Math.hypot(px - c, py - c) > R);
+}
