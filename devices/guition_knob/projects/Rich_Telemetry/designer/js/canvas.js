@@ -209,5 +209,8 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
 
   model.subscribe(render);
   render();
+  // La webfont Montserrat (font-display:swap) charge en asynchrone : le 1er render mesure
+  // avant le swap → centrage à ~8px près. Re-render une fois la police prête (fidélité).
+  if (document.fonts?.ready) document.fonts.ready.then(render);
   return { render, getSelected: () => selected };
 }
