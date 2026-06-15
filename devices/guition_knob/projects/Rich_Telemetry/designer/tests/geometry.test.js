@@ -76,6 +76,10 @@ test('gapDegAt = 2× écart à la verticale basse', () => {
   assert.equal(gapDegAt(130, 230), 90); // angle 135°, |135−90|=45, ×2=90
 });
 
+test('gapDegAt = 180 quand le pointeur est droit en haut', () => {
+  assert.equal(gapDegAt(180, 60), 180); // dist=120, atan2(-120,0)=-90°, |−90−90|=180
+});
+
 test('cornersOutsideCircle : boîte centrée → dedans', () => {
   assert.equal(cornersOutsideCircle(160, 170, 40, 20), false);
 });
