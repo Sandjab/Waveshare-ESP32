@@ -1,17 +1,18 @@
-# Rich_Telemetry — Designer (squelette)
+# Rich_Telemetry — Designer
 
 IHM WYSIWYG **autonome** pour concevoir le `layout.json` de Rich_Telemetry et le pousser au device. Web app statique : aucune dépendance, aucun build, cross-platform (navigateur). **Ne touche pas au firmware.**
 
-> État : **squelette**. Charge/pousse le layout, valide les invariants de base, affiche un aperçu de *structure*. Le vrai éditeur WYSIWYG (palette de composants, drag-and-drop, rendu fidèle des widgets, undo) reste à concevoir — voir les `TODO (session C)` dans `app.js`. Cette conception mérite son propre brainstorming.
+> État : **fondation (Plan A) en place** — édition via le panneau *JSON avancé* avec validation live contre le schéma (ajv), undo/redo, et load/push `/layout` vers le device. L'éditeur WYSIWYG visuel (palette, canvas drag-and-drop, rendu des widgets, inspecteur) reste à construire — Plans B/C (voir `specs/` et `plans/`).
 
 ## Lancer
 
-À cause de la politique CORS / `file://`, sers le dossier plutôt que d'ouvrir `index.html` en double-clic :
+À cause de la politique CORS / `file://`, sers le dossier plutôt que d'ouvrir `index.html` en double-clic. De plus, le designer charge le schéma partagé via `../schema/layout.schema.json` — il faut donc **servir depuis le dossier parent** `Rich_Telemetry/` (pas depuis `designer/`) afin que `schema/` soit accessible sur le même origin :
 
 ```bash
-cd devices/guition_knob/projects/Rich_Telemetry/designer
+# Servir depuis le dossier parent pour que ../schema soit accessible
+cd devices/guition_knob/projects/Rich_Telemetry
 python3 -m http.server 8000
-# puis http://localhost:8000
+# puis http://localhost:8000/designer/
 ```
 
 ## Contrat partagé
