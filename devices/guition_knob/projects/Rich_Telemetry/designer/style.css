@@ -42,7 +42,9 @@ textarea { width: 100%; height: 220px; background: #070d17; color: #cbd5e1; bord
   width: 360px; height: 360px;     /* 1 px CSS = 1 unité écran (échelle 1:1) */
   border-radius: 50%;
   background: #000;
-  overflow: hidden;
+  /* PAS d'overflow:hidden : il clipperait les poignées de redim (handle-br, poignées
+     de ring) près du bord. Le rendu rond vient du border-radius + .screen-circle ;
+     un widget hors-cercle est signalé par .w.outside, pas clippé. */
   flex: none;
   touch-action: none;              /* pointer events propres (pas de scroll/zoom) */
 }
