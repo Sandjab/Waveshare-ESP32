@@ -4,6 +4,8 @@
 #include <lvgl.h>
 #include <string.h>
 #include <cstdio>
+#include <math.h>
+#include "format.h"
 
 static lv_obj_t* s_page_cont[MAX_PAGES];
 static lv_obj_t* s_widget[MAX_PAGES][MAX_PLACEMENTS_PER_PAGE];
@@ -34,14 +36,30 @@ const char* view_default_layout() {
         "{\"ref\":\"w7d\",\"radius\":141,\"thickness\":16,\"gap_deg\":70}]}]}";
 }
 
-// Place les labels d'une couronne : légende dans l'ouverture du bas, pastille sur le haut
-// de la bande. Offset = rayon - épaisseur (bord interne de la bande) -> suit le diamètre.
-// À rappeler après chaque set_text : LVGL recalcule alors le centrage sur la taille réelle
-// du label (sinon il grandit vers la droite depuis sa position posée à vide -> décalé).
-static void ring_place_labels(lv_obj_t* arc, lv_obj_t* cap, lv_obj_t* pill, const Placement& q) {
-    int off = q.radius - q.thickness;
-    if (cap)  lv_obj_align_to(cap,  arc, LV_ALIGN_CENTER, 0,  off);   // bas
-    if (pill) lv_obj_align_to(pill, arc, LV_ALIGN_CENTER, 0, -off);   // haut
+// Place les labels d'une couronne autour de son ouverture. L'ouverture est centrée
+// sur l'angle (90 + start_angle) en convention LVGL (0=droite, 90=bas, horaire).
+// - cap (légende/countdown) : DANS l'ouverture.
+// - slot2 : soit la pastille (à l'opposé de l'ouverture), soit la lecture centrale
+//   (au centre géométrique) selon slot2_center.
+// À rappeler après chaque set_text (LVGL recentre sur la taille réelle du label).
+static void ring_place_labels(lv_obj_t* arc, lv_obj_t* cap, lv_obj_t* slot2,
+                              const Placement& q, bool slot2_center) {
+    const float DEG2RAD = 0.01745329252f;
+    int r = q.radius - q.thickness;
+    if (cap) {
+        float a = (90 + q.start_angle) * DEG2RAD;          // dans l'ouverture
+        lv_obj_align_to(cap, arc, LV_ALIGN_CENTER,
+                        (int)roundf(r * cosf(a)), (int)roundf(r * sinf(a)));
+    }
+    if (slot2) {
+        if (slot2_center) {
+            lv_obj_align_to(slot2, arc, LV_ALIGN_CENTER, 0, 0);   // centre
+        } else {
+            float a = (270 + q.start_angle) * DEG2RAD;     // opposé de l'ouverture
+            lv_obj_align_to(slot2, arc, LV_ALIGN_CENTER,
+                            (int)roundf(r * cosf(a)), (int)roundf(r * sinf(a)));
+        }
+    }
 }
 
 static void build_ring(lv_obj_t* parent, Component& c, Placement& q,
@@ -51,7 +69,8 @@ static void build_ring(lv_obj_t* parent, Component& c, Placement& q,
     lv_obj_center(arc);
     lv_obj_remove_style(arc, NULL, LV_PART_KNOB);
     lv_obj_clear_flag(arc, LV_OBJ_FLAG_CLICKABLE);
-    lv_arc_set_bg_angles(arc, 90 + q.gap_deg / 2, 90 - q.gap_deg / 2);
+    lv_arc_set_bg_angles(arc, 90 + q.start_angle + q.gap_deg / 2,
+                              90 + q.start_angle - q.gap_deg / 2);
     lv_arc_set_range(arc, c.vmin, c.vmax);
     lv_obj_set_style_arc_width(arc, q.thickness, LV_PART_MAIN);
     lv_obj_set_style_arc_width(arc, q.thickness, LV_PART_INDICATOR);
@@ -63,7 +82,12 @@ static void build_ring(lv_obj_t* parent, Component& c, Placement& q,
     lv_obj_set_style_text_color(*cap, lv_color_hex(c.color), 0);
     lv_label_set_text(*cap, "");
 
-    if (c.pill) {
+    if (c.center_pct) {                       // lecture centrale (prioritaire sur la pastille)
+        *pill = lv_label_create(parent);
+        lv_obj_set_style_text_font(*pill, pick_font(c.font), 0);
+        lv_obj_set_style_text_color(*pill, lv_color_hex(c.color), 0);
+        lv_label_set_text(*pill, "");
+    } else if (c.pill) {                       // pastille de pourcentage (inchangé)
         *pill = lv_label_create(parent);
         lv_obj_set_style_bg_opa(*pill, LV_OPA_COVER, 0);
         lv_obj_set_style_bg_color(*pill, lv_color_hex(c.color), 0);
@@ -72,7 +96,7 @@ static void build_ring(lv_obj_t* parent, Component& c, Placement& q,
         lv_obj_set_style_pad_hor(*pill, 8, 0); lv_obj_set_style_pad_ver(*pill, 3, 0);
         lv_label_set_text(*pill, "0%");
     }
-    ring_place_labels(arc, *cap, c.pill ? *pill : nullptr, q);
+    ring_place_labels(arc, *cap, (c.center_pct || c.pill) ? *pill : nullptr, q, c.center_pct);
 }
 
 // Swipe -> navigation. L'objet ecran persiste a travers les rebuilds (lv_obj_clean
@@ -217,11 +241,16 @@ void view_sync(Dashboard* d) {
                     lv_arc_set_value(w, c.value);
                     if (s_sub1[p][i]) lv_label_set_text(s_sub1[p][i], c.caption);
                     if (s_sub2[p][i]) {
-                        char pb[8]; snprintf(pb, sizeof(pb), "%ld%%", (long)c.value);
-                        lv_label_set_text(s_sub2[p][i], pb);
-                        lv_obj_set_style_bg_color(s_sub2[p][i], lv_color_hex(col), 0);
+                        if (c.center_pct) {
+                            char cb[24]; format_value((double)c.value, c.unit, cb, sizeof(cb));
+                            lv_label_set_text(s_sub2[p][i], cb);
+                        } else {
+                            char pb[8]; snprintf(pb, sizeof(pb), "%ld%%", (long)c.value);
+                            lv_label_set_text(s_sub2[p][i], pb);
+                            lv_obj_set_style_bg_color(s_sub2[p][i], lv_color_hex(col), 0);
+                        }
                     }
-                    ring_place_labels(w, s_sub1[p][i], s_sub2[p][i], q);  // re-centre après set_text
+                    ring_place_labels(w, s_sub1[p][i], s_sub2[p][i], q, c.center_pct);
                     break;
                 }
                 default: break;
