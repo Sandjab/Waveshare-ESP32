@@ -56,11 +56,11 @@ LVGL (`dx = r·cos θ`, `dy = r·sin θ`, y vers le bas) :
 `start_angle = 0` ⇒ `cap` en bas, `pill` en haut : identique à la v1.
 
 ### `center_pct`
-Label centré affichant `value` concaténé à `unit`, **sans espace inséré**
-(cohérent avec le `pill` qui fait déjà `value%`). Ex. `72%`, `61C`, `1500rpm` ;
-`72` seul si `unit` vide. Pour un séparateur, l'inclure dans `unit`
-(ex. `unit: " rpm"` → `1500 rpm`). Mis à jour dans la branche `COMP_RING` de
-l'update, au même titre que l'indicateur d'arc.
+Label centré réutilisant le helper existant `format_value(value, unit, …)`
+(déjà testé) → **valeur, espace, unité** : `72 %`, `61 C`, `1500 rpm` ; `72`
+seul si `unit` vide. Cohérent avec les readouts du projet, et évite de réinventer
+un format (DRY). Mis à jour dans la branche `COMP_RING` de l'update, au même
+titre que l'indicateur d'arc.
 
 ## Limite assumée
 
