@@ -64,6 +64,30 @@ void test_layout_types_and_geom(void) {
     TEST_ASSERT_EQUAL_INT(140, d.pages[0].places[0].radius);
     TEST_ASSERT_EQUAL_INT(A_CENTER, d.pages[0].places[1].anchor);
 }
+static const char* LAYOUT_RING_OPTS =
+  "{\"title\":\"T\",\"background\":\"#000000\","
+  "\"components\":{\"g\":{\"type\":\"ring\",\"color\":\"#38BDF8\","
+                        "\"center_pct\":true,\"unit\":\"C\"}},"
+  "\"pages\":[{\"name\":\"p\",\"place\":[{\"ref\":\"g\","
+             "\"radius\":140,\"thickness\":16,\"gap_deg\":70,\"start_angle\":90}]}]}";
+
+void test_ring_center_pct_parsed(void) {
+    Dashboard d{}; char err[80];
+    TEST_ASSERT_TRUE(dash_set_layout(&d, LAYOUT_RING_OPTS, err, sizeof(err)));
+    int ig = dash_find(&d, "g");
+    TEST_ASSERT_TRUE(d.components[ig].center_pct);
+    TEST_ASSERT_EQUAL_STRING("C", d.components[ig].unit);
+}
+void test_ring_start_angle_parsed(void) {
+    Dashboard d{}; char err[80];
+    dash_set_layout(&d, LAYOUT_RING_OPTS, err, sizeof(err));
+    TEST_ASSERT_EQUAL_INT(90, d.pages[0].places[0].start_angle);
+}
+void test_ring_start_angle_default_zero(void) {
+    Dashboard d{}; char err[80];
+    dash_set_layout(&d, LAYOUT_OK, err, sizeof(err));   // LAYOUT_OK ne définit pas start_angle
+    TEST_ASSERT_EQUAL_INT(0, d.pages[0].places[0].start_angle);
+}
 void test_layout_unknown_type_rejected(void) {
     Dashboard d{}; char err[80];
     const char* bad = "{\"components\":{\"x\":{\"type\":\"frobnicator\"}},\"pages\":[]}";
@@ -155,6 +179,9 @@ int main(int, char**) {
     RUN_TEST(test_update_unknown_reported_not_applied);
     RUN_TEST(test_layout_parse_counts);
     RUN_TEST(test_layout_types_and_geom);
+    RUN_TEST(test_ring_center_pct_parsed);
+    RUN_TEST(test_ring_start_angle_parsed);
+    RUN_TEST(test_ring_start_angle_default_zero);
     RUN_TEST(test_layout_unknown_type_rejected);
     RUN_TEST(test_layout_invalid_keeps_old);
     RUN_TEST(test_hex_parse);
