@@ -15,7 +15,7 @@ test('layout par défaut est valide', () => {
 
 test('type de composant inconnu → invalide', () => {
   const bad = structuredClone(DEFAULT_LAYOUT);
-  bad.components.hello.type = 'wat';
+  bad.components.titre.type = 'wat';
   assert.equal(validate(bad).valid, false);
 });
 

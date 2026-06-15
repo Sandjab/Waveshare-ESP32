@@ -2,6 +2,7 @@ import { createModel } from './model.js';
 import { createValidator } from './validate.js';
 import { bindJsonView } from './json-view.js';
 import { loadLayout, pushLayout } from './device.js';
+import { createCanvas } from './canvas.js';
 
 const $ = id => document.getElementById(id);
 
@@ -20,6 +21,11 @@ async function main() {
   }
   const validate = createValidator(schema);
   const model = createModel();
+
+  // Canvas WYSIWYG (page 0). La sélection sera consommée par l'inspecteur en Plan C.
+  createCanvas({ stage: $('stage'), badges: $('badges') }, model, {
+    onSelect: () => {}
+  });
 
   bindJsonView(model, {
     textarea: $('json'), applyBtn: $('apply'), validEl: $('valid'), errorsEl: $('errors')
