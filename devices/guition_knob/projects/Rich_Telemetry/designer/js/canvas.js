@@ -56,7 +56,7 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
       node.dataset.pi = i;
       stage.appendChild(node);                   // append avant de mesurer
       position(node, pl, comp);
-      node.addEventListener('pointerdown', e => onPointerDown(e, i, node, comp, pl));
+      node.addEventListener('pointerdown', e => onPointerDown(e, i, node, comp));
     });
     applySelection();
   }
@@ -81,7 +81,7 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
   }
 
   // --- Drag (label/readout/bar) : aperçu live, UN SEUL commit au drop (piège HANDOFF a) ---
-  function onPointerDown(e, i, node, comp, pl) {
+  function onPointerDown(e, i, node, comp) {
     if (e.target.classList.contains('handle')) return; // laisser le resize gérer
     select(i);
     if (!DRAGGABLE.has(comp.type)) return;             // ring : centré, non déplaçable
@@ -178,7 +178,9 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
         const sr = stage.getBoundingClientRect();
         h.setPointerCapture(e.pointerId);
         let g = geo();
+        let moved = false;
         const move = ev => {
+          moved = true;
           const px = ev.clientX - sr.left, py = ev.clientY - sr.top; // coords écran
           const base = geo();
           if (kind === 'radius')      g = { ...base, r:  ringRadiusAt(px, py) };
@@ -189,7 +191,7 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
         const up = () => {
           h.releasePointerCapture(e.pointerId);
           h.removeEventListener('pointermove', move); h.removeEventListener('pointerup', up);
-          model.commit(s => {
+          if (moved) model.commit(s => {
             const q = s.pages[0].place[i];
             q.radius = g.r; q.thickness = g.th; q.gap_deg = g.gap;
           });
