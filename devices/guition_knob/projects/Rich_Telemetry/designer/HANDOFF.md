@@ -4,7 +4,9 @@
 
 ## TL;DR
 
-L'éditeur WYSIWYG du designer est découpé en **3 plans séquentiels (A/B/C)**. **Les Plans A (fondation) et B (canvas WYSIWYG) sont implémentés, testés, revus et vérifiés en navigateur.** **Le Plan C reste à écrire et exécuter** (palette, inspecteur, pages CRUD, file-io, mutations dédiées `model.js`). Tout vit sur la branche **`feat/rt-designer`** (non mergée).
+L'éditeur WYSIWYG du designer est découpé en plans séquentiels. **Plans A (fondation) et B (canvas WYSIWYG) : implémentés, testés, revus, vérifiés navigateur.** Le « Plan C » a été **scindé en C1 + C2** : **C1 (palette + inspecteur = édition mono-page) est ÉCRIT mais PAS encore exécuté** (`plans/2026-06-16-wysiwyg-editor-plan-c1-panels.md`) ; **C2 (pages CRUD + canvas multi-pages + file-io + humanisation ajv + bibliothèque inter-pages) reste à écrire et exécuter**. Tout vit sur la branche **`feat/rt-designer`** (non mergée).
+
+**Reprise immédiate :** exécuter C1 en subagent-driven (le plan est prêt) — cf. « Process de reprise » en bas.
 
 ## Branche & base
 
@@ -42,7 +44,7 @@ e2f4b13 Plan A implementation plan
 
 ```bash
 cd devices/guition_knob/projects/Rich_Telemetry/designer
-node --test                 # 25 tests (logique pure)
+node --test                 # 43 tests (geometry/model/validate/render) au post-Plan B
 
 # Servir : DEPUIS LE PARENT (pour que ../schema soit accessible en HTTP)
 cd ..                       # → Rich_Telemetry/
@@ -67,21 +69,40 @@ Implémenté en subagent-driven (plan : `plans/2026-06-15-wysiwyg-editor-plan-b-
 
 ## Ce qui reste
 
-### Plan C — Panneaux & fichier (à écrire + exécuter)
-- `js/palette.js` (6 types + bibliothèque de composants partagés inter-pages), `js/inspector.js` (props par type + éditeur de `thresholds` + valeur mock + **signalement ASCII** + **humaniser les messages d'erreur ajv** — actuellement bruts type `/background must match pattern`), `js/pages.js` (CRUD + réordonner), `js/file-io.js` (export/import `layout.json`).
-- Ajouter des **mutations dédiées** à `model.js` (`addComponent`, `placeOnPage`, page CRUD…) en **TDD `node --test`** (l'API actuelle `commit(mutator)` est volontairement minimale, extension prévue).
-- **À reprendre dans `canvas.js` quand Plan C arrive** (notes de la revue holistique B) : (a) la sélection est un **index** dans `pages[0].place` — OK tant que les placements sont stables, mais le CRUD de Plan C (suppression/réordre) doit **re-keyer la sélection sur une référence stable** (id/objet) ; (b) le canvas est **câblé en dur sur `pages[0]`** (`render`, les 3 closures de commit, `placements()`) — le multi-pages doit **propager l'index de page active** ; (c) `onSelect` est un no-op câblé dans `app.js`, prêt pour l'inspecteur.
+### Plan C1 — Édition (palette + inspecteur) — ÉCRIT, à EXÉCUTER
+
+Plan complet : **`plans/2026-06-16-wysiwyg-editor-plan-c1-panels.md`** (6 tâches, code verbatim). Donne un **éditeur mono-page complet** (créer/éditer/supprimer des widgets à la souris, sans toucher au JSON). Lots :
+1. `js/mutations.js` — ops layout pures (uniqueId, addComponent, addPlacement, removePlacement, setComponentProp/PlacementProp, setThresholds) + DEFAULTS par type, **TDD `node --test`**.
+2. `js/mocks.js` — store des valeurs d'aperçu par composant (hors layout), **testé**.
+3. `js/canvas.js` (modif) — mocks par composant, `onSelect {placeIndex, ref}`, `selectPlacement(i)`.
+4. `js/palette.js` — 6 types, **drag→canvas crée + place + sélectionne** (HTML5 DnD).
+5. `js/inspector.js` — props par type (table de descripteurs) + **signalement ASCII** + supprimer.
+6. inspecteur — géométrie de placement + éditeur de `thresholds` du ring + valeur mock.
+
+**Décisions C1 verrouillées** (cf. § « Décisions prises » du plan C1) : mutations dans un **module pur** appelé via `model.commit` (pas des méthodes du model) ; édition committée sur **`change`** (1 undo/édition), ASCII signalé en live ; **mocks hors modèle** (re-render canvas, **pas d'undo**, pas dans `layout.json`) ; **badges led_ring/sound non sélectionnables au canvas en C1** (édition via JSON avancé en attendant C2) ; **création palette = drag→canvas** (choix user). C1 reste **câblé sur `pages[0]`** (assumé).
+
+### Plan C2 — Pages & fichier (à ÉCRIRE puis exécuter)
+- `js/pages.js` : onglets de pages **CRUD + réordonner** ; **canvas multi-pages** (afficher la page active, pas seulement `pages[0]`).
+- `js/file-io.js` : **export / import** `layout.json` (filet indépendant du device).
+- **Humaniser les messages d'erreur ajv** (actuellement bruts type `/background must match pattern`) dans le panneau d'erreurs.
+- **Bibliothèque de composants partagés inter-pages** (glisser un composant existant sur une autre page = le partager) — reportée de C1 car sa valeur est cross-page.
+- **Refactors `canvas.js` à faire en C2** (notes de la revue holistique B, valables tant que C1 ne les traite pas) : (a) la sélection est un **index** dans `pages[0].place` — le CRUD/réordre de C2 doit **re-keyer la sélection sur une référence stable** (id/objet) ; (b) le canvas est **câblé en dur sur `pages[0]`** (`render`, les closures de commit, `placements()`, et les appels `mutations` avec `pageIndex=0`) — le multi-pages doit **propager l'index de page active** partout.
+- Mutations supplémentaires à ajouter à `mutations.js` en C2 : `addPage`, `removePage`, `renamePage`, `reorderPages` (TDD `node --test`).
 
 ### Prérequis firmware (hors designer)
 - **CORS** sur le `WebServer` ESP32 : `Access-Control-Allow-Origin: *` + handler `OPTIONS` (preflight POST JSON). Sur la branche embarqué, **commit dédié**. Sans lui, Charger/Pousser device est câblé mais bloqué dans un navigateur (les autres lots n'en dépendent pas ; l'export fichier de Plan C permet de travailler sans device).
 - À confirmer quand le firmware CORS arrive : la forme de réponse de `POST /layout` (`device.js` suppose `{ok, error}` ; un 200 sans corps JSON est traité comme succès).
 
 ## Process de reprise recommandé
-1. Si Plan C a des décisions ouvertes → `superpowers:brainstorming` d'abord. Sinon, les décisions sont déjà dans le spec.
-2. `superpowers:writing-plans` pour détailler le plan C (même format que A/B).
-3. `superpowers:subagent-driven-development` pour exécuter (un subagent/tâche + revue spec puis qualité ; vérif navigateur du DOM par le contrôleur via Playwright). Plans A et B ont suivi exactement ce process.
+1. **Exécuter C1 maintenant** (le plan est écrit) : `superpowers:subagent-driven-development` sur `plans/2026-06-16-wysiwyg-editor-plan-c1-panels.md` — un subagent/tâche + revue spec puis qualité ; vérif navigateur du DOM par le contrôleur via Playwright (servir depuis `Rich_Telemetry/`). Plans A et B ont suivi exactement ce process (modèle rapide pour le code verbatim ; revues + vérif navigateur par le contrôleur).
+2. **Puis écrire C2** : `superpowers:writing-plans` (même format que A/B/C1), en s'appuyant sur le § « Plan C2 » ci-dessus et le spec. Décisions ouvertes éventuelles → `superpowers:brainstorming` d'abord.
+3. Exécuter C2 en subagent-driven.
+
+**Astuces process (rodées sur A/B/C1)** : le hook pre-commit affiche un warning jaune `SCHEMA DIVERGENT` (non bloquant, pré-existant — voir plus bas) ; la vérif navigateur se fait au mieux via Playwright MCP en pilotant les vrais pointer/DnD events (attention : un `pointerdown` synthétique sans `pointerup` laisse un drag fantôme — faire des clics complets) ; nettoyer les screenshots de test laissés à la racine du repo.
 
 ## Pièges rencontrés (à re-signaler aux implémenteurs)
 - **Apostrophes dans les labels de test** : un label contenant `'` doit être une string délimitée par `"` (sinon SyntaxError).
 - **ajv** : `new Ajv({allErrors:true, strict:false})` compile le schéma draft-07 (oneOf×6, $defs, tuples) sans souci ; le bundle vendorisé est browser-safe.
 - **Schema servi** : servir depuis le **parent** `Rich_Telemetry/` (le schéma partagé est hors `designer/`).
+- **Hook pre-commit `SCHEMA DIVERGENT` (non bloquant)** : à chaque commit, un hook signale en jaune que `schema/layout.schema.json` a divergé entre `feat/rt-embedded` et `feat/rt-designer` vs master. **Pré-existant, sans rapport avec le designer** (Plans B/C1 n'ont pas touché le schéma) ; le commit passe quand même. À resync via master un jour (le hook imprime la commande `git diff` utile). Ne pas s'en inquiéter pendant l'exécution de C1/C2.
+- **Vérif navigateur (Playwright MCP)** : servir depuis `Rich_Telemetry/`, piloter de vrais events ; un `pointerdown` synthétique sans `pointerup` laisse un drag fantôme dont les `pointermove` ultérieurs bullent et déplacent le widget (utiliser des clics complets down+up). Nettoyer les `*.png` de test laissés à la racine du repo après coup.
