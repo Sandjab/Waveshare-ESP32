@@ -40,8 +40,8 @@
       "description": "ASCII uniquement : les polices Montserrat embarquees ne couvrent pas les accents/symboles non-ASCII."
     },
     "font": {
-      "enum": [14, 20, 28],
-      "description": "Taille de police LVGL embarquee. Defaut 20. Une autre valeur retombe sur le defaut cote firmware."
+      "enum": [14, 20, 28, 36, 48],
+      "description": "Taille de police LVGL embarquee. Defaut 20. Une valeur intermediaire est arrondie a la taille disponible inferieure (min 14)."
     },
     "threshold": {
       "type": "array",
@@ -116,6 +116,7 @@
       "properties": {
         "type": { "const": "ring" },
         "color": { "$ref": "#/$defs/hexColor" },
+        "font": { "$ref": "#/$defs/font", "description": "Taille du chiffre central (center_pct)." },
         "pill": { "type": "boolean", "description": "Affiche un pill de pourcentage sur la partie haute de la bande." },
         "countdown": { "type": "boolean", "description": "Decremente reset_in_s d'une unite/s et l'affiche dans l'ouverture." },
         "min": { "type": "number", "description": "Defaut 0." },
@@ -124,7 +125,8 @@
           "type": "array",
           "items": { "$ref": "#/$defs/threshold" }
         },
-        "center_pct": { "type": "boolean", "description": "Affiche value+unit au centre de l'anneau, en grand (police = font du composant). Exclusif avec pill (center_pct prioritaire). Unites non-ASCII (degre, micro) non rendues." }
+        "center_pct": { "type": "boolean", "description": "Affiche value+unit au centre de l'anneau, en grand (police = font du composant). Exclusif avec pill (center_pct prioritaire). La couleur suit le seuil par defaut. Unites non-ASCII (degre, micro) non rendues." },
+        "center_color": { "$ref": "#/$defs/hexColor", "description": "Couleur du chiffre central (center_pct). Surcharge la couleur deduite du seuil. Absent = suit le seuil (ou color)." }
       }
     },
     "comp_led_ring": {

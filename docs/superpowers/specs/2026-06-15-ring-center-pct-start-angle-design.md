@@ -87,3 +87,19 @@ visuel par l'utilisateur). Cas à observer :
 3. `start_angle` = `0` → aucun changement visuel vs layout actuel (non-régression).
 4. `start_angle` = `90`/`180` sur un anneau avec countdown → ouverture *et*
    caption pivotent ensemble, restent alignés.
+
+## Évolutions validées sur device (2026-06-16)
+
+La validation visuelle a fait évoluer `center_pct` au-delà de la spec initiale
+(les deux décisions « police = font » et « couleur = couleur du composant » sont
+remplacées par) :
+
+- **Couleur** : le chiffre central **suit la couleur du seuil** (comme l'arc) par
+  défaut. Un champ optionnel **`center_color`** (hex) la **surcharge**. Implémenté
+  via `c.center_color` + flag `c.center_color_set` (`dashboard.cpp`), rendu dans
+  `view_sync` (`ccol = center_color_set ? center_color : col`). Sans `thresholds`,
+  `col` retombe sur `color` → le centre prend `color`.
+- **Taille** : palette de polices étendue à `14/20/28/36/48` (ajout de Montserrat
+  36 et 48 dans `lv_conf.h`, `pick_font` étendu), pilotable par `font` — y compris
+  pour les `readout`/`label` qui partagent `pick_font`.
+- Tests natifs `center_color` ajoutés ; `schema` + `README` mis à jour.

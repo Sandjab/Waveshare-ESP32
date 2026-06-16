@@ -58,7 +58,8 @@ Anneau circulaire avec ouverture en bas. Paramètres de config :
 
 - `color` : couleur par défaut (hex).
 - `pill` : `true` → affiche un pill de pourcentage sur la partie haute de la bande.
-- `center_pct` : `true` → affiche `valeur + unité` au centre de l'anneau, en grand (police = champ `font` du composant, p. ex. `28`). Exclusif avec `pill` (si les deux sont à `true`, `center_pct` gagne). Limite : unités non-ASCII (`°`, `µ`) non rendues — utiliser `%`, `C`, `V`, `rpm`…
+- `center_pct` : `true` → affiche `valeur + unité` au centre de l'anneau, en grand (taille = champ `font` : `14`/`20`/`28`/`36`/`48`). Exclusif avec `pill` (si les deux sont à `true`, `center_pct` gagne). Par défaut le chiffre **suit la couleur du seuil** (comme l'arc). Limite : unités non-ASCII (`°`, `µ`) non rendues — utiliser `%`, `C`, `V`, `rpm`…
+- `center_color` : couleur fixe du chiffre central, qui **surcharge** la couleur déduite du seuil. Absent → le chiffre suit le seuil (ou `color` s'il n'y a pas de `thresholds`).
 - `countdown` : `true` → décrémente `reset_in_s` d'une unité par seconde et l'affiche dans l'ouverture (ex. `1h50`, `5j6h`, `45s`). On peut aussi pousser une `"caption"` littérale.
 - `min` / `max` : plage (défaut 0/100).
 - `thresholds` : liste `[[limite, "#hex"], ...]` — la couleur change quand la valeur passe sous la limite.
