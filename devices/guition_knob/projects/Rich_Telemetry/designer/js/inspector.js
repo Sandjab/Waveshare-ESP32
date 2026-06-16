@@ -1,8 +1,9 @@
 // Inspecteur : édite le composant + le placement sélectionnés. Pilote les champs par des tables de
 // descripteurs (DRY). Chaque édition committée = UN commit (sur 'change', pas par frappe → pas de
 // flood undo). Le signalement ASCII est live (sur 'input'). S'abonne au modèle pour se rafraîchir.
-import { setComponentProp, removePlacement } from './mutations.js';
+import { setComponentProp, setPlacementProp, setThresholds, removePlacement } from './mutations.js';
 import { ANCHORS } from './geometry.js';
+import { getMock, setMock } from './mocks.js';
 
 const FONTS = [14, 20, 28];
 const nonAscii = v => /[^\x00-\x7F]/.test(v ?? '');
@@ -15,6 +16,24 @@ const COMP_FIELDS = {
   ring:     [['color', 'Couleur', 'color'], ['pill', 'Pastille %', 'bool'], ['countdown', 'Countdown', 'bool'], ['min', 'Min', 'num'], ['max', 'Max', 'num']],
   led_ring: [['color', 'Couleur', 'color'], ['brightness', 'Luminosité (0-255)', 'num']],
   sound:    []
+};
+
+// Champs de géométrie de placement par type : [clé, libellé, kind].
+const PLACE_FIELDS = {
+  label:    [['anchor', 'Ancrage', 'anchor'], ['dx', 'dx', 'num'], ['dy', 'dy', 'num']],
+  readout:  [['anchor', 'Ancrage', 'anchor'], ['dx', 'dx', 'num'], ['dy', 'dy', 'num']],
+  bar:      [['anchor', 'Ancrage', 'anchor'], ['dx', 'dx', 'num'], ['dy', 'dy', 'num'], ['width', 'Largeur', 'num'], ['height', 'Hauteur', 'num']],
+  ring:     [['radius', 'Rayon', 'num'], ['thickness', 'Épaisseur', 'num'], ['gap_deg', 'Ouverture°', 'num']],
+  led_ring: [],
+  sound:    []
+};
+
+// Champs de valeur mock (aperçu) par type : [clé, libellé].
+const MOCK_FIELDS = {
+  readout: [['value', 'Valeur (aperçu)']],
+  bar:     [['value', 'Valeur (aperçu)']],
+  ring:    [['value', 'Valeur % (aperçu)'], ['reset_in_s', 'Countdown (s)']],
+  label:   [], led_ring: [], sound: []
 };
 
 // Construit un <input>/<select> selon kind. onChange reçoit la valeur typée. Les éditeurs textuels
@@ -68,8 +87,56 @@ export function createInspector(root, model, { rerenderCanvas, clearSelection } 
 
   function select(s) { sel = s; render(); }
 
-  // hook d'extension rempli en Task 6 (géométrie + seuils + mock). No-op ici.
-  function renderExtras(body, c) {}
+  // Sous-titre de section.
+  function sub(body, text) { const h = document.createElement('div'); h.className = 'insp-sub'; h.textContent = text; body.appendChild(h); }
+  function note(body, text) { const n = document.createElement('div'); n.className = 'insp-note'; n.textContent = text; body.appendChild(n); }
+
+  function renderExtras(body, c) {
+    const p = place();
+    // --- Géométrie du placement ---
+    const gf = PLACE_FIELDS[c.type] || [];
+    if (gf.length) {
+      sub(body, 'Placement');
+      if (c.type === 'ring') note(body, 'Anneau centré : ancrage/dx/dy ignorés par le firmware.');
+      for (const [key, label, kind] of gf) {
+        const input = makeInput(kind, p[key], v => model.commit(s => setPlacementProp(s, 0, sel.placeIndex, key, v)));
+        body.appendChild(fieldRow(label, input));
+      }
+    }
+
+    // --- Seuils du ring (liste éditable de [limite, #couleur]) ---
+    if (c.type === 'ring') {
+      sub(body, 'Seuils (couleur si valeur < limite)');
+      const ths = (c.thresholds || []).map(t => [t[0], t[1]]); // copie locale éditable
+      const commitThs = () => model.commit(s => setThresholds(s, sel.ref, ths.filter(t => t[1])));
+      ths.forEach((t, idx) => {
+        const row = document.createElement('div'); row.className = 'insp-row';
+        const lim = makeInput('num', t[0], v => { ths[idx][0] = v === '' ? 0 : v; commitThs(); });
+        const col = makeInput('color', t[1], v => { ths[idx][1] = v; commitThs(); });
+        const rm = document.createElement('button'); rm.className = 'insp-th-rm'; rm.textContent = '×';
+        rm.addEventListener('click', () => { ths.splice(idx, 1); commitThs(); });
+        row.appendChild(lim); row.appendChild(col); row.appendChild(rm);
+        body.appendChild(row);
+      });
+      const add = document.createElement('button'); add.className = 'insp-th-add'; add.textContent = '+ seuil';
+      add.addEventListener('click', () => { ths.push([0, '#FF0000']); commitThs(); });
+      body.appendChild(add);
+    }
+
+    // --- Valeur d'aperçu (mock) : hors layout, re-rend le canvas sans toucher au modèle/undo ---
+    const mf = MOCK_FIELDS[c.type] || [];
+    if (mf.length) {
+      sub(body, 'Aperçu (mock, non poussé au device)');
+      const m = getMock(sel.ref, c.type);
+      for (const [key, label] of mf) {
+        const input = makeInput('num', m[key], v => {
+          setMock(sel.ref, { [key]: v === '' ? 0 : v });
+          rerenderCanvas && rerenderCanvas();
+        });
+        body.appendChild(fieldRow(label, input));
+      }
+    }
+  }
 
   function render() {
     // garde focus : ne pas reconstruire pendant qu'un champ de l'inspecteur est en cours d'édition.
