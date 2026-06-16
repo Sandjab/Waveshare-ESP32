@@ -2,16 +2,6 @@
 // appelées via model.commit(s => mutate(s, ...)). Séparées de model.js (state/undo/events) pour
 // rester testables sous node --test. Toute clé posée doit rester valide vis-à-vis du schéma.
 
-// Définition par défaut minimale et VALIDE pour un nouveau composant de chaque type.
-export const DEFAULTS = {
-  label:    () => ({ type: 'label', text: 'Texte', font: 20, color: '#FFFFFF' }),
-  readout:  () => ({ type: 'readout', label: 'Label', font: 20, color: '#FFFFFF' }),
-  bar:      () => ({ type: 'bar', label: 'Bar', min: 0, max: 100, color: '#38BDF8' }),
-  ring:     () => ({ type: 'ring', color: '#38BDF8', pill: true, min: 0, max: 100 }),
-  led_ring: () => ({ type: 'led_ring', color: '#FFFFFF', brightness: 64 }),
-  sound:    () => ({ type: 'sound' })
-};
-
 // id unique pour un nouveau composant : <type><n>, n = 1er entier libre.
 export function uniqueId(state, type) {
   const comps = state.components || {};

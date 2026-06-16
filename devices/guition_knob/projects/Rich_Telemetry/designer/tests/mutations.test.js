@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  uniqueId, DEFAULTS, addComponent, addPlacement, removePlacement,
+  uniqueId, addComponent, addPlacement, removePlacement,
   setComponentProp, setPlacementProp, setThresholds,
   addPage, removePage, renamePage, reorderPages
 } from '../js/mutations.js';
@@ -13,12 +13,6 @@ test('uniqueId incrémente par type', () => {
   assert.equal(uniqueId(s, 'label'), 'label1');
   s.components.label1 = { type: 'label' };
   assert.equal(uniqueId(s, 'label'), 'label2');
-});
-
-test('DEFAULTS produit une définition valide par type', () => {
-  for (const type of ['label','readout','bar','ring','led_ring','sound']) {
-    assert.equal(DEFAULTS[type]().type, type);
-  }
 });
 
 test('addComponent ajoute à la map components', () => {
