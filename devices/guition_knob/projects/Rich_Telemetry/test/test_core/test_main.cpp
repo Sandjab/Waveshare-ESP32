@@ -301,6 +301,52 @@ void test_dash_set_context_writes_ctx(void) {
     TEST_ASSERT_EQUAL_INT(21, (int)d.ctx.vars[ctx_find(&d.ctx,"temp")].num);
 }
 
+// --- parse des sources (pull P2) ---
+static const char* LAYOUT_SOURCES =
+  "{\"title\":\"T\",\"background\":\"#000000\","
+  "\"sources\":[{"
+    "\"name\":\"weather\",\"url\":\"https://api.example/w?city=Paris\",\"interval_s\":600,"
+    "\"headers\":{\"X-API-Key\":\"$weather_key\"},"
+    "\"vars\":{\"temp\":\"/main/temp\",\"hum\":\"/main/humidity\"}}],"
+  "\"components\":{\"t\":{\"type\":\"readout\",\"unit\":\"C\",\"bind\":\"temp\"}},"
+  "\"pages\":[{\"name\":\"p\",\"place\":[{\"ref\":\"t\"}]}]}";
+
+void test_sources_parse_counts(void) {
+    Dashboard d{}; char err[80];
+    TEST_ASSERT_TRUE(dash_set_layout(&d, LAYOUT_SOURCES, err, sizeof(err)));
+    TEST_ASSERT_EQUAL_INT(1, d.source_count);
+    TEST_ASSERT_EQUAL_STRING("weather", d.sources[0].name);
+    TEST_ASSERT_EQUAL_STRING("https://api.example/w?city=Paris", d.sources[0].url);
+    TEST_ASSERT_EQUAL_UINT32(600, d.sources[0].interval_s);
+}
+void test_sources_headers_and_vars(void) {
+    Dashboard d{}; char err[80];
+    dash_set_layout(&d, LAYOUT_SOURCES, err, sizeof(err));
+    TEST_ASSERT_EQUAL_INT(1, d.sources[0].header_count);
+    TEST_ASSERT_EQUAL_STRING("X-API-Key",    d.sources[0].headers[0].name);
+    TEST_ASSERT_EQUAL_STRING("$weather_key", d.sources[0].headers[0].value);
+    TEST_ASSERT_EQUAL_INT(2, d.sources[0].var_count);
+    TEST_ASSERT_EQUAL_STRING("temp",       d.sources[0].vars[0].name);   // ArduinoJson préserve l'ordre des clés
+    TEST_ASSERT_EQUAL_STRING("/main/temp", d.sources[0].vars[0].ptr);
+}
+void test_sources_interval_floor(void) {
+    Dashboard d{}; char err[80];
+    const char* L = "{\"sources\":[{\"name\":\"s\",\"url\":\"http://x/\",\"interval_s\":1}],"
+                    "\"components\":{},\"pages\":[]}";
+    TEST_ASSERT_TRUE(dash_set_layout(&d, L, err, sizeof(err)));
+    TEST_ASSERT_EQUAL_UINT32(CTX_MIN_INTERVAL_S, d.sources[0].interval_s);   // 1 -> borné à 5
+}
+void test_sources_url_required(void) {
+    Dashboard d{}; char err[80];
+    const char* L = "{\"sources\":[{\"name\":\"s\"}],\"components\":{},\"pages\":[]}";
+    TEST_ASSERT_FALSE(dash_set_layout(&d, L, err, sizeof(err)));   // url manquante -> rejet
+}
+void test_no_sources_is_zero(void) {
+    Dashboard d{}; char err[80];
+    dash_set_layout(&d, LAYOUT_OK, err, sizeof(err));   // layout sans 'sources'
+    TEST_ASSERT_EQUAL_INT(0, d.source_count);           // rétro-compat
+}
+
 // --- context_apply : variables liees -> composants ---
 static const char* bound_layout(const char* type, const char* extra) {
     static char b[256];
@@ -385,6 +431,11 @@ int main(int, char**) {
     RUN_TEST(test_ctx_apply_json_num_and_str);
     RUN_TEST(test_layout_bind_parsed);
     RUN_TEST(test_dash_set_context_writes_ctx);
+    RUN_TEST(test_sources_parse_counts);
+    RUN_TEST(test_sources_headers_and_vars);
+    RUN_TEST(test_sources_interval_floor);
+    RUN_TEST(test_sources_url_required);
+    RUN_TEST(test_no_sources_is_zero);
     RUN_TEST(test_ctxapply_readout_num_formats);
     RUN_TEST(test_ctxapply_readout_string);
     RUN_TEST(test_ctxapply_bar_value);

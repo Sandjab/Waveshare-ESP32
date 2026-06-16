@@ -104,6 +104,30 @@ bool dash_set_layout(Dashboard* d, const char* json, char* err, size_t errn) {
         t.page_count++;
     }
 
+    JsonArrayConst srcs = doc["sources"].as<JsonArrayConst>();
+    for (JsonObjectConst so : srcs) {
+        if (t.source_count >= MAX_SOURCES) { snprintf(err, errn, "trop de sources"); return false; }
+        Source& s = t.sources[t.source_count];
+        strlcpy(s.name, so["name"] | "", sizeof(s.name));
+        strlcpy(s.url,  so["url"]  | "", sizeof(s.url));
+        if (s.url[0] == '\0') { snprintf(err, errn, "source '%s' sans url", s.name); return false; }
+        uint32_t iv  = so["interval_s"] | 60;
+        s.interval_s = iv < CTX_MIN_INTERVAL_S ? CTX_MIN_INTERVAL_S : iv;
+        for (JsonPairConst h : so["headers"].as<JsonObjectConst>()) {
+            if (s.header_count >= MAX_HEADERS_PER_SOURCE) break;
+            strlcpy(s.headers[s.header_count].name,  h.key().c_str(), sizeof(s.headers[0].name));
+            strlcpy(s.headers[s.header_count].value, h.value() | "", sizeof(s.headers[0].value));
+            s.header_count++;
+        }
+        for (JsonPairConst v : so["vars"].as<JsonObjectConst>()) {
+            if (s.var_count >= MAX_VARS_PER_SOURCE) break;
+            strlcpy(s.vars[s.var_count].name, v.key().c_str(), sizeof(s.vars[0].name));
+            strlcpy(s.vars[s.var_count].ptr,  v.value() | "", sizeof(s.vars[0].ptr));
+            s.var_count++;
+        }
+        t.source_count++;
+    }
+
     t.active_page  = 0;
     t.layout_dirty = true;
     *d = t;

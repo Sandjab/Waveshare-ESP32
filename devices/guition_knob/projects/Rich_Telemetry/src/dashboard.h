@@ -52,6 +52,24 @@ struct Page {
     int       place_count;
 };
 
+struct SourceHeader { char name[HEADER_NAME_LEN]; char value[HEADER_VAL_LEN]; };  // value: littéral ou "$secret"
+struct SourceVar    { char name[ID_LEN];          char ptr[PTR_LEN]; };           // variable -> JSON Pointer
+
+struct Source {
+    char         name[ID_LEN];
+    char         url[URL_LEN];
+    uint32_t     interval_s;
+    SourceHeader headers[MAX_HEADERS_PER_SOURCE];
+    int          header_count;
+    SourceVar    vars[MAX_VARS_PER_SOURCE];
+    int          var_count;
+    // --- runtime (rempli par la tâche productrice en P2) ---
+    uint32_t     last_fetch_ms;   // 0 = jamais -> fetch immédiat
+    int          last_status;     // dernier code HTTP, ou <0 sur erreur transport/parse
+    uint32_t     err_count;
+    uint32_t     updated_at;      // millis() du dernier fetch réussi
+};
+
 struct Dashboard {
     char      title[TEXT_LEN];
     uint32_t  background;
@@ -64,6 +82,8 @@ struct Dashboard {
     bool      layout_dirty;
     bool      values_dirty;
     Context   ctx;                   // blackboard alimente par /context (push) et le pull (P2)
+    Source    sources[MAX_SOURCES];
+    int       source_count;
 };
 
 int  dash_find(const Dashboard* d, const char* id);
