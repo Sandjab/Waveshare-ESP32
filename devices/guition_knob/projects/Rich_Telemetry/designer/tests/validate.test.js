@@ -30,7 +30,7 @@ test("ref de placement non résolue → invalide (sémantique, hors JSON Schema)
   bad.pages[0].place[0].ref = 'ghost';
   const r = validate(bad);
   assert.equal(r.valid, false);
-  assert.ok(r.errors.some(e => e.includes("ref inconnue 'ghost'")));
+  assert.ok(r.errors.some(e => e.includes('ghost')));        // message humanisé : « page 1 : référence inconnue « ghost » »
 });
 
 test('erreurs de forme ET sémantique coexistent (pas de court-circuit)', () => {
@@ -39,8 +39,8 @@ test('erreurs de forme ET sémantique coexistent (pas de court-circuit)', () => 
   bad.pages[0].place[0].ref = 'ghost';  // erreur sémantique
   const r = validate(bad);
   assert.equal(r.valid, false);
-  assert.ok(r.errors.some(e => e.includes('/background')));
-  assert.ok(r.errors.some(e => e.includes("ref inconnue 'ghost'")));
+  assert.ok(r.errors.some(e => e.includes('background')));   // « background : doit être une couleur #RRGGBB »
+  assert.ok(r.errors.some(e => e.includes('ghost')));
 });
 
 test("ref absente → erreur de forme seule, pas de 'ref inconnue undefined'", () => {
