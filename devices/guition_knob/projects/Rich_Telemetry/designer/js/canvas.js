@@ -6,8 +6,9 @@ import {
 } from './geometry.js';
 import {
   buildLabel, buildReadout, buildBar, buildRing, buildBadge,
-  ringPaths, pickThresholdColor, MOCKS
+  ringPaths, pickThresholdColor
 } from './render.js';
+import { getMock } from './mocks.js';
 
 // Le firmware CENTRE le ring (lv_obj_center, view.cpp:51) : anchor/dx/dy ignorés.
 // → un ring n'est pas déplaçable, seulement redimensionnable.
@@ -21,10 +22,10 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
   const nodeFor = i => stage.querySelector(`.w[data-pi="${i}"]`);
 
   function buildNode(pl, comp) {
-    if (comp.type === 'bar')     return buildBar(comp, pl);
-    if (comp.type === 'ring')    return buildRing(comp, pl);
-    if (comp.type === 'readout') return buildReadout(comp);
-    return buildLabel(comp); // label
+    if (comp.type === 'bar')     return buildBar(comp, pl, getMock(pl.ref, 'bar'));
+    if (comp.type === 'ring')    return buildRing(comp, pl, getMock(pl.ref, 'ring'));
+    if (comp.type === 'readout') return buildReadout(comp, getMock(pl.ref, 'readout'));
+    return buildLabel(comp); // label : pas de mock (affiche son texte)
   }
 
   function position(node, pl, comp) {
@@ -77,7 +78,7 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
   function select(i) {
     selected = i;
     applySelection();
-    onSelect && onSelect(i == null ? null : placements()[i]);
+    onSelect && onSelect(i == null ? null : { placeIndex: i, ref: placements()[i].ref });
   }
 
   // --- Drag (label/readout/bar) : aperçu live, UN SEUL commit au drop (piège HANDOFF a) ---
@@ -150,15 +151,15 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
     set('.handle-gap', c + g.r * Math.cos(a), c + g.r * Math.sin(a));
   }
 
-  function paintRing(node, comp, g) {
+  function paintRing(node, comp, g, mockVal) {
     const size = g.r * 2;
     node.style.width = size + 'px'; node.style.height = size + 'px';
     node.style.left = (SCREEN / 2 - g.r) + 'px'; node.style.top = (SCREEN / 2 - g.r) + 'px';
     const svg = node.querySelector('svg');
     svg.setAttribute('width', size); svg.setAttribute('height', size);
     svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
-    const p = ringPaths(g.r, g.th, g.gap, MOCKS.ring.value, comp.min ?? 0, comp.max ?? 100);
-    const col = pickThresholdColor(comp.thresholds, MOCKS.ring.value, comp.color || '#38BDF8');
+    const p = ringPaths(g.r, g.th, g.gap, mockVal, comp.min ?? 0, comp.max ?? 100);
+    const col = pickThresholdColor(comp.thresholds, mockVal, comp.color || '#38BDF8');
     const t = svg.querySelector('.ring-track'), ind = svg.querySelector('.ring-ind');
     t.setAttribute('d', p.track); t.setAttribute('stroke-width', g.th);
     ind.setAttribute('d', p.indicator); ind.setAttribute('stroke-width', g.th); ind.setAttribute('stroke', col);
@@ -186,7 +187,7 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
           if (kind === 'radius')      g = { ...base, r:  ringRadiusAt(px, py) };
           else if (kind === 'thick')  g = { ...base, th: ringThicknessAt(px, py, base.r) };
           else                        g = { ...base, gap: gapDegAt(px, py) };
-          paintRing(node, comp, g);
+          paintRing(node, comp, g, getMock(pl.ref, 'ring').value);
         };
         const up = () => {
           h.releasePointerCapture(e.pointerId);
@@ -212,5 +213,5 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
   // La webfont Montserrat (font-display:swap) charge en asynchrone : le 1er render mesure
   // avant le swap → centrage à ~8px près. Re-render une fois la police prête (fidélité).
   if (document.fonts?.ready) document.fonts.ready.then(render);
-  return { render, getSelected: () => selected };
+  return { render, getSelected: () => selected, selectPlacement: select };
 }

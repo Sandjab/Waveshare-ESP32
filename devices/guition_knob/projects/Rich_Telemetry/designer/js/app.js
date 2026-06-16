@@ -22,8 +22,8 @@ async function main() {
   const validate = createValidator(schema);
   const model = createModel();
 
-  // Canvas WYSIWYG (page 0). La sélection sera consommée par l'inspecteur en Plan C.
-  createCanvas({ stage: $('stage'), badges: $('badges') }, model, {
+  // Canvas WYSIWYG (page 0). onSelect reçoit { placeIndex, ref } (consommé par l'inspecteur, Task 5).
+  const canvas = createCanvas({ stage: $('stage'), badges: $('badges') }, model, {
     onSelect: () => {}
   });
 
