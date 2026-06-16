@@ -4,7 +4,7 @@
 
 ## TL;DR
 
-L'éditeur WYSIWYG du designer est découpé en plans séquentiels. **Plans A (fondation), B (canvas WYSIWYG) et C1 (palette + inspecteur = édition mono-page) : implémentés, testés, revus (spec + qualité + holistique = SHIP), vérifiés navigateur.** Le « Plan C » a été **scindé en C1 + C2** : **C1 est FAIT** (`plans/2026-06-16-wysiwyg-editor-plan-c1-panels.md`, 6 commits `e8030ea`..`1561478`) ; **C2 (pages CRUD + canvas multi-pages + file-io + humanisation ajv + bibliothèque inter-pages) : implémenté et testé** (`plans/2026-06-16-wysiwyg-editor-plan-c2-pages-fileio.md`). Tout vit sur la branche **`feat/rt-designer`** (non mergée). Reste hors-designer : le **CORS firmware** (Charger/Pousser device) ; et les reportés v2+ du spec (`/update`, `/page`, aperçu animé led_ring, presets).
+L'éditeur WYSIWYG du designer est découpé en plans séquentiels. **Plans A (fondation), B (canvas WYSIWYG) et C1 (palette + inspecteur = édition mono-page) : implémentés, testés, revus (spec + qualité + holistique = SHIP), vérifiés navigateur.** Le « Plan C » a été **scindé en C1 + C2** : **C1 est FAIT** (`plans/2026-06-16-wysiwyg-editor-plan-c1-panels.md`, 6 commits `e8030ea`..`1561478`) ; **C2 (pages CRUD + canvas multi-pages + file-io + humanisation ajv + bibliothèque inter-pages) : implémenté et testé** (`plans/2026-06-16-wysiwyg-editor-plan-c2-pages-fileio.md`). `feat/rt-designer` **intègre désormais `master` à jour** et est soumise en **PR #7**. Le **CORS est disponible** (mergé via **PR #5**, présent dans la base de la branche après intégration de `master`) → **Charger/Pousser device fonctionne dans le navigateur**. Restent seulement les reportés v2+ du spec (`/update`, `/page`, aperçu animé led_ring, presets).
 
 **Reprise immédiate :** écrire C2 (`superpowers:writing-plans`, même format que A/B/C1), puis l'exécuter en subagent-driven — cf. « Process de reprise » en bas.
 
@@ -93,9 +93,9 @@ Plan complet d'origine : **`plans/2026-06-16-wysiwyg-editor-plan-c1-panels.md`**
 - **Refactors `canvas.js` à faire en C2** (notes de la revue holistique B, valables tant que C1 ne les traite pas) : (a) la sélection est un **index** dans `pages[0].place` — le CRUD/réordre de C2 doit **re-keyer la sélection sur une référence stable** (id/objet) ; (b) le canvas est **câblé en dur sur `pages[0]`** (`render`, les closures de commit, `placements()`, et les appels `mutations` avec `pageIndex=0`) — le multi-pages doit **propager l'index de page active** partout.
 - Mutations supplémentaires à ajouter à `mutations.js` en C2 : `addPage`, `removePage`, `renamePage`, `reorderPages` (TDD `node --test`).
 
-### Prérequis firmware (hors designer)
-- **CORS** sur le `WebServer` ESP32 : `Access-Control-Allow-Origin: *` + handler `OPTIONS` (preflight POST JSON). Sur la branche embarqué, **commit dédié**. Sans lui, Charger/Pousser device est câblé mais bloqué dans un navigateur (les autres lots n'en dépendent pas ; l'export fichier de Plan C permet de travailler sans device).
-- À confirmer quand le firmware CORS arrive : la forme de réponse de `POST /layout` (`device.js` suppose `{ok, error}` ; un 200 sans corps JSON est traité comme succès).
+### Intégration firmware
+- **CORS** : ✅ **DISPONIBLE** — mergé via **PR #5** (`Access-Control-Allow-Origin: *` + handler `OPTIONS` pour le preflight POST JSON), présent dans la base de `feat/rt-designer` après l'intégration de `master`. **Charger/Pousser device fonctionne désormais dans le navigateur** (c'était le seul prérequis firmware du designer ; l'export/import fichier de C2 permettait déjà de travailler sans device).
+- **À confirmer en test réel maintenant que le CORS est là** : la forme de réponse de `POST /layout` (`device.js` suppose `{ok, error}` ; un 200 sans corps JSON est traité comme succès).
 
 ## Process de reprise recommandé
 1. ~~Exécuter C1~~ — ✅ FAIT (cf. § « Plan C1 » ci-dessus).
