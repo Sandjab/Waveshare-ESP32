@@ -57,9 +57,10 @@ static void ring_place_labels(lv_obj_t* arc, lv_obj_t* cap, lv_obj_t* slot2,
         if (slot2_center) {
             lv_obj_align_to(slot2, arc, LV_ALIGN_CENTER, 0, 0);   // centre
         } else {
+            int rp = q.radius - q.thickness / 2;           // pill centrée sur l'épaisseur de la bande
             float a = (270 + q.start_angle) * DEG2RAD;     // opposé de l'ouverture
             lv_obj_align_to(slot2, arc, LV_ALIGN_CENTER,
-                            (int)roundf(r * cosf(a)), (int)roundf(r * sinf(a)));
+                            (int)roundf(rp * cosf(a)), (int)roundf(rp * sinf(a)));
         }
     }
 }
@@ -77,6 +78,7 @@ static void build_ring(lv_obj_t* parent, Component& c, Placement& q,
     lv_obj_set_style_arc_width(arc, q.thickness, LV_PART_MAIN);
     lv_obj_set_style_arc_width(arc, q.thickness, LV_PART_INDICATOR);
     lv_obj_set_style_arc_color(arc, lv_color_hex(0x1F2937), LV_PART_MAIN);
+    lv_obj_set_style_pad_all(arc, 0, LV_PART_MAIN);   // bord externe de la bande au bord du widget → milieu exact = radius - thickness/2 (sinon le padding par défaut décale la pill)
     *main = arc;
 
     *cap = lv_label_create(parent);
@@ -89,13 +91,22 @@ static void build_ring(lv_obj_t* parent, Component& c, Placement& q,
         lv_obj_set_style_text_font(*pill, pick_font(c.font), 0);
         lv_obj_set_style_text_color(*pill, lv_color_hex(c.color), 0);
         lv_label_set_text(*pill, "");
-    } else if (c.pill) {                       // pastille de pourcentage (inchangé)
+    } else if (c.pill) {                       // pastille de pourcentage
         *pill = lv_label_create(parent);
+        lv_obj_set_style_text_font(*pill, &lv_font_montserrat_14, 0);
         lv_obj_set_style_bg_opa(*pill, LV_OPA_COVER, 0);
         lv_obj_set_style_bg_color(*pill, lv_color_hex(c.color), 0);
         lv_obj_set_style_text_color(*pill, lv_color_hex(0x04121A), 0);
         lv_obj_set_style_radius(*pill, 13, 0);
-        lv_obj_set_style_pad_hor(*pill, 8, 0); lv_obj_set_style_pad_ver(*pill, 3, 0);
+        lv_obj_set_style_border_width(*pill, 1, 0);                       // contour noir 1px : détache la pill d'un anneau plein de même couleur
+        lv_obj_set_style_border_color(*pill, lv_color_hex(0x000000), 0);
+        lv_obj_set_style_border_opa(*pill, LV_OPA_COVER, 0);
+        // Hauteur de la pill = max(hauteur actuelle, thickness+4) → déborde la bande de ≥2px en haut/bas.
+        // Obtenue par padding vertical symétrique (garde le % centré) ; plancher 3 = hauteur actuelle.
+        int lh = lv_font_get_line_height(&lv_font_montserrat_14);
+        int pv = (q.thickness + 4 - lh) / 2;
+        if (pv < 3) pv = 3;
+        lv_obj_set_style_pad_hor(*pill, 8, 0); lv_obj_set_style_pad_ver(*pill, pv, 0);
         lv_label_set_text(*pill, "0%");
     }
     ring_place_labels(arc, *cap, (c.center_pct || c.pill) ? *pill : nullptr, q, c.center_pct);
