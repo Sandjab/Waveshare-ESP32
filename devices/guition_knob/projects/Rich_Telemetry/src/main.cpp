@@ -13,6 +13,7 @@
 #include "touch_cst816.h"
 #include "persist.h"
 #include "secret_store.h"
+#include "net_pull.h"
 #include "freertos/semphr.h"
 
 static WebServer server(HTTP_PORT);
@@ -40,6 +41,7 @@ static void start_services() {
     if (MDNS.begin(MDNS_HOST)) MDNS.addService("http", "tcp", HTTP_PORT);
     api_register(server, &g_dash);
     server.begin();
+    net_pull_begin(&g_dash, g_ctx_mutex);   // garde-fou `started` au-dessus -> lancée une seule fois
     Serial.printf("[http] :%d  http://%s.local\n", HTTP_PORT, MDNS_HOST);
 }
 

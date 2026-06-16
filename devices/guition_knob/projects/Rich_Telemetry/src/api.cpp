@@ -70,7 +70,10 @@ static void h_set_layout() {
     if (!S->hasArg("plain")) { S->send(400, "text/plain", "Empty body\n"); return; }
     String body = S->arg("plain");
     char err[80];
-    if (!dash_set_layout(D, body.c_str(), err, sizeof(err))) {
+    if (g_ctx_mutex) xSemaphoreTake(g_ctx_mutex, portMAX_DELAY);
+    bool ok = dash_set_layout(D, body.c_str(), err, sizeof(err));
+    if (g_ctx_mutex) xSemaphoreGive(g_ctx_mutex);
+    if (!ok) {
         S->send(400, "application/json", String("{\"ok\":false,\"error\":\"") + err + "\"}\n");
         return;
     }
