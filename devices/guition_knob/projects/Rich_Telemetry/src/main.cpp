@@ -12,6 +12,7 @@
 #include "nav_input.h"
 #include "touch_cst816.h"
 #include "persist.h"
+#include "secret_store.h"
 #include "freertos/semphr.h"
 
 static WebServer server(HTTP_PORT);
@@ -51,6 +52,7 @@ void setup() {
     lv_timer_handler();
     char err[80];
     persist_begin();
+    secret_store_begin();   // LittleFS déjà monté par persist_begin()
     if (!persist_load(g_layout_json) ||
         !dash_set_layout(&g_dash, g_layout_json.c_str(), err, sizeof(err))) {
         g_layout_json = view_default_layout();          // fallback compile

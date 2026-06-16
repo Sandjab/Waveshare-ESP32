@@ -21,3 +21,5 @@
 #define MDNS_HOST               "guition"
 #define WIFI_BOOT_TIMEOUT_MS    20000
 #define LAYOUT_PATH             "/layout.json"
+#define SECRETS_PATH            "/secrets.json"
+#define SECRET_VAL_LEN          80

@@ -7,6 +7,7 @@
 #include "nav_input.h"
 #include "view.h"
 #include "persist.h"
+#include "secret_store.h"
 #include "freertos/semphr.h"
 
 extern String g_layout_json;
@@ -32,6 +33,12 @@ static void h_set_context() {
     dash_set_context(D, S->arg("plain").c_str(), millis());
     if (g_ctx_mutex) xSemaphoreGive(g_ctx_mutex);
     S->send(200, "application/json", "{\"ok\":true}\n");
+}
+
+static void h_set_secrets() {
+    if (!S->hasArg("plain")) { S->send(400, "text/plain", "Empty body\n"); return; }
+    if (!secret_store_merge(S->arg("plain").c_str())) { S->send(400, "text/plain", "Invalid JSON\n"); return; }
+    S->send(200, "application/json", "{\"ok\":true}\n");   // ne renvoie JAMAIS le contenu
 }
 
 static void h_status() {
@@ -108,6 +115,7 @@ void api_register(WebServer& server, Dashboard* d) {
     server.enableCORS(true);   // Allow-Origin/Methods/Headers: * sur toutes les réponses (outil de dev LAN mono-utilisateur)
     server.on("/update", HTTP_POST, h_update);
     server.on("/context", HTTP_POST, h_set_context);
+    server.on("/secrets", HTTP_POST, h_set_secrets);   // pas de route GET : write-only par conception
     server.on("/status", HTTP_GET,  h_status);
     server.on("/layout", HTTP_POST, h_set_layout);
     server.on("/layout", HTTP_GET,  h_get_layout);
