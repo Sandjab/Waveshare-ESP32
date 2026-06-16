@@ -63,6 +63,8 @@ bool dash_set_layout(Dashboard* d, const char* json, char* err, size_t errn) {
         c.vmax        = o["max"] | 100;
         c.pill        = o["pill"] | false;
         c.center_pct  = o["center_pct"] | false;
+        c.center_color_set = o["center_color"].is<const char*>();
+        c.center_color     = c.center_color_set ? parse_hex_color(o["center_color"], c.color) : c.color;
         c.countdown   = o["countdown"] | false;
         c.font        = o["font"] | 20;
         c.led_brightness_cfg = o["brightness"] | 64;

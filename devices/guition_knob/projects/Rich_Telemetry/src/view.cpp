@@ -19,6 +19,8 @@ static const lv_align_t ALIGN_MAP[] = {
 };
 
 static const lv_font_t* pick_font(uint16_t px) {
+    if (px >= 48) return &lv_font_montserrat_48;
+    if (px >= 36) return &lv_font_montserrat_36;
     if (px >= 28) return &lv_font_montserrat_28;
     if (px >= 20) return &lv_font_montserrat_20;
     return &lv_font_montserrat_14;
@@ -244,6 +246,8 @@ void view_sync(Dashboard* d) {
                         if (c.center_pct) {
                             char cb[24]; format_value((double)c.value, c.unit, cb, sizeof(cb));
                             lv_label_set_text(s_sub2[p][i], cb);
+                            uint32_t ccol = c.center_color_set ? c.center_color : col;  // surcharge explicite, sinon suit le seuil
+                            lv_obj_set_style_text_color(s_sub2[p][i], lv_color_hex(ccol), 0);
                         } else {
                             char pb[8]; snprintf(pb, sizeof(pb), "%ld%%", (long)c.value);
                             lv_label_set_text(s_sub2[p][i], pb);

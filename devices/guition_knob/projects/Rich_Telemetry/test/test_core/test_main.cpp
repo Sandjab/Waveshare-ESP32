@@ -88,6 +88,26 @@ void test_ring_start_angle_default_zero(void) {
     dash_set_layout(&d, LAYOUT_OK, err, sizeof(err));   // LAYOUT_OK ne définit pas start_angle
     TEST_ASSERT_EQUAL_INT(0, d.pages[0].places[0].start_angle);
 }
+static const char* LAYOUT_RING_CCOL =
+  "{\"title\":\"T\",\"background\":\"#000000\","
+  "\"components\":{\"g\":{\"type\":\"ring\",\"color\":\"#38BDF8\","
+                        "\"center_pct\":true,\"center_color\":\"#FF0000\"}},"
+  "\"pages\":[{\"name\":\"p\",\"place\":[{\"ref\":\"g\",\"radius\":140}]}]}";
+
+void test_ring_center_color_set(void) {
+    Dashboard d{}; char err[80];
+    TEST_ASSERT_TRUE(dash_set_layout(&d, LAYOUT_RING_CCOL, err, sizeof(err)));
+    int ig = dash_find(&d, "g");
+    TEST_ASSERT_TRUE(d.components[ig].center_color_set);
+    TEST_ASSERT_EQUAL_HEX32(0xFF0000, d.components[ig].center_color);
+}
+void test_ring_center_color_defaults_to_color(void) {
+    Dashboard d{}; char err[80];
+    dash_set_layout(&d, LAYOUT_RING_OPTS, err, sizeof(err));   // pas de center_color
+    int ig = dash_find(&d, "g");
+    TEST_ASSERT_FALSE(d.components[ig].center_color_set);
+    TEST_ASSERT_EQUAL_HEX32(0x38BDF8, d.components[ig].center_color);  // retombe sur color
+}
 void test_layout_unknown_type_rejected(void) {
     Dashboard d{}; char err[80];
     const char* bad = "{\"components\":{\"x\":{\"type\":\"frobnicator\"}},\"pages\":[]}";
@@ -182,6 +202,8 @@ int main(int, char**) {
     RUN_TEST(test_ring_center_pct_parsed);
     RUN_TEST(test_ring_start_angle_parsed);
     RUN_TEST(test_ring_start_angle_default_zero);
+    RUN_TEST(test_ring_center_color_set);
+    RUN_TEST(test_ring_center_color_defaults_to_color);
     RUN_TEST(test_layout_unknown_type_rejected);
     RUN_TEST(test_layout_invalid_keeps_old);
     RUN_TEST(test_hex_parse);
