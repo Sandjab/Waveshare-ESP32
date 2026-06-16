@@ -15,9 +15,10 @@ import { getMock } from './mocks.js';
 const DRAGGABLE = new Set(['label', 'readout', 'bar']);
 
 export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
-  let selected = null; // index du placement sélectionné sur la page active
+  let selected = null;    // index du placement sélectionné sur la page active
+  let activePage = 0;     // page affichée par le canvas (source de vérité de l'éditeur, hors layout)
 
-  const placements = () => model.state.pages?.[0]?.place ?? [];
+  const placements = () => model.state.pages?.[activePage]?.place ?? [];
   const comps = () => model.state.components || {};
   const nodeFor = i => stage.querySelector(`.w[data-pi="${i}"]`);
 
@@ -108,7 +109,7 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
       node.removeEventListener('pointerup', up);
       node.classList.remove('snapped');
       if (live) model.commit(s => {                    // commit unique, pas par frame
-        const q = s.pages[0].place[i];
+        const q = s.pages[activePage].place[i];
         q.anchor = live.anchor; q.dx = live.dx; q.dy = live.dy;
       });
     };
@@ -135,7 +136,7 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
       const up = () => {
         h.releasePointerCapture(e.pointerId);
         h.removeEventListener('pointermove', move); h.removeEventListener('pointerup', up);
-        if (dim) model.commit(s => { const q = s.pages[0].place[i]; q.width = dim.width; q.height = dim.height; });
+        if (dim) model.commit(s => { const q = s.pages[activePage].place[i]; q.width = dim.width; q.height = dim.height; });
       };
       h.addEventListener('pointermove', move); h.addEventListener('pointerup', up);
     });
@@ -193,7 +194,7 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
           h.releasePointerCapture(e.pointerId);
           h.removeEventListener('pointermove', move); h.removeEventListener('pointerup', up);
           if (moved) model.commit(s => {
-            const q = s.pages[0].place[i];
+            const q = s.pages[activePage].place[i];
             q.radius = g.r; q.thickness = g.th; q.gap_deg = g.gap;
           });
         };
@@ -208,10 +209,19 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
     if (e.target === stage || e.target.classList.contains('screen-circle')) select(null);
   });
 
+  // Change la page affichée. On désélectionne (un index de placement n'a pas de sens d'une page à
+  // l'autre — cf. Décisions C2, on désélectionne plutôt que de re-keyer) puis on re-rend.
+  function setPage(i) {
+    activePage = i;
+    selected = null;
+    render();
+    onSelect && onSelect(null);
+  }
+
   model.subscribe(render);
   render();
   // La webfont Montserrat (font-display:swap) charge en asynchrone : le 1er render mesure
   // avant le swap → centrage à ~8px près. Re-render une fois la police prête (fidélité).
   if (document.fonts?.ready) document.fonts.ready.then(render);
-  return { render, getSelected: () => selected, selectPlacement: select };
+  return { render, getSelected: () => selected, selectPlacement: select, setPage, getActivePage: () => activePage };
 }

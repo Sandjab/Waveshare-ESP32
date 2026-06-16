@@ -31,7 +31,8 @@ async function main() {
   });
   inspector = createInspector($('inspector'), model, {
     rerenderCanvas: canvas.render,
-    clearSelection: () => canvas.selectPlacement(null)
+    clearSelection: () => canvas.selectPlacement(null),
+    getActivePage: canvas.getActivePage
   });
 
   // Palette : glisser un type sur le canvas crée le composant, puis on le sélectionne.

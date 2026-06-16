@@ -79,11 +79,11 @@ function fieldRow(label, input, { ascii } = {}) {
   return row;
 }
 
-export function createInspector(root, model, { rerenderCanvas, clearSelection } = {}) {
+export function createInspector(root, model, { rerenderCanvas, clearSelection, getActivePage = () => 0 } = {}) {
   let sel = null; // { placeIndex, ref } ou null
 
   const comp = () => sel && model.state.components[sel.ref];
-  const place = () => sel && model.state.pages[0].place[sel.placeIndex];
+  const place = () => sel && model.state.pages?.[getActivePage()]?.place?.[sel.placeIndex];
 
   function select(s) { sel = s; render(); }
 
@@ -99,7 +99,7 @@ export function createInspector(root, model, { rerenderCanvas, clearSelection } 
       sub(body, 'Placement');
       if (c.type === 'ring') note(body, 'Anneau centré : ancrage/dx/dy ignorés par le firmware.');
       for (const [key, label, kind] of gf) {
-        const input = makeInput(kind, p[key], v => model.commit(s => setPlacementProp(s, 0, sel.placeIndex, key, v)));
+        const input = makeInput(kind, p[key], v => model.commit(s => setPlacementProp(s, getActivePage(), sel.placeIndex, key, v)));
         body.appendChild(fieldRow(label, input));
       }
     }
@@ -143,11 +143,12 @@ export function createInspector(root, model, { rerenderCanvas, clearSelection } 
     if (root.contains(document.activeElement) && document.activeElement !== document.body) return;
     root.querySelectorAll('.insp-body').forEach(n => n.remove());
     const c = comp();
+    const p = place();
     const body = document.createElement('div');
     body.className = 'insp-body';
-    if (!c) {
-      const p = document.createElement('p'); p.className = 'todo'; p.textContent = 'Sélectionne un widget sur le canvas.';
-      body.appendChild(p); root.appendChild(body); return;
+    if (!c || !p) {                               // sélection absente ou devenue obsolète (page changée, undo…)
+      const para = document.createElement('p'); para.className = 'todo'; para.textContent = 'Sélectionne un widget sur le canvas.';
+      body.appendChild(para); root.appendChild(body); return;
     }
     const head = document.createElement('div'); head.className = 'insp-head';
     head.textContent = `${c.type} · ${sel.ref}`;
@@ -163,9 +164,9 @@ export function createInspector(root, model, { rerenderCanvas, clearSelection } 
     const del = document.createElement('button'); del.className = 'insp-del'; del.textContent = 'Supprimer de la page';
     del.addEventListener('click', () => {
       const i = sel.placeIndex;
-      model.commit(s => removePlacement(s, 0, i));
       sel = null;
-      clearSelection && clearSelection(); // désélectionne le canvas
+      clearSelection && clearSelection();                 // désélectionne AVANT le commit (évite le flash, note C1-c)
+      model.commit(s => removePlacement(s, getActivePage(), i));
     });
     body.appendChild(del);
     root.appendChild(body);
