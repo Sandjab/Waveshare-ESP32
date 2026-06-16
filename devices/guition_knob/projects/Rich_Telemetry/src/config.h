@@ -3,6 +3,7 @@
 #define MAX_PAGES               8
 #define MAX_PLACEMENTS_PER_PAGE 12
 #define MAX_THRESHOLDS          4
+#define MAX_CTX_VARS            32
 #define ID_LEN                  24
 #define TEXT_LEN                32
 #define CAPTION_LEN             24

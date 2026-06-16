@@ -4,6 +4,7 @@
 #include "color.h"
 #include "nav_logic.h"
 #include "dashboard.h"
+#include "context.h"
 #include <ArduinoJson.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -229,6 +230,32 @@ void test_threshold_none(void) {
     TEST_ASSERT_EQUAL_HEX32(0xABCDEF, threshold_color(t,0,50,0xABCDEF));
 }
 
+// --- contexte (blackboard) ---
+void test_ctx_set_find_num(void) {
+    Context c{};
+    TEST_ASSERT_TRUE(ctx_set_num(&c, "cpu", 42, 100));
+    int i = ctx_find(&c, "cpu");
+    TEST_ASSERT_TRUE(i >= 0);
+    TEST_ASSERT_EQUAL_INT(CTX_NUM, c.vars[i].type);
+    TEST_ASSERT_EQUAL_INT(42, (int)c.vars[i].num);
+    TEST_ASSERT_EQUAL_UINT32(100, c.vars[i].updated_at);
+}
+void test_ctx_overwrite_keeps_one_slot(void) {
+    Context c{};
+    ctx_set_num(&c, "x", 1, 0);
+    ctx_set_str(&c, "x", "hi", 5);
+    TEST_ASSERT_EQUAL_INT(1, c.count);                 // meme nom = meme slot
+    int i = ctx_find(&c, "x");
+    TEST_ASSERT_EQUAL_INT(CTX_STR, c.vars[i].type);
+    TEST_ASSERT_EQUAL_STRING("hi", c.vars[i].str);
+}
+void test_ctx_full_rejects(void) {
+    Context c{};
+    char nm[8];
+    for (int k = 0; k < MAX_CTX_VARS; k++) { snprintf(nm, sizeof(nm), "v%d", k); TEST_ASSERT_TRUE(ctx_set_num(&c, nm, k, 0)); }
+    TEST_ASSERT_FALSE(ctx_set_num(&c, "over", 1, 0));  // plein -> refus
+}
+
 int main(int, char**) {
     UNITY_BEGIN();
     RUN_TEST(test_remaining_seconds);
@@ -255,6 +282,9 @@ int main(int, char**) {
     RUN_TEST(test_ring_center_color_defaults_to_color);
     RUN_TEST(test_layout_unknown_type_rejected);
     RUN_TEST(test_schema_types_all_resolve);
+    RUN_TEST(test_ctx_set_find_num);
+    RUN_TEST(test_ctx_overwrite_keeps_one_slot);
+    RUN_TEST(test_ctx_full_rejects);
     RUN_TEST(test_layout_invalid_keeps_old);
     RUN_TEST(test_hex_parse);
     RUN_TEST(test_hex_no_hash);
