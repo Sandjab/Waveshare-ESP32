@@ -1,10 +1,10 @@
 # Rich_Telemetry Designer — HANDOFF (reprise après clear context)
 
-**Dernière mise à jour : 2026-06-15.** Document autoporteur pour reprendre le travail sur l'éditeur WYSIWYG du designer. Lis aussi `specs/` et `plans/` (ils sont la source de vérité ; ce fichier est l'état + le plan de reprise).
+**Dernière mise à jour : 2026-06-16.** Document autoporteur pour reprendre le travail sur l'éditeur WYSIWYG du designer. Lis aussi `specs/` et `plans/` (ils sont la source de vérité ; ce fichier est l'état + le plan de reprise).
 
 ## TL;DR
 
-L'éditeur WYSIWYG du designer est découpé en **3 plans séquentiels (A/B/C)**. **Le Plan A (fondation) est implémenté, testé, revu et vérifié en navigateur.** Plans B et C restent à écrire et exécuter. Tout vit sur la branche **`feat/rt-designer`** (non mergée).
+L'éditeur WYSIWYG du designer est découpé en **3 plans séquentiels (A/B/C)**. **Les Plans A (fondation) et B (canvas WYSIWYG) sont implémentés, testés, revus et vérifiés en navigateur.** **Le Plan C reste à écrire et exécuter** (palette, inspecteur, pages CRUD, file-io, mutations dédiées `model.js`). Tout vit sur la branche **`feat/rt-designer`** (non mergée).
 
 ## Branche & base
 
@@ -55,26 +55,31 @@ Le câblage DOM n'est pas couvert par `node --test` → vérification navigateur
 
 1. Usage : **pour n'importe qui** (UX guidée). 2. Positionnement : **hybride** (drag + snap aux ancrages, ancrage éditable). 3. Aperçu : **best-effort** HTML/canvas, **indicatif** (le device arbitre). 4. Disposition : **3 colonnes**. 5. Stack : **vanilla zéro-build**, ajv vendorisé. 6. **CORS** : header côté firmware.
 
-## Ce qui reste
+## Ce qui est fait — Plan B (canvas WYSIWYG)
 
-### Plan B — Canvas WYSIWYG (à écrire + exécuter)
-- `js/render.js` : rendu best-effort des widgets écran (`label/readout/bar/ring`) + **badges** pour `led_ring`/`sound` (pas de rendu écran). Webfont Montserrat. Ring = arc avec ouverture `gap_deg` en bas + pill + couleurs de seuil.
-- `js/canvas.js` : drag + snap via `geometry.js` (déjà testé), sélection, **poignées de redimensionnement** (bar : width/height ; ring : radius/thickness/gap_deg).
-- Valeurs d'aperçu **mock** (éditables ; remplacées à l'exécution par `/update`, hors scope).
-- ⚠️ **Pièges (revue finale)** : (a) en drag, **commit-on-drop / coalescer** — surtout PAS `model.commit()` par frame de pointeur (flood undo + clone complet par frame) ; (b) la math de **resize** (radius/thickness/width/height) et la **circle-awareness** (coins hors zone ronde visible) sont **net-new** en B, pas dans `geometry.js`.
+Implémenté en subagent-driven (plan : `plans/2026-06-15-wysiwyg-editor-plan-b-canvas.md`), revu (spec + qualité par tâche + revue holistique finale = SHIP) et vérifié en navigateur (Playwright).
+- `js/render.js` : rendu best-effort `label/readout/bar/ring` + **badges** `led_ring`/`sound` ; math pure (barFill, pickThresholdColor, formatValue/Remaining, arcPath/ringPaths) **testée** ; miroir fidèle de `src/view.cpp`/`color.cpp`/`format.cpp` (dont `Math.trunc` du `%` pour coller à `(long)c.value`).
+- `js/canvas.js` : drag + snap via `geometry.js`, sélection, **poignées de redim** (bar width/height ; ring radius/thickness/gap_deg), commit-on-drop, conscience du cercle (`.outside`), re-render sur `document.fonts.ready` (centrage fidèle au 1er paint).
+- `js/geometry.js` += `resizeBox/ringRadiusAt/ringThicknessAt/gapDegAt/cornersOutsideCircle` (**testés**). `default-layout.js` = layout démo (4 widgets + 2 badges). `style.css`/`index.html` : stage rond 360 px + poignées + badges + Montserrat vendorisée.
+- **Décision verrouillée (firmware)** : le ring est **centré et non déplaçable** (`lv_obj_center`, `view.cpp:51` → `anchor/dx/dy` ignorés pour un ring), seulement redimensionnable. Documenté dans `designer/README.md` (« Aperçu : indicatif »).
+
+**Vérifié :** `node --test` → 43/43. Navigateur : rendu correct, drag = **1 seul** undo/déplacement, ring non déplaçable, resize bar+ring OK, undo/redo, `.outside`, sync JSON↔canvas bidirectionnelle.
+
+## Ce qui reste
 
 ### Plan C — Panneaux & fichier (à écrire + exécuter)
 - `js/palette.js` (6 types + bibliothèque de composants partagés inter-pages), `js/inspector.js` (props par type + éditeur de `thresholds` + valeur mock + **signalement ASCII** + **humaniser les messages d'erreur ajv** — actuellement bruts type `/background must match pattern`), `js/pages.js` (CRUD + réordonner), `js/file-io.js` (export/import `layout.json`).
 - Ajouter des **mutations dédiées** à `model.js` (`addComponent`, `placeOnPage`, page CRUD…) en **TDD `node --test`** (l'API actuelle `commit(mutator)` est volontairement minimale, extension prévue).
+- **À reprendre dans `canvas.js` quand Plan C arrive** (notes de la revue holistique B) : (a) la sélection est un **index** dans `pages[0].place` — OK tant que les placements sont stables, mais le CRUD de Plan C (suppression/réordre) doit **re-keyer la sélection sur une référence stable** (id/objet) ; (b) le canvas est **câblé en dur sur `pages[0]`** (`render`, les 3 closures de commit, `placements()`) — le multi-pages doit **propager l'index de page active** ; (c) `onSelect` est un no-op câblé dans `app.js`, prêt pour l'inspecteur.
 
 ### Prérequis firmware (hors designer)
 - **CORS** sur le `WebServer` ESP32 : `Access-Control-Allow-Origin: *` + handler `OPTIONS` (preflight POST JSON). Sur la branche embarqué, **commit dédié**. Sans lui, Charger/Pousser device est câblé mais bloqué dans un navigateur (les autres lots n'en dépendent pas ; l'export fichier de Plan C permet de travailler sans device).
 - À confirmer quand le firmware CORS arrive : la forme de réponse de `POST /layout` (`device.js` suppose `{ok, error}` ; un 200 sans corps JSON est traité comme succès).
 
 ## Process de reprise recommandé
-1. Si Plan B/C ont des décisions ouvertes → `superpowers:brainstorming` d'abord. Sinon, les décisions sont déjà dans le spec.
-2. `superpowers:writing-plans` pour détailler le plan B (puis C).
-3. `superpowers:subagent-driven-development` pour exécuter (un subagent/tâche + revue spec puis qualité ; vérif navigateur du DOM par le contrôleur via Playwright).
+1. Si Plan C a des décisions ouvertes → `superpowers:brainstorming` d'abord. Sinon, les décisions sont déjà dans le spec.
+2. `superpowers:writing-plans` pour détailler le plan C (même format que A/B).
+3. `superpowers:subagent-driven-development` pour exécuter (un subagent/tâche + revue spec puis qualité ; vérif navigateur du DOM par le contrôleur via Playwright). Plans A et B ont suivi exactement ce process.
 
 ## Pièges rencontrés (à re-signaler aux implémenteurs)
 - **Apostrophes dans les labels de test** : un label contenant `'` doit être une string délimitée par `"` (sinon SyntaxError).
