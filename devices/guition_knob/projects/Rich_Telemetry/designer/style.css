@@ -1,0 +1,134 @@
+:root {
+  --bg: #0b1220;
+  --panel: #0d1117;
+  --line: #1e293b;
+  --ink: #e6edf3;
+  --muted: #64748b;
+  --accent: #38bdf8;
+  --ok: #22c55e;
+  --err: #f87171;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: 14px/1.5 system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+header h1 { font-size: 14px; margin: 0; }
+header .grow { flex: 1; }
+button { background: #0f2233; border: 1px solid var(--accent); color: var(--ink); border-radius: 5px; padding: 4px 10px; cursor: pointer; }
+button:disabled { border-color: var(--line); color: #475569; cursor: default; }
+input { background: #0a1424; border: 1px solid var(--line); color: var(--ink); border-radius: 5px; padding: 3px 6px; }
+main { display: grid; grid-template-columns: 170px 1fr 200px; gap: 10px; padding: 10px; min-height: 50vh; }
+.col { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+.col h2 { font-size: 12px; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+.todo { color: #475569; font-style: italic; }
+footer { padding: 10px 12px; border-top: 1px solid var(--line); }
+textarea { width: 100%; height: 220px; background: #070d17; color: #cbd5e1; border: 1px solid var(--line); border-radius: 8px; font: 12.5px/1.5 monospace; padding: 10px; }
+.row { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+.status, .valid { font-size: 12.5px; }
+.status.ok, .valid.ok { color: var(--ok); }
+.status.err, .valid.err { color: var(--err); }
+.errors { color: var(--err); font: 12px/1.4 monospace; white-space: pre-wrap; margin: 6px 0 0; }
+
+/* --- Plan B : webfont + canvas --- */
+@font-face {
+  font-family: 'Montserrat';
+  src: url('vendor/fonts/montserrat-500.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+
+#canvas-col { display: flex; flex-direction: column; align-items: center; }
+.stage {
+  position: relative;
+  width: 360px; height: 360px;     /* 1 px CSS = 1 unité écran (échelle 1:1) */
+  border-radius: 50%;
+  background: #000;
+  /* PAS d'overflow:hidden : il clipperait les poignées de redim (handle-br, poignées
+     de ring) près du bord. Le rendu rond vient du border-radius + .screen-circle ;
+     un widget hors-cercle est signalé par .w.outside, pas clippé. */
+  flex: none;
+  touch-action: none;              /* pointer events propres (pas de scroll/zoom) */
+}
+.screen-circle {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  border: 1px dashed #334155;      /* matérialise la zone ronde visible */
+  pointer-events: none;
+}
+.w { position: absolute; user-select: none; cursor: move; white-space: nowrap; }
+.w.selected { outline: 1px solid var(--accent); outline-offset: 2px; }
+.w.snapped { outline: 1px solid var(--ok); }
+.w.outside { outline: 1px dashed var(--err); }  /* coin hors zone ronde */
+
+.w-bar-label { font: 12px Montserrat, system-ui, sans-serif; color: #9AA0AA; margin-bottom: 4px; }
+.w-bar-track { background: #1F2937; border-radius: 3px; overflow: hidden; }
+.w-bar-fill { height: 100%; }
+
+.w-ring { cursor: default; }       /* ring centré, non déplaçable (view.cpp:51) */
+.w-ring svg { display: block; }
+.w-ring-pill, .w-ring-cap {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  font: 12px Montserrat, system-ui, sans-serif;
+}
+.w-ring-pill { color: #04121A; border-radius: 13px; padding: 2px 8px; }
+.w-ring-cap { font-size: 13px; }
+
+.handle {
+  position: absolute; width: 11px; height: 11px; box-sizing: border-box;
+  background: var(--accent); border: 1px solid #04121A; border-radius: 2px; z-index: 5;
+}
+.handle-radius, .handle-thick, .handle-gap { transform: translate(-50%, -50%); }
+.handle-radius, .handle-thick { cursor: ns-resize; }
+.handle-gap { cursor: ew-resize; }
+.handle-br { right: -6px; bottom: -6px; cursor: nwse-resize; }
+
+.badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; justify-content: center; }
+.badge { font-size: 12px; padding: 3px 8px; border-radius: 12px; border: 1px solid var(--line); color: var(--muted); }
+
+/* --- Plan C1 : palette --- */
+.palette-list { display: flex; flex-direction: column; gap: 6px; }
+.palette-item {
+  padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px;
+  background: #0f1a2b; cursor: grab; user-select: none; font-size: 13px;
+}
+.palette-item:active { cursor: grabbing; }
+.palette-item:hover { border-color: var(--accent); }
+
+/* --- Plan C1 : inspecteur --- */
+.insp-head { font-size: 12px; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
+.insp-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 12.5px; }
+.insp-label { flex: 0 0 78px; color: #9aa0aa; }
+.insp-row input[type="text"], .insp-row input[type="number"], .insp-row select { flex: 1; min-width: 0; background: #0a1424; border: 1px solid var(--line); color: var(--ink); border-radius: 4px; padding: 2px 5px; }
+.insp-row input[type="color"] { width: 36px; height: 22px; padding: 0; border: 1px solid var(--line); background: none; }
+.insp-warn { color: var(--err); font-size: 11px; }
+.insp-del { margin-top: 10px; width: 100%; border-color: var(--err); color: var(--err); }
+.insp-sub { font-size: 11px; color: var(--muted); margin: 10px 0 4px; text-transform: uppercase; }
+.insp-note { font-size: 11px; color: var(--muted); font-style: italic; margin: 2px 0 6px; }
+.insp-th-rm { flex: 0 0 auto; padding: 0 8px; border-color: var(--line); color: var(--muted); }
+.insp-th-add { width: 100%; margin-top: 2px; }
+
+/* --- Plan C2 : onglets de pages --- */
+.pages-bar { display: flex; align-items: center; gap: 12px; padding: 6px 12px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.page-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.page-tab {
+  background: #0f1a2b; border: 1px solid var(--line); color: var(--muted);
+  border-radius: 6px 6px 0 0; padding: 4px 12px; cursor: pointer; font-size: 12.5px;
+}
+.page-tab.active { color: var(--ink); border-color: var(--accent); background: var(--panel); }
+.page-rename { width: 120px; }
+.page-ctrls { display: flex; gap: 4px; }
+.page-btn { padding: 3px 9px; font-size: 12px; }
+.page-btn:disabled { border-color: var(--line); color: #475569; cursor: default; }
+.page-del { border-color: var(--err); color: var(--err); }
+.page-del:disabled { border-color: var(--line); color: #475569; }
+
+/* --- Plan C2 : bibliothèque de composants --- */
+.lib-title { font-size: 11px; text-transform: uppercase; color: var(--muted); margin: 14px 0 6px; }
+.lib-list { display: flex; flex-direction: column; gap: 5px; }
+.lib-item {
+  padding: 6px 9px; border: 1px solid var(--line); border-radius: 6px; background: #0a1424;
+  cursor: grab; user-select: none; font-size: 12px; display: flex; justify-content: space-between; gap: 6px;
+}
+.lib-item:active { cursor: grabbing; }
+.lib-item:hover { border-color: var(--accent); }
+.lib-item .lib-type { color: var(--muted); font-size: 10.5px; }
+.lib-empty { font-size: 11px; color: #475569; font-style: italic; }

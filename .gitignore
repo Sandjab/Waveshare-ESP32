@@ -25,3 +25,6 @@ devices.local.yaml
 
 # Superpowers brainstorming companion (mockups, transient)
 .superpowers/
+
+# Playwright MCP smoke-test artifacts (transient)
+.playwright-mcp/
