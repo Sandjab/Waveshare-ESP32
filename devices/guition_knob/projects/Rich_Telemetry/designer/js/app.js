@@ -36,9 +36,11 @@ async function main() {
     getActivePage: canvas.getActivePage
   });
 
-  // Palette : glisser un type sur le canvas crée le composant, puis on le sélectionne.
+  // Palette : glisser un type (création) ou un composant de la bibliothèque (partage) sur le canvas,
+  // sur la page active, puis sélection du nouveau placement.
   createPalette($('palette'), model, {
     stage: $('stage'),
+    getActivePage: canvas.getActivePage,
     onCreated: i => canvas.selectPlacement(i)
   });
 
