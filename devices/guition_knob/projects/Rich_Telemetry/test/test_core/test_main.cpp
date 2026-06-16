@@ -301,6 +301,54 @@ void test_dash_set_context_writes_ctx(void) {
     TEST_ASSERT_EQUAL_INT(21, (int)d.ctx.vars[ctx_find(&d.ctx,"temp")].num);
 }
 
+// --- context_apply : variables liees -> composants ---
+static const char* bound_layout(const char* type, const char* extra) {
+    static char b[256];
+    snprintf(b, sizeof(b),
+        "{\"components\":{\"x\":{\"type\":\"%s\",\"bind\":\"v\"%s}},"
+        "\"pages\":[{\"name\":\"p\",\"place\":[{\"ref\":\"x\"}]}]}", type, extra);
+    return b;
+}
+void test_ctxapply_readout_num_formats(void) {
+    Dashboard d{}; char err[80];
+    dash_set_layout(&d, bound_layout("readout", ",\"unit\":\"C\""), err, sizeof(err));
+    dash_set_context(&d, "{\"v\":21}", 1);
+    context_apply(&d);
+    int i = dash_find(&d,"x");
+    TEST_ASSERT_EQUAL_STRING("21 C", d.components[i].vstr);
+    TEST_ASSERT_TRUE(d.components[i].dirty);
+}
+void test_ctxapply_readout_string(void) {
+    Dashboard d{}; char err[80];
+    dash_set_layout(&d, bound_layout("readout", ""), err, sizeof(err));
+    dash_set_context(&d, "{\"v\":\"OK\"}", 1);
+    context_apply(&d);
+    TEST_ASSERT_EQUAL_STRING("OK", d.components[dash_find(&d,"x")].vstr);
+}
+void test_ctxapply_bar_value(void) {
+    Dashboard d{}; char err[80];
+    dash_set_layout(&d, bound_layout("bar", ""), err, sizeof(err));
+    dash_set_context(&d, "{\"v\":63}", 1);
+    context_apply(&d);
+    TEST_ASSERT_EQUAL_INT(63, d.components[dash_find(&d,"x")].value);
+}
+void test_ctxapply_unchanged_not_dirty(void) {
+    Dashboard d{}; char err[80];
+    dash_set_layout(&d, bound_layout("bar", ""), err, sizeof(err));
+    dash_set_context(&d, "{\"v\":63}", 1);
+    context_apply(&d);
+    d.components[dash_find(&d,"x")].dirty = false;
+    context_apply(&d);                                  // meme valeur : pas de re-dirty
+    TEST_ASSERT_FALSE(d.components[dash_find(&d,"x")].dirty);
+}
+void test_ctxapply_missing_var_keeps_value(void) {
+    Dashboard d{}; char err[80];
+    dash_set_layout(&d, bound_layout("bar", ""), err, sizeof(err));
+    d.components[dash_find(&d,"x")].value = 7;
+    context_apply(&d);                                  // variable "v" absente
+    TEST_ASSERT_EQUAL_INT(7, d.components[dash_find(&d,"x")].value);
+}
+
 int main(int, char**) {
     UNITY_BEGIN();
     RUN_TEST(test_remaining_seconds);
@@ -337,6 +385,11 @@ int main(int, char**) {
     RUN_TEST(test_ctx_apply_json_num_and_str);
     RUN_TEST(test_layout_bind_parsed);
     RUN_TEST(test_dash_set_context_writes_ctx);
+    RUN_TEST(test_ctxapply_readout_num_formats);
+    RUN_TEST(test_ctxapply_readout_string);
+    RUN_TEST(test_ctxapply_bar_value);
+    RUN_TEST(test_ctxapply_unchanged_not_dirty);
+    RUN_TEST(test_ctxapply_missing_var_keeps_value);
     RUN_TEST(test_layout_invalid_keeps_old);
     RUN_TEST(test_hex_parse);
     RUN_TEST(test_hex_no_hash);

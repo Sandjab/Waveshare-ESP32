@@ -181,6 +181,36 @@ void dash_set_context(Dashboard* d, const char* json, uint32_t now) {
     ctx_apply_json(&d->ctx, doc.as<JsonObjectConst>(), now);
 }
 
+void context_apply(Dashboard* d) {
+    for (int i = 0; i < d->comp_count; i++) {
+        Component& c = d->components[i];
+        if (c.bind[0] == '\0') continue;                // pas de bind -> push par id
+        int vi = ctx_find(&d->ctx, c.bind);
+        if (vi < 0) continue;                           // variable absente -> garde la derniere valeur
+        const CtxVar& v = d->ctx.vars[vi];
+        bool changed = false;
+        switch (c.type) {
+            case COMP_BAR:
+            case COMP_RING:                             // scalaire -> valeur primaire (pct pour le ring)
+                if (v.type == CTX_NUM) {
+                    int32_t nv = (int32_t)v.num;
+                    if (c.value != nv) { c.value = nv; changed = true; }
+                }
+                break;
+            case COMP_READOUT:
+            case COMP_LABEL: {                          // num -> format_value (unite pour readout) ; str -> tel quel
+                char nb[TEXT_LEN];
+                if (v.type == CTX_STR) strlcpy(nb, v.str, sizeof(nb));
+                else format_value(v.num, c.type == COMP_READOUT ? c.unit : "", nb, sizeof(nb));
+                if (strncmp(c.vstr, nb, sizeof(c.vstr)) != 0) { strlcpy(c.vstr, nb, sizeof(c.vstr)); changed = true; }
+                break;
+            }
+            default: break;                            // led_ring/sound : pas de bind
+        }
+        if (changed) { c.dirty = true; d->values_dirty = true; }
+    }
+}
+
 void dash_tick_countdown(Dashboard* d, uint32_t elapsed_s) {
     for (int i = 0; i < d->comp_count; i++) {
         Component& c = d->components[i];
