@@ -288,6 +288,19 @@ void test_ctx_apply_json_num_and_str(void) {
     TEST_ASSERT_EQUAL_STRING("srv1", c.vars[ctx_find(&c,"host")].str);
 }
 
+void test_layout_bind_parsed(void) {
+    Dashboard d{}; char err[80];
+    const char* L = "{\"components\":{\"t\":{\"type\":\"readout\",\"bind\":\"temp\"}},\"pages\":[]}";
+    TEST_ASSERT_TRUE(dash_set_layout(&d, L, err, sizeof(err)));
+    TEST_ASSERT_EQUAL_STRING("temp", d.components[dash_find(&d,"t")].bind);
+}
+void test_dash_set_context_writes_ctx(void) {
+    Dashboard d{};
+    dash_set_context(&d, "{\"temp\":21}", 3);
+    TEST_ASSERT_TRUE(ctx_find(&d.ctx, "temp") >= 0);
+    TEST_ASSERT_EQUAL_INT(21, (int)d.ctx.vars[ctx_find(&d.ctx,"temp")].num);
+}
+
 int main(int, char**) {
     UNITY_BEGIN();
     RUN_TEST(test_remaining_seconds);
@@ -322,6 +335,8 @@ int main(int, char**) {
     RUN_TEST(test_ptr_missing_is_null);
     RUN_TEST(test_ptr_escape);
     RUN_TEST(test_ctx_apply_json_num_and_str);
+    RUN_TEST(test_layout_bind_parsed);
+    RUN_TEST(test_dash_set_context_writes_ctx);
     RUN_TEST(test_layout_invalid_keeps_old);
     RUN_TEST(test_hex_parse);
     RUN_TEST(test_hex_no_hash);

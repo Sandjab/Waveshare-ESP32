@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "config.h"
+#include "context.h"
 
 enum CompType { COMP_NONE, COMP_LABEL, COMP_READOUT, COMP_BAR, COMP_RING, COMP_LED_RING, COMP_SOUND };
 enum LedMode  { LED_OFF, LED_SOLID, LED_PROGRESS, LED_SPINNER, LED_BLINK, LED_BREATHE };
@@ -26,6 +27,7 @@ struct Component {
     int      threshold_count;
     uint16_t font;
     uint8_t  led_brightness_cfg;
+    char     bind[ID_LEN];           // nom de variable du contexte (pull) ; vide = push par id
 
     // --- etat (modifie par /update) ---
     int32_t  value;
@@ -61,9 +63,12 @@ struct Dashboard {
     int       active_page;
     bool      layout_dirty;
     bool      values_dirty;
+    Context   ctx;                   // blackboard alimente par /context (push) et le pull (P2)
 };
 
 int  dash_find(const Dashboard* d, const char* id);
 bool dash_set_layout(Dashboard* d, const char* json, char* err, size_t errn);
 int  dash_apply_update(Dashboard* d, const char* json, char* unknown_csv, size_t n);
 void dash_tick_countdown(Dashboard* d, uint32_t elapsed_s);
+void dash_set_context(Dashboard* d, const char* json, uint32_t now);
+void context_apply(Dashboard* d);

@@ -71,6 +71,7 @@ bool dash_set_layout(Dashboard* d, const char* json, char* err, size_t errn) {
         c.countdown   = o["countdown"] | false;
         c.font        = o["font"] | 20;
         c.led_brightness_cfg = o["brightness"] | 64;
+        strlcpy(c.bind, o["bind"] | "", sizeof(c.bind));
         JsonArrayConst th = o["thresholds"].as<JsonArrayConst>();
         for (JsonArrayConst pair : th) {
             if (c.threshold_count >= MAX_THRESHOLDS) break;
@@ -172,6 +173,12 @@ int dash_apply_update(Dashboard* d, const char* json, char* unknown_csv, size_t 
         updated++;
     }
     return updated;
+}
+
+void dash_set_context(Dashboard* d, const char* json, uint32_t now) {
+    JsonDocument doc;
+    if (deserializeJson(doc, json)) return;          // JSON invalide : on garde le contexte
+    ctx_apply_json(&d->ctx, doc.as<JsonObjectConst>(), now);
 }
 
 void dash_tick_countdown(Dashboard* d, uint32_t elapsed_s) {
