@@ -45,10 +45,10 @@ Un même `id` peut être placé sur plusieurs pages : il n'existe qu'en un seul 
 
 | Type | Config | Valeur `/update` | Notes |
 |------|--------|-----------------|-------|
-| `label` | `text`, `font` (14/20/28), `color` | string (optionnel) | Texte statique ou mis à jour |
+| `label` | `text`, `font` (14/20/28/36/48), `color` | string (optionnel) | Texte statique ou mis à jour |
 | `readout` | `label`, `unit`, `font`, `color` | nombre ou string | Affiché « CPU 42 % » (label + valeur) |
 | `bar` | `label`, `min`, `max`, `color` | nombre | Géométrie : `width`, `height`. Label affiché au-dessus de la barre. |
-| `ring` | `color`, `pill`, `countdown`, `min`, `max`, `thresholds` | `{"pct":0-100,"reset_in_s":N}` | Voir ci-dessous |
+| `ring` | `color`, `font`, `pill`, `center_pct`, `center_color`, `countdown`, `min`, `max`, `thresholds` | `{"pct":0-100,"reset_in_s":N}` | Voir ci-dessous |
 | `led_ring` | *(physique, pas de géométrie)* | objet mode | Anneau 13 WS2812 |
 | `sound` | *(physique, pas de géométrie)* | objet tone/name | Tir unique |
 
