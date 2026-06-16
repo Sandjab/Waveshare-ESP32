@@ -13,8 +13,8 @@ test('getMock renvoie un objet propre au type sans défaut', () => {
 });
 
 test('setMock fusionne et persiste par id', () => {
-  setMock('cpu', { value: 88 });
-  assert.equal(getMock('cpu', 'readout').value, 88);
+  setMock('cpuEdit', { value: 88 });            // id dédié : pas de couplage d'ordre avec les autres tests
+  assert.equal(getMock('cpuEdit', 'readout').value, 88);
 });
 
 test('les ids sont indépendants', () => {

@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   uniqueId, DEFAULTS, addComponent, addPlacement, removePlacement,
-  setComponentProp, setPlacementProp, setThresholds
+  setComponentProp, setPlacementProp, setThresholds,
+  addPage, removePage, renamePage, reorderPages
 } from '../js/mutations.js';
 
 const fresh = () => ({ components: {}, pages: [{ name: 'P1', place: [] }] });
@@ -77,4 +78,38 @@ test('setPlacementProp ignore un index hors borne', () => {
   const s = fresh();
   setPlacementProp(s, 0, 99, 'dy', 10); // ne doit pas throw
   assert.equal(s.pages[0].place.length, 0);
+});
+
+test('addPage ajoute une page vide nommée en fin de liste', () => {
+  const s = fresh();
+  addPage(s, 'P2');
+  assert.equal(s.pages.length, 2);
+  assert.deepEqual(s.pages[1], { name: 'P2', place: [] });
+});
+
+test('removePage retire la page par index', () => {
+  const s = fresh();
+  addPage(s, 'P2');
+  removePage(s, 0);
+  assert.deepEqual(s.pages.map(p => p.name), ['P2']);
+});
+
+test('renamePage change le nom de la page', () => {
+  const s = fresh();
+  renamePage(s, 0, 'Accueil');
+  assert.equal(s.pages[0].name, 'Accueil');
+});
+
+test('reorderPages déplace from → to', () => {
+  const s = fresh();
+  addPage(s, 'P2'); addPage(s, 'P3');          // [P1, P2, P3]
+  reorderPages(s, 0, 2);                        // [P2, P3, P1]
+  assert.deepEqual(s.pages.map(p => p.name), ['P2', 'P3', 'P1']);
+});
+
+test('reorderPages ignore les index hors bornes (no-op)', () => {
+  const s = fresh();
+  addPage(s, 'P2');                             // [P1, P2]
+  reorderPages(s, 0, 5);
+  assert.deepEqual(s.pages.map(p => p.name), ['P1', 'P2']);
 });

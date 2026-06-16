@@ -59,3 +59,29 @@ export function setThresholds(state, id, thresholds) {
   if (thresholds && thresholds.length) c.thresholds = thresholds;
   else delete c.thresholds;
 }
+
+// --- Pages (Plan C2) ---
+
+// Ajoute une page vide en fin de liste. `name` est requis (le schéma exige page.name).
+export function addPage(state, name) {
+  (state.pages ||= []).push({ name, place: [] });
+}
+
+export function removePage(state, pageIndex) {
+  if (!state.pages) return;
+  state.pages.splice(pageIndex, 1);
+}
+
+export function renamePage(state, pageIndex, name) {
+  const page = state.pages?.[pageIndex];
+  if (page) page.name = name;
+}
+
+// Déplace la page d'index `from` vers `to`. No-op si index hors bornes ou identiques.
+export function reorderPages(state, from, to) {
+  const pages = state.pages;
+  if (!pages || from === to) return;
+  if (from < 0 || from >= pages.length || to < 0 || to >= pages.length) return;
+  const [p] = pages.splice(from, 1);
+  pages.splice(to, 0, p);
+}
