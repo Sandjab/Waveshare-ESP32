@@ -105,3 +105,18 @@ textarea { width: 100%; height: 220px; background: #070d17; color: #cbd5e1; bord
 .insp-note { font-size: 11px; color: var(--muted); font-style: italic; margin: 2px 0 6px; }
 .insp-th-rm { flex: 0 0 auto; padding: 0 8px; border-color: var(--line); color: var(--muted); }
 .insp-th-add { width: 100%; margin-top: 2px; }
+
+/* --- Plan C2 : onglets de pages --- */
+.pages-bar { display: flex; align-items: center; gap: 12px; padding: 6px 12px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.page-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.page-tab {
+  background: #0f1a2b; border: 1px solid var(--line); color: var(--muted);
+  border-radius: 6px 6px 0 0; padding: 4px 12px; cursor: pointer; font-size: 12.5px;
+}
+.page-tab.active { color: var(--ink); border-color: var(--accent); background: var(--panel); }
+.page-rename { width: 120px; }
+.page-ctrls { display: flex; gap: 4px; }
+.page-btn { padding: 3px 9px; font-size: 12px; }
+.page-btn:disabled { border-color: var(--line); color: #475569; cursor: default; }
+.page-del { border-color: var(--err); color: var(--err); }
+.page-del:disabled { border-color: var(--line); color: #475569; }

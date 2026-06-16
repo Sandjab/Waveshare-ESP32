@@ -5,6 +5,7 @@ import { loadLayout, pushLayout } from './device.js';
 import { createCanvas } from './canvas.js';
 import { createPalette } from './palette.js';
 import { createInspector } from './inspector.js';
+import { createPages } from './pages.js';
 
 const $ = id => document.getElementById(id);
 
@@ -39,6 +40,12 @@ async function main() {
   createPalette($('palette'), model, {
     stage: $('stage'),
     onCreated: i => canvas.selectPlacement(i)
+  });
+
+  // Onglets de pages : sélectionner la page active + CRUD + réordonner.
+  const pages = createPages($('pages'), model, {
+    getActivePage: canvas.getActivePage,
+    setPage: i => canvas.setPage(i)
   });
 
   bindJsonView(model, {
