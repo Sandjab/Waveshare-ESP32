@@ -217,6 +217,32 @@ void test_update_unknown_reported_not_applied(void) {
     TEST_ASSERT_EQUAL_STRING("ghost", unk);
 }
 
+// --- apply des types physiques (caracterisation : verrouille le comportement avant la refacto 2b) ---
+void test_update_led_ring_mode_color_value(void) {
+    Dashboard d{}; char err[80], unk[UNKNOWN_CSV_LEN];
+    const char* L = "{\"components\":{\"led\":{\"type\":\"led_ring\"}},\"pages\":[]}";
+    TEST_ASSERT_TRUE(dash_set_layout(&d, L, err, sizeof(err)));
+    dash_apply_update(&d,
+        "{\"led\":{\"mode\":\"progress\",\"color\":\"#FF8800\",\"value\":42,\"period_ms\":500}}",
+        unk, sizeof(unk));
+    int i = dash_find(&d, "led");
+    TEST_ASSERT_EQUAL_INT(LED_PROGRESS, d.components[i].led_mode);
+    TEST_ASSERT_EQUAL_HEX32(0xFF8800, d.components[i].led_color);
+    TEST_ASSERT_EQUAL_UINT8(42, d.components[i].led_value);
+    TEST_ASSERT_EQUAL_UINT16(500, d.components[i].led_period_ms);
+}
+void test_update_sound_sets_pending(void) {
+    Dashboard d{}; char err[80], unk[UNKNOWN_CSV_LEN];
+    const char* L = "{\"components\":{\"buzz\":{\"type\":\"sound\"}},\"pages\":[]}";
+    TEST_ASSERT_TRUE(dash_set_layout(&d, L, err, sizeof(err)));
+    dash_apply_update(&d, "{\"buzz\":{\"tone\":880,\"ms\":200,\"name\":\"beep\"}}", unk, sizeof(unk));
+    int i = dash_find(&d, "buzz");
+    TEST_ASSERT_TRUE(d.components[i].snd_pending);
+    TEST_ASSERT_EQUAL_UINT16(880, d.components[i].snd_tone);
+    TEST_ASSERT_EQUAL_UINT16(200, d.components[i].snd_ms);
+    TEST_ASSERT_EQUAL_STRING("beep", d.components[i].snd_name);
+}
+
 void test_next_mid(void)     { TEST_ASSERT_EQUAL_INT(2, nav_next(1, 3, true)); }
 void test_next_wrap(void)    { TEST_ASSERT_EQUAL_INT(0, nav_next(2, 3, true)); }
 void test_next_clamp(void)   { TEST_ASSERT_EQUAL_INT(2, nav_next(2, 3, false)); }
@@ -412,6 +438,8 @@ int main(int, char**) {
     RUN_TEST(test_update_partial_leaves_others);
     RUN_TEST(test_update_ring_object);
     RUN_TEST(test_update_unknown_reported_not_applied);
+    RUN_TEST(test_update_led_ring_mode_color_value);
+    RUN_TEST(test_update_sound_sets_pending);
     RUN_TEST(test_layout_parse_counts);
     RUN_TEST(test_layout_types_and_geom);
     RUN_TEST(test_ring_center_pct_parsed);
