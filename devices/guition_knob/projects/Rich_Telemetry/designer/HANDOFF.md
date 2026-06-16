@@ -4,9 +4,9 @@
 
 ## TL;DR
 
-L'éditeur WYSIWYG du designer est découpé en plans séquentiels. **Plans A (fondation) et B (canvas WYSIWYG) : implémentés, testés, revus, vérifiés navigateur.** Le « Plan C » a été **scindé en C1 + C2** : **C1 (palette + inspecteur = édition mono-page) est ÉCRIT mais PAS encore exécuté** (`plans/2026-06-16-wysiwyg-editor-plan-c1-panels.md`) ; **C2 (pages CRUD + canvas multi-pages + file-io + humanisation ajv + bibliothèque inter-pages) reste à écrire et exécuter**. Tout vit sur la branche **`feat/rt-designer`** (non mergée).
+L'éditeur WYSIWYG du designer est découpé en plans séquentiels. **Plans A (fondation), B (canvas WYSIWYG) et C1 (palette + inspecteur = édition mono-page) : implémentés, testés, revus (spec + qualité + holistique = SHIP), vérifiés navigateur.** Le « Plan C » a été **scindé en C1 + C2** : **C1 est FAIT** (`plans/2026-06-16-wysiwyg-editor-plan-c1-panels.md`, 6 commits `e8030ea`..`1561478`) ; **C2 (pages CRUD + canvas multi-pages + file-io + humanisation ajv + bibliothèque inter-pages) reste à écrire et exécuter**. Tout vit sur la branche **`feat/rt-designer`** (non mergée).
 
-**Reprise immédiate :** exécuter C1 en subagent-driven (le plan est prêt) — cf. « Process de reprise » en bas.
+**Reprise immédiate :** écrire C2 (`superpowers:writing-plans`, même format que A/B/C1), puis l'exécuter en subagent-driven — cf. « Process de reprise » en bas.
 
 ## Branche & base
 
@@ -69,9 +69,13 @@ Implémenté en subagent-driven (plan : `plans/2026-06-15-wysiwyg-editor-plan-b-
 
 ## Ce qui reste
 
-### Plan C1 — Édition (palette + inspecteur) — ÉCRIT, à EXÉCUTER
+### Plan C1 — Édition (palette + inspecteur) — ✅ FAIT (2026-06-16)
 
-Plan complet : **`plans/2026-06-16-wysiwyg-editor-plan-c1-panels.md`** (6 tâches, code verbatim). Donne un **éditeur mono-page complet** (créer/éditer/supprimer des widgets à la souris, sans toucher au JSON). Lots :
+Exécuté en subagent-driven (un implémenteur/tâche + revue spec puis qualité par tâche + revue holistique finale = **SHIP**), vérifié navigateur (Playwright, pilotage DnD HTML5 via `DataTransfer` synthétique + édition par events `change`). **6 commits** sur `feat/rt-designer` : `e8030ea` mutations · `6b8a279` mocks · `43ea977` canvas (mocks/onSelect/selectPlacement) · `0a6c789` palette · `8379154` inspecteur (props/ASCII/delete) · `1561478` inspecteur (géométrie/seuils/mock). `node --test` → **57/57**. Vérifié : palette 6 types, drag→crée+sélectionne, undo atomique, inspecteur props par type, ASCII live, delete+undo, géométrie (ancrage→`.outside`, width/height, rayon), seuils +/édit/×, mock pilote l'arc **sans** entrer dans l'undo ni le `layout.json`, tout reste `✓ valide`.
+
+**Notes Minor reportées à C2** (revue holistique, non bloquantes) : (a) `canvas.getSelected` est une surface d'API non encore consommée — utile pour re-keyer la sélection en C2 ; (b) `tests/mocks.test.js` a une dépendance d'ordre implicite (id `cpu` partagé entre 2 tests ; passe car `node:test` est à ordre stable — fix = id distinct) ; (c) flash cosmétique de sélection au delete d'un placement non-dernier (`render` synchrone avant `clearSelection` ; aucune corruption — fix C2 = `selected=null` avant `model.commit`) ; (d) le store de mocks garde les ids de composants supprimés (pas de GC ; à balayer en C2 si rename/réutilisation inter-pages).
+
+Plan complet d'origine : **`plans/2026-06-16-wysiwyg-editor-plan-c1-panels.md`** (6 tâches, code verbatim). A donné un **éditeur mono-page complet** (créer/éditer/supprimer des widgets à la souris, sans toucher au JSON). Lots :
 1. `js/mutations.js` — ops layout pures (uniqueId, addComponent, addPlacement, removePlacement, setComponentProp/PlacementProp, setThresholds) + DEFAULTS par type, **TDD `node --test`**.
 2. `js/mocks.js` — store des valeurs d'aperçu par composant (hors layout), **testé**.
 3. `js/canvas.js` (modif) — mocks par composant, `onSelect {placeIndex, ref}`, `selectPlacement(i)`.
@@ -94,9 +98,9 @@ Plan complet : **`plans/2026-06-16-wysiwyg-editor-plan-c1-panels.md`** (6 tâche
 - À confirmer quand le firmware CORS arrive : la forme de réponse de `POST /layout` (`device.js` suppose `{ok, error}` ; un 200 sans corps JSON est traité comme succès).
 
 ## Process de reprise recommandé
-1. **Exécuter C1 maintenant** (le plan est écrit) : `superpowers:subagent-driven-development` sur `plans/2026-06-16-wysiwyg-editor-plan-c1-panels.md` — un subagent/tâche + revue spec puis qualité ; vérif navigateur du DOM par le contrôleur via Playwright (servir depuis `Rich_Telemetry/`). Plans A et B ont suivi exactement ce process (modèle rapide pour le code verbatim ; revues + vérif navigateur par le contrôleur).
-2. **Puis écrire C2** : `superpowers:writing-plans` (même format que A/B/C1), en s'appuyant sur le § « Plan C2 » ci-dessus et le spec. Décisions ouvertes éventuelles → `superpowers:brainstorming` d'abord.
-3. Exécuter C2 en subagent-driven.
+1. ~~Exécuter C1~~ — ✅ FAIT (cf. § « Plan C1 » ci-dessus).
+2. **Écrire C2 maintenant** : `superpowers:writing-plans` (même format que A/B/C1), en s'appuyant sur le § « Plan C2 » ci-dessus + les notes Minor reportées de C1 + le spec. Décisions ouvertes éventuelles → `superpowers:brainstorming` d'abord.
+3. Exécuter C2 en subagent-driven (même process que C1 : un implémenteur/tâche, revue spec puis qualité, vérif navigateur par le contrôleur via Playwright en servant depuis `Rich_Telemetry/`).
 
 **Astuces process (rodées sur A/B/C1)** : le hook pre-commit affiche un warning jaune `SCHEMA DIVERGENT` (non bloquant, pré-existant — voir plus bas) ; la vérif navigateur se fait au mieux via Playwright MCP en pilotant les vrais pointer/DnD events (attention : un `pointerdown` synthétique sans `pointerup` laisse un drag fantôme — faire des clics complets) ; nettoyer les screenshots de test laissés à la racine du repo.
 
