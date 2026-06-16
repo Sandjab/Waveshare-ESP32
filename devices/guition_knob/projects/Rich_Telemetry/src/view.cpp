@@ -112,6 +112,90 @@ static void build_ring(lv_obj_t* parent, Component& c, Placement& q,
     ring_place_labels(arc, *cap, (c.center_pct || c.pill) ? *pill : nullptr, q, c.center_pct);
 }
 
+// build/sync extraits des anciens switch de view_rebuild/view_sync, à l'identique.
+// Signature commune : 3 slots LVGL (main + 2 sous-objets) car ring/bar sont multi-objets.
+static void build_text(lv_obj_t* parent, Component& c, Placement& q,
+                       lv_obj_t** main, lv_obj_t**, lv_obj_t**) {
+    lv_obj_t* l = lv_label_create(parent);
+    lv_obj_set_style_text_font(l, pick_font(c.font), 0);
+    lv_obj_set_style_text_color(l, lv_color_hex(c.color), 0);
+    lv_label_set_text(l, "");
+    lv_obj_align(l, ALIGN_MAP[q.anchor], q.dx, q.dy);
+    *main = l;
+}
+static void build_bar(lv_obj_t* parent, Component& c, Placement& q,
+                      lv_obj_t** main, lv_obj_t** sub1, lv_obj_t**) {
+    lv_obj_t* b = lv_bar_create(parent);
+    lv_obj_set_size(b, q.width ? q.width : 200, q.height ? q.height : 16);
+    lv_bar_set_range(b, c.vmin, c.vmax);
+    lv_obj_set_style_bg_color(b, lv_color_hex(c.color), LV_PART_INDICATOR);
+    lv_obj_align(b, ALIGN_MAP[q.anchor], q.dx, q.dy);
+    *main = b;
+    if (c.label[0]) {
+        lv_obj_t* bl = lv_label_create(parent);
+        lv_obj_set_style_text_font(bl, &lv_font_montserrat_14, 0);
+        lv_obj_set_style_text_color(bl, lv_color_hex(0x9AA0AA), 0);
+        lv_label_set_text(bl, c.label);
+        lv_obj_align_to(bl, b, LV_ALIGN_OUT_TOP_MID, 0, -6);
+        *sub1 = bl;
+    }
+}
+
+static void sync_label(Component& c, Placement&, lv_obj_t* w, lv_obj_t*, lv_obj_t*) {
+    lv_label_set_text(w, c.vstr);
+}
+static void sync_readout(Component& c, Placement&, lv_obj_t* w, lv_obj_t*, lv_obj_t*) {
+    if (c.label[0]) {
+        char rb[TEXT_LEN * 2];
+        snprintf(rb, sizeof(rb), "%s %s", c.label, c.vstr);
+        lv_label_set_text(w, rb);
+    } else {
+        lv_label_set_text(w, c.vstr);
+    }
+}
+static void sync_bar(Component& c, Placement&, lv_obj_t* w, lv_obj_t*, lv_obj_t*) {
+    lv_bar_set_value(w, c.value, LV_ANIM_OFF);
+}
+static void sync_ring(Component& c, Placement& q, lv_obj_t* w, lv_obj_t* sub1, lv_obj_t* sub2) {
+    uint32_t col = threshold_color(c.thresholds, c.threshold_count, c.value, c.color);
+    lv_obj_set_style_arc_color(w, lv_color_hex(col), LV_PART_INDICATOR);
+    lv_arc_set_value(w, c.value);
+    if (sub1) lv_label_set_text(sub1, c.caption);
+    if (sub2) {
+        if (c.center_pct) {
+            char cb[24]; format_value((double)c.value, c.unit, cb, sizeof(cb));
+            lv_label_set_text(sub2, cb);
+            uint32_t ccol = c.center_color_set ? c.center_color : col;  // surcharge explicite, sinon suit le seuil
+            lv_obj_set_style_text_color(sub2, lv_color_hex(ccol), 0);
+        } else {
+            char pb[8]; snprintf(pb, sizeof(pb), "%ld%%", (long)c.value);
+            lv_label_set_text(sub2, pb);
+            lv_obj_set_style_bg_color(sub2, lv_color_hex(col), 0);
+        }
+    }
+    ring_place_labels(w, sub1, sub2, q, c.center_pct);
+}
+
+// Vtable vue indexée par CompType. Types physiques (led_ring/sound) : build/sync = nullptr
+// (rendus par leur tick dédié -> le moteur les saute). label/readout partagent build_text.
+struct ViewVTable {
+    void (*build)(lv_obj_t* parent, Component& c, Placement& q,
+                  lv_obj_t** main, lv_obj_t** sub1, lv_obj_t** sub2);
+    void (*sync)(Component& c, Placement& q,
+                 lv_obj_t* main, lv_obj_t* sub1, lv_obj_t* sub2);
+};
+static const ViewVTable VIEW[] = {
+    /* COMP_NONE     */ { nullptr,    nullptr      },
+    /* COMP_LABEL    */ { build_text, sync_label   },
+    /* COMP_READOUT  */ { build_text, sync_readout },
+    /* COMP_BAR      */ { build_bar,  sync_bar     },
+    /* COMP_RING     */ { build_ring, sync_ring    },
+    /* COMP_LED_RING */ { nullptr,    nullptr      },
+    /* COMP_SOUND    */ { nullptr,    nullptr      },
+};
+static_assert(sizeof(VIEW) / sizeof(VIEW[0]) == COMP_COUNT,
+              "VIEW desync avec CompType : ajoute la ligne du nouveau type");
+
 // Swipe -> navigation. L'objet ecran persiste a travers les rebuilds (lv_obj_clean
 // ne supprime que ses enfants), donc on n'enregistre le callback gesture qu'une fois.
 static Dashboard* s_dash_for_gesture = nullptr;
@@ -150,39 +234,8 @@ void view_rebuild(Dashboard* d) {
         for (int i = 0; i < d->pages[p].place_count; i++) {
             Placement& q = d->pages[p].places[i];
             Component& c = d->components[q.comp_index];
-            switch (c.type) {
-                case COMP_RING:
-                    build_ring(cont, c, q, &s_widget[p][i], &s_sub1[p][i], &s_sub2[p][i]);
-                    break;
-                case COMP_LABEL:
-                case COMP_READOUT: {
-                    lv_obj_t* l = lv_label_create(cont);
-                    lv_obj_set_style_text_font(l, pick_font(c.font), 0);
-                    lv_obj_set_style_text_color(l, lv_color_hex(c.color), 0);
-                    lv_label_set_text(l, "");
-                    lv_obj_align(l, ALIGN_MAP[q.anchor], q.dx, q.dy);
-                    s_widget[p][i] = l;
-                    break;
-                }
-                case COMP_BAR: {
-                    lv_obj_t* b = lv_bar_create(cont);
-                    lv_obj_set_size(b, q.width ? q.width : 200, q.height ? q.height : 16);
-                    lv_bar_set_range(b, c.vmin, c.vmax);
-                    lv_obj_set_style_bg_color(b, lv_color_hex(c.color), LV_PART_INDICATOR);
-                    lv_obj_align(b, ALIGN_MAP[q.anchor], q.dx, q.dy);
-                    s_widget[p][i] = b;
-                    if (c.label[0]) {
-                        lv_obj_t* bl = lv_label_create(cont);
-                        lv_obj_set_style_text_font(bl, &lv_font_montserrat_14, 0);
-                        lv_obj_set_style_text_color(bl, lv_color_hex(0x9AA0AA), 0);
-                        lv_label_set_text(bl, c.label);
-                        lv_obj_align_to(bl, b, LV_ALIGN_OUT_TOP_MID, 0, -6);
-                        s_sub1[p][i] = bl;
-                    }
-                    break;
-                }
-                default: break;
-            }
+            if ((unsigned)c.type < COMP_COUNT && VIEW[c.type].build)
+                VIEW[c.type].build(cont, c, q, &s_widget[p][i], &s_sub1[p][i], &s_sub2[p][i]);
         }
     }
     // points indicateurs (au-dessus des conteneurs de page)
@@ -231,45 +284,8 @@ void view_sync(Dashboard* d) {
             if (!c.dirty) continue;
             lv_obj_t* w = s_widget[p][i];
             if (!w) continue;
-            switch (c.type) {
-                case COMP_LABEL:
-                    lv_label_set_text(w, c.vstr);
-                    break;
-                case COMP_READOUT: {
-                    if (c.label[0]) {
-                        char rb[TEXT_LEN * 2];
-                        snprintf(rb, sizeof(rb), "%s %s", c.label, c.vstr);
-                        lv_label_set_text(w, rb);
-                    } else {
-                        lv_label_set_text(w, c.vstr);
-                    }
-                    break;
-                }
-                case COMP_BAR:
-                    lv_bar_set_value(w, c.value, LV_ANIM_OFF);
-                    break;
-                case COMP_RING: {
-                    uint32_t col = threshold_color(c.thresholds, c.threshold_count, c.value, c.color);
-                    lv_obj_set_style_arc_color(w, lv_color_hex(col), LV_PART_INDICATOR);
-                    lv_arc_set_value(w, c.value);
-                    if (s_sub1[p][i]) lv_label_set_text(s_sub1[p][i], c.caption);
-                    if (s_sub2[p][i]) {
-                        if (c.center_pct) {
-                            char cb[24]; format_value((double)c.value, c.unit, cb, sizeof(cb));
-                            lv_label_set_text(s_sub2[p][i], cb);
-                            uint32_t ccol = c.center_color_set ? c.center_color : col;  // surcharge explicite, sinon suit le seuil
-                            lv_obj_set_style_text_color(s_sub2[p][i], lv_color_hex(ccol), 0);
-                        } else {
-                            char pb[8]; snprintf(pb, sizeof(pb), "%ld%%", (long)c.value);
-                            lv_label_set_text(s_sub2[p][i], pb);
-                            lv_obj_set_style_bg_color(s_sub2[p][i], lv_color_hex(col), 0);
-                        }
-                    }
-                    ring_place_labels(w, s_sub1[p][i], s_sub2[p][i], q, c.center_pct);
-                    break;
-                }
-                default: break;
-            }
+            if ((unsigned)c.type < COMP_COUNT && VIEW[c.type].sync)
+                VIEW[c.type].sync(c, q, w, s_sub1[p][i], s_sub2[p][i]);
         }
     }
     for (int i = 0; i < d->comp_count; i++) d->components[i].dirty = false;
