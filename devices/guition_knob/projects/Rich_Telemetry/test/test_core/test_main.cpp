@@ -256,6 +256,28 @@ void test_ctx_full_rejects(void) {
     TEST_ASSERT_FALSE(ctx_set_num(&c, "over", 1, 0));  // plein -> refus
 }
 
+// --- extracteur JSON Pointer ---
+void test_ptr_nested_object(void) {
+    JsonDocument d; deserializeJson(d, "{\"main\":{\"temp\":21}}");
+    JsonVariantConst v = ctx_extract_pointer(d.as<JsonVariantConst>(), "/main/temp");
+    TEST_ASSERT_FALSE(v.isNull());
+    TEST_ASSERT_EQUAL_INT(21, v.as<int>());
+}
+void test_ptr_array_index(void) {
+    JsonDocument d; deserializeJson(d, "{\"list\":[10,20,30]}");
+    JsonVariantConst v = ctx_extract_pointer(d.as<JsonVariantConst>(), "/list/1");
+    TEST_ASSERT_EQUAL_INT(20, v.as<int>());
+}
+void test_ptr_missing_is_null(void) {
+    JsonDocument d; deserializeJson(d, "{\"a\":1}");
+    TEST_ASSERT_TRUE(ctx_extract_pointer(d.as<JsonVariantConst>(), "/a/b").isNull());
+    TEST_ASSERT_TRUE(ctx_extract_pointer(d.as<JsonVariantConst>(), "/nope").isNull());
+}
+void test_ptr_escape(void) {
+    JsonDocument d; deserializeJson(d, "{\"a/b\":7}");
+    TEST_ASSERT_EQUAL_INT(7, ctx_extract_pointer(d.as<JsonVariantConst>(), "/a~1b").as<int>());
+}
+
 int main(int, char**) {
     UNITY_BEGIN();
     RUN_TEST(test_remaining_seconds);
@@ -285,6 +307,10 @@ int main(int, char**) {
     RUN_TEST(test_ctx_set_find_num);
     RUN_TEST(test_ctx_overwrite_keeps_one_slot);
     RUN_TEST(test_ctx_full_rejects);
+    RUN_TEST(test_ptr_nested_object);
+    RUN_TEST(test_ptr_array_index);
+    RUN_TEST(test_ptr_missing_is_null);
+    RUN_TEST(test_ptr_escape);
     RUN_TEST(test_layout_invalid_keeps_old);
     RUN_TEST(test_hex_parse);
     RUN_TEST(test_hex_no_hash);

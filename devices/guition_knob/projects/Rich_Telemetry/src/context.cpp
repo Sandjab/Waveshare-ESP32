@@ -1,5 +1,6 @@
 #include "context.h"
 #include <string.h>
+#include <stdlib.h>
 
 int ctx_find(const Context* c, const char* name) {
     for (int i = 0; i < c->count; i++)
@@ -39,4 +40,27 @@ int ctx_apply_json(Context* c, JsonObjectConst obj, uint32_t now) {
         // objet/array/bool/null ignores en v1
     }
     return n;
+}
+
+// JSON Pointer (RFC 6901) : "/a/b/0", avec desechappement ~1->/ et ~0->~.
+JsonVariantConst ctx_extract_pointer(JsonVariantConst root, const char* ptr) {
+    if (!ptr || ptr[0] != '/') return JsonVariantConst();
+    JsonVariantConst cur = root;
+    char token[64];
+    for (const char* p = ptr; *p == '/'; ) {
+        p++;
+        size_t k = 0;
+        while (*p && *p != '/' && k < sizeof(token) - 1) {
+            char ch = *p++;
+            if (ch == '~' && *p == '1')      { ch = '/'; p++; }
+            else if (ch == '~' && *p == '0') { ch = '~'; p++; }
+            token[k++] = ch;
+        }
+        token[k] = '\0';
+        if (cur.is<JsonObjectConst>())      cur = cur.as<JsonObjectConst>()[token];
+        else if (cur.is<JsonArrayConst>())  cur = cur.as<JsonArrayConst>()[(size_t)atoi(token)];
+        else                                return JsonVariantConst();
+        if (cur.isNull()) return JsonVariantConst();
+    }
+    return cur;
 }
