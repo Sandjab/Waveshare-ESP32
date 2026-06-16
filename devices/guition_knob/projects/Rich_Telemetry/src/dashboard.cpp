@@ -10,14 +10,17 @@ int dash_find(const Dashboard* d, const char* id) {
     return -1;
 }
 
+// Table nom→type : seul point d'énumération des types côté parse. Le test de conformité
+// (test_schema_types_all_resolve) garantit qu'elle couvre exactement les types du schema.
+static const struct { const char* name; CompType type; } COMP_NAMES[] = {
+    { "label",    COMP_LABEL    }, { "readout",  COMP_READOUT  }, { "bar",   COMP_BAR   },
+    { "ring",     COMP_RING     }, { "led_ring", COMP_LED_RING }, { "sound", COMP_SOUND },
+};
+
 static CompType parse_type(const char* s) {
     if (!s) return COMP_NONE;
-    if (!strcmp(s,"label"))    return COMP_LABEL;
-    if (!strcmp(s,"readout"))  return COMP_READOUT;
-    if (!strcmp(s,"bar"))      return COMP_BAR;
-    if (!strcmp(s,"ring"))     return COMP_RING;
-    if (!strcmp(s,"led_ring")) return COMP_LED_RING;
-    if (!strcmp(s,"sound"))    return COMP_SOUND;
+    for (const auto& e : COMP_NAMES)
+        if (!strcmp(s, e.name)) return e.type;
     return COMP_NONE;
 }
 
