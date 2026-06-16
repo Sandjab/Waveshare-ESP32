@@ -123,6 +123,33 @@ Port 80 par défaut. mDNS `guition.local` (sur certains LAN le mDNS est filtré 
 
 **CORS** : activé (`Allow-Origin: *`, preflight `OPTIONS` → `204`) pour qu'un éditeur web (le designer) puisse pousser un layout depuis un navigateur. Adapté à un usage LAN mono-utilisateur ; restreindre l'origine si l'exposition change.
 
+### Corps de `/update`
+
+Le corps est une map `{ "id": valeur, ... }`. La forme de `valeur` dépend du composant :
+
+- **Mono-valeur** (`label`, `readout`, `bar`) : un scalaire — nombre ou string.
+- **Multi-valeurs** (`ring`, `led_ring`, `sound`) : un **objet** dont les clés sont les valeurs (détail par type dans la colonne « Valeur `/update` » et les sections ci-dessus).
+
+On peut mélanger les deux et viser plusieurs composants dans un même POST :
+
+```json
+{
+  "cpu": 42,
+  "w5h": { "pct": 63, "reset_in_s": 6600 },
+  "led": { "mode": "solid", "color": "#22C55E", "brightness": 128 }
+}
+```
+
+À l'intérieur d'un objet, **chaque champ est optionnel** : un champ absent conserve sa valeur précédente. Un update d'un seul champ est donc valide —
+
+```json
+{ "w5h": { "reset_in_s": 6600 } }
+```
+
+— `pct` et `caption` restent inchangés. (Cas `ring` avec `countdown: true` : omettre `caption` la régénère depuis `reset_in_s`.)
+
+Tout `id` absent du layout est ignoré et renvoyé dans `"unknown":[...]`.
+
 ### Exemples `curl`
 
 ```bash
