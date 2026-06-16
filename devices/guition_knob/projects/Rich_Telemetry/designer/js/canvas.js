@@ -5,14 +5,11 @@ import {
   ringRadiusAt, ringThicknessAt, gapDegAt, cornersOutsideCircle, SCREEN
 } from './geometry.js';
 import {
-  buildLabel, buildReadout, buildBar, buildRing, buildBadge,
+  buildBadge,
   ringPaths, pickThresholdColor
 } from './render.js';
 import { getMock } from './mocks.js';
-
-// Le firmware CENTRE le ring (lv_obj_center, view.cpp:51) : anchor/dx/dy ignorés.
-// → un ring n'est pas déplaçable, seulement redimensionnable.
-const DRAGGABLE = new Set(['label', 'readout', 'bar']);
+import { COMPONENTS } from './registry.js';
 
 export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
   let selected = null;    // index du placement sélectionné sur la page active
@@ -23,14 +20,11 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
   const nodeFor = i => stage.querySelector(`.w[data-pi="${i}"]`);
 
   function buildNode(pl, comp) {
-    if (comp.type === 'bar')     return buildBar(comp, pl, getMock(pl.ref, 'bar'));
-    if (comp.type === 'ring')    return buildRing(comp, pl, getMock(pl.ref, 'ring'));
-    if (comp.type === 'readout') return buildReadout(comp, getMock(pl.ref, 'readout'));
-    return buildLabel(comp); // label : pas de mock (affiche son texte)
+    return COMPONENTS[comp.type].build(comp, pl, getMock(pl.ref, comp.type));
   }
 
   function position(node, pl, comp) {
-    if (comp.type === 'ring') {                 // centré, ignore anchor/dx/dy
+    if (COMPONENTS[comp.type].centered) {                 // centré, ignore anchor/dx/dy
       const r = pl.radius || 80;
       node.style.left = (SCREEN / 2 - r) + 'px';
       node.style.top  = (SCREEN / 2 - r) + 'px';
@@ -50,7 +44,9 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
     placements().forEach((pl, i) => {
       const comp = comps()[pl.ref];
       if (!comp) return;                         // ref inconnue : la validation le signale déjà
-      if (comp.type === 'led_ring' || comp.type === 'sound') {
+      const def = COMPONENTS[comp.type];
+      if (!def) return;                          // type inconnu : signalé par la validation, on ne le dessine pas (repli défini, pas un buildLabel silencieux)
+      if (def.physical) {
         badges.appendChild(buildBadge(pl.ref, comp));
         return;
       }
@@ -86,7 +82,8 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
   function onPointerDown(e, i, node, comp) {
     if (e.target.classList.contains('handle')) return; // laisser le resize gérer
     select(i);
-    if (!DRAGGABLE.has(comp.type)) return;             // ring : centré, non déplaçable
+    const def = COMPONENTS[comp.type];
+    if (def.centered || def.physical) return;             // ring centré / physique : non déplaçable
     e.preventDefault();
     const sr = stage.getBoundingClientRect();
     const nr = node.getBoundingClientRect();
