@@ -4,6 +4,7 @@ import { bindJsonView } from './json-view.js';
 import { loadLayout, pushLayout } from './device.js';
 import { createCanvas } from './canvas.js';
 import { createPalette } from './palette.js';
+import { createInspector } from './inspector.js';
 
 const $ = id => document.getElementById(id);
 
@@ -23,9 +24,14 @@ async function main() {
   const validate = createValidator(schema);
   const model = createModel();
 
-  // Canvas WYSIWYG (page 0). onSelect reçoit { placeIndex, ref } (consommé par l'inspecteur, Task 5).
+  let inspector;
+  // Canvas WYSIWYG (page 0). onSelect → inspecteur.
   const canvas = createCanvas({ stage: $('stage'), badges: $('badges') }, model, {
-    onSelect: () => {}
+    onSelect: s => inspector.select(s)
+  });
+  inspector = createInspector($('inspector'), model, {
+    rerenderCanvas: canvas.render,
+    clearSelection: () => canvas.selectPlacement(null)
   });
 
   // Palette : glisser un type sur le canvas crée le composant, puis on le sélectionne.
