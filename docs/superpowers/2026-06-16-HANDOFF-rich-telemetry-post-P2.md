@@ -49,14 +49,18 @@ Specs (dans `docs/superpowers/specs/`) :
 Dépendances : **chart/meter dépendent de la 2b** (la vtable). **P3 = designer, non device-gated.**
 
 ### Track 2 — La VTABLE puis les nouveaux widgets (firmware, device)
-**Phase 2b** — spec `specs/2026-06-16-component-type-registry-design.md` § Phase 2. Refactor de
-dispatch : vtable `{ name, apply_value, build, sync }` indexée par l'enum `CompType`, consolidant
-`apply_one` (`dashboard.cpp`, voie `/update`) + les **2 `switch` de `view.cpp`** (build + sync).
-**Signature réelle** (la spec est un croquis) : `build`/`sync` exposent le `Placement` + les **3
-slots LVGL** `s_widget`/`s_sub1`/`s_sub2` (ring/bar = multi-objets). Types physiques
-(`led_ring`/`sound`) : `build/sync = NULL`. Le **parse statique reste plat**, la **struct
-`Component` reste plate** (union différée). Rendu **non native-testable** → flash + contrôle
-visuel (non-régression des 6 types existants : label/readout/bar/ring/led_ring/sound).
+**Phase 2b ✅ FAITE & mergée sur `master`** (2026-06-17, fast-forward `5d922ad`, plan
+`plans/2026-06-16-2b-component-vtable.md`, **non poussée sur `origin`** — push laissé à
+l'utilisateur). Réalité d'archi vs croquis spec : **deux tables**, pas une struct unique
+(`dashboard.h` doit rester sans LVGL pour le build natif, et une instance unique ne peut couvrir
+les deux cibles de build) — (1) modèle `APPLY[]` (`comp_apply_fn`, `dashboard.cpp`, native,
+remplace le switch d'`apply_one`) ; (2) vue `VIEW[]` (`struct ViewVTable{build,sync}`, `view.cpp`,
+LVGL, remplace les 2 switch ; physiques `led_ring`/`sound` = `{nullptr,nullptr}` ; `build_ring`
+réutilisé verbatim). Sentinelle **`COMP_COUNT`** + `static_assert` de taille sur chaque table
+(oubli de ligne = build cassé). **`context_apply` laissé tel quel — hors scope 2b ; chart/meter
+l'étendront** (un `case` de plus). Vérifié : `pio test -e native` **61/61**, `pio run -e esp32s3`
+SUCCESS (RAM 42.7%/Flash 25.0%), device validé (non-régression des 6 types, les 2 chemins du ring ;
+piège de validation : dans `build_ring`, `center_pct` est prioritaire sur `pill`).
 
 **chart + meter (après 2b)** — spec `specs/2026-06-16-chart-meter-components-design.md`. Les
 ajouter comme **premiers nouveaux types via la vtable**. `chart` = `lv_chart`, historique en
@@ -124,10 +128,10 @@ neuf : mode download manuel BOOT — voir `devices/guition_knob/CLAUDE.md` § «
   réservés à une future page de config.
 
 ## TL;DR pour démarrer
-1. Choisir un track : **2b + chart/meter** (firmware, device, specs prêtes → aller direct par
-   plan) **ou** **P3 designer** (web app, sans carte).
-2. `writing-plans` pour le track choisi (2b/chart/meter ont leurs specs ; P3 dériver de la spec
-   pull § P3), puis **subagent-driven** : implémenter → (revue diff soi-même) → flasher → valider
-   visuellement.
+1. **2b ✅ faite.** Reste : **chart/meter** (firmware, device — la vtable existe désormais, les
+   ajouter comme premiers nouveaux types via `APPLY[]`/`VIEW[]` + `context_apply` + schema) **ou**
+   **P3 designer** (web app, sans carte). chart/meter a sa spec `specs/2026-06-16-chart-meter-components-design.md`.
+2. `writing-plans` pour le track choisi, puis **subagent-driven** : implémenter → (revue diff
+   soi-même) → flasher → valider visuellement.
 3. Le schema `layout.schema.json` est le contrat partagé firmware↔designer : le faire évoluer par
    un commit dédié (ajouts `sources`/`secrets`/`bind` + types chart/meter) attendu par P3.
