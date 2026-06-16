@@ -49,9 +49,8 @@ Specs (dans `docs/superpowers/specs/`) :
 Dépendances : **chart/meter dépendent de la 2b** (la vtable). **P3 = designer, non device-gated.**
 
 ### Track 2 — La VTABLE puis les nouveaux widgets (firmware, device)
-**Phase 2b ✅ FAITE & mergée sur `master`** (2026-06-17, fast-forward `5d922ad`, plan
-`plans/2026-06-16-2b-component-vtable.md`, **non poussée sur `origin`** — push laissé à
-l'utilisateur). Réalité d'archi vs croquis spec : **deux tables**, pas une struct unique
+**Phase 2b ✅ FAITE & poussée sur `origin/master`** (2026-06-17, fast-forward `5d922ad`, plan
+`plans/2026-06-16-2b-component-vtable.md`). Réalité d'archi vs croquis spec : **deux tables**, pas une struct unique
 (`dashboard.h` doit rester sans LVGL pour le build natif, et une instance unique ne peut couvrir
 les deux cibles de build) — (1) modèle `APPLY[]` (`comp_apply_fn`, `dashboard.cpp`, native,
 remplace le switch d'`apply_one`) ; (2) vue `VIEW[]` (`struct ViewVTable{build,sync}`, `view.cpp`,
@@ -62,15 +61,16 @@ l'étendront** (un `case` de plus). Vérifié : `pio test -e native` **61/61**, 
 SUCCESS (RAM 42.7%/Flash 25.0%), device validé (non-régression des 6 types, les 2 chemins du ring ;
 piège de validation : dans `build_ring`, `center_pct` est prioritaire sur `pill`).
 
-**chart + meter (après 2b)** — spec `specs/2026-06-16-chart-meter-components-design.md`. Les
-ajouter comme **premiers nouveaux types via la vtable**. `chart` = `lv_chart`, historique en
-**ring buffer dans le modèle** (`/update` pousse un scalaire → append ; `view_sync` mirroir →
-idempotent). `meter` = `lv_meter`, scalaire→aiguille, **`thresholds` réutilisés en zones d'arc**.
-**LVGL v8.4 obligatoire** : activer `LV_USE_CHART`/`LV_USE_METER` dans `src/lv_conf.h` ; NE PAS
-suivre les exemples master de lvgl.io (v9, `lv_meter`→`lv_scale`). Docs : Context7
-`/websites/lvgl_io_8_4`. Le parse/append du ring buffer chart est **native-testable** (pousser 35
-valeurs → garder les 30 dernières) avant même le rendu. Ces types `bind` aussi (P2) : penser à
-les couvrir dans `context_apply` (chart = append, meter = valeur primaire).
+**chart + meter (firmware) ✅ FAITS & poussés sur `origin/master`** (2026-06-17, fast-forward
+`9806761`, plan `plans/2026-06-17-chart-meter-firmware.md`). Ajoutés via la vtable (1ers nouveaux
+types). `chart` = `lv_chart` LINE, **fenêtre glissante dans le modèle** (`hist[60]`/`hist_count`,
+`memmove`), `sync` mirroir `hist→y_points`+`refresh` (série relue via `lv_chart_get_series_next`),
+config `points`. `meter` = `lv_meter`, scalaire→aiguille, **`thresholds` en zones d'arc** (270°),
+handle aiguille stocké dans le slot `s_sub1`. `bind` couvert dans `context_apply` (chart =
+append-au-changement, meter = valeur). `LV_USE_CHART`/`LV_USE_METER` activés. Vérifié : natif
+**66/66**, esp32s3 SUCCESS (RAM 45.2 %/Flash 25.0 %), device validé. **Schema/designer NON touchés**
+(firmware-d'abord) → P3 ajoutera `comp_chart`/`comp_meter`. API v8.4 via Context7
+`/websites/lvgl_io_open_8_4`.
 
 ### Track 3 — Designer (web app, SANS la carte)
 **Pull P3** : éditeur de `sources` (3 colonnes url/interval/headers/vars) + champ **`bind`** dans
@@ -128,10 +128,12 @@ neuf : mode download manuel BOOT — voir `devices/guition_knob/CLAUDE.md` § «
   réservés à une future page de config.
 
 ## TL;DR pour démarrer
-1. **2b ✅ faite.** Reste : **chart/meter** (firmware, device — la vtable existe désormais, les
-   ajouter comme premiers nouveaux types via `APPLY[]`/`VIEW[]` + `context_apply` + schema) **ou**
-   **P3 designer** (web app, sans carte). chart/meter a sa spec `specs/2026-06-16-chart-meter-components-design.md`.
-2. `writing-plans` pour le track choisi, puis **subagent-driven** : implémenter → (revue diff
-   soi-même) → flasher → valider visuellement.
+1. **Track firmware (2b + chart/meter) ✅ entièrement fait & poussé.** Reste : **P3 designer**
+   (web app, sans carte) — éditeur de `sources` + champ `bind` dans l'inspecteur + **entrées
+   `comp_chart`/`comp_meter` au schema ET dans `registry.js`** (le firmware parse déjà chart/meter
+   mais le schema/designer ne les déclarent pas encore) + mise à niveau de `layout.schema.json`
+   (retard sur le firmware : `sources`/`secrets`/`bind`/`chart`/`meter`).
+2. `writing-plans` pour P3, puis **subagent-driven** (sans carte : `node --test` + conformité +
+   navigateur, servir depuis la racine projet sur un port neuf — cf. `designer/HANDOFF.md`).
 3. Le schema `layout.schema.json` est le contrat partagé firmware↔designer : le faire évoluer par
    un commit dédié (ajouts `sources`/`secrets`/`bind` + types chart/meter) attendu par P3.
