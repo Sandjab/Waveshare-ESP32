@@ -4,6 +4,9 @@
 #include "color.h"
 #include "nav_logic.h"
 #include "dashboard.h"
+#include <ArduinoJson.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 static char buf[32];
 
@@ -113,6 +116,52 @@ void test_layout_unknown_type_rejected(void) {
     const char* bad = "{\"components\":{\"x\":{\"type\":\"frobnicator\"}},\"pages\":[]}";
     TEST_ASSERT_FALSE(dash_set_layout(&d, bad, err, sizeof(err)));
 }
+
+// Conformité firmware ↔ schema : pour CHAQUE type déclaré dans le schema partagé
+// (component.oneOf → comp_* → type.const), parse_type (via dash_set_layout) doit le
+// résoudre ; un type absent du schema doit être rejeté. Échoue rouge si le firmware
+// oublie un type que le schema déclare. Le schema est lu depuis RT_SCHEMA_PATH.
+void test_schema_types_all_resolve(void) {
+    FILE* f = fopen(RT_SCHEMA_PATH, "rb");
+    TEST_ASSERT_NOT_NULL_MESSAGE(f, "impossible d'ouvrir RT_SCHEMA_PATH: " RT_SCHEMA_PATH);
+    fseek(f, 0, SEEK_END); long n = ftell(f); fseek(f, 0, SEEK_SET);
+    char* schema = (char*)malloc((size_t)n + 1);
+    size_t rd = fread(schema, 1, (size_t)n, f); schema[rd] = '\0';
+    fclose(f);
+
+    JsonDocument doc;
+    DeserializationError e = deserializeJson(doc, schema);
+    TEST_ASSERT_TRUE_MESSAGE(!e, "schema JSON invalide");
+
+    JsonArrayConst oneOf = doc["$defs"]["component"]["oneOf"].as<JsonArrayConst>();
+    TEST_ASSERT_FALSE_MESSAGE(oneOf.isNull(), "component.oneOf absent du schema");
+
+    int count = 0;
+    for (JsonObjectConst ref : oneOf) {
+        const char* r = ref["$ref"];                       // ex "#/$defs/comp_ring"
+        TEST_ASSERT_NOT_NULL_MESSAGE(r, "entree oneOf sans $ref");
+        const char* slash = strrchr(r, '/');
+        TEST_ASSERT_NOT_NULL(slash);
+        const char* defName = slash + 1;                   // "comp_ring"
+        const char* typeName = doc["$defs"][defName]["properties"]["type"]["const"];
+        TEST_ASSERT_NOT_NULL_MESSAGE(typeName, defName);
+
+        char layout[192];
+        snprintf(layout, sizeof(layout),
+            "{\"components\":{\"x\":{\"type\":\"%s\"}},\"pages\":[]}", typeName);
+        Dashboard d{}; char err[80];
+        TEST_ASSERT_TRUE_MESSAGE(dash_set_layout(&d, layout, err, sizeof(err)), typeName);
+        count++;
+    }
+    free(schema);
+    TEST_ASSERT_GREATER_THAN_MESSAGE(0, count, "aucun type extrait du schema");
+
+    // Un type absent du schema doit être rejeté.
+    Dashboard d{}; char err[80];
+    TEST_ASSERT_FALSE(dash_set_layout(&d,
+        "{\"components\":{\"x\":{\"type\":\"definitely_not_a_type\"}},\"pages\":[]}",
+        err, sizeof(err)));
+}
 void test_layout_invalid_keeps_old(void) {
     Dashboard d{}; char err[80];
     dash_set_layout(&d, LAYOUT_OK, err, sizeof(err));
@@ -205,6 +254,7 @@ int main(int, char**) {
     RUN_TEST(test_ring_center_color_set);
     RUN_TEST(test_ring_center_color_defaults_to_color);
     RUN_TEST(test_layout_unknown_type_rejected);
+    RUN_TEST(test_schema_types_all_resolve);
     RUN_TEST(test_layout_invalid_keeps_old);
     RUN_TEST(test_hex_parse);
     RUN_TEST(test_hex_no_hash);
