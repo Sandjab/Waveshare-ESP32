@@ -31,7 +31,7 @@ export const COMPONENTS = {
     compFields: [['label', 'Label', 'asciitext'], ['unit', 'Unité', 'asciitext'], ['font', 'Police', 'font'], ['color', 'Couleur', 'color']],
     placeFields: [['anchor', 'Ancrage', 'anchor'], ['dx', 'dx', 'num'], ['dy', 'dy', 'num']],
     mockFields: [['value', 'Valeur (aperçu)']],
-    build: (comp, pl, mock) => buildReadout(comp, mock),
+    build: (comp, _pl, mock) => buildReadout(comp, mock),
   },
   bar: {
     label: 'Barre',
