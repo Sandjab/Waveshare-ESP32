@@ -95,11 +95,17 @@ static void h_page() {
 
 void api_register(WebServer& server, Dashboard* d) {
     S = &server; D = d;
+    server.enableCORS(true);   // Allow-Origin/Methods/Headers: * sur toutes les réponses (outil de dev LAN mono-utilisateur)
     server.on("/update", HTTP_POST, h_update);
     server.on("/status", HTTP_GET,  h_status);
     server.on("/layout", HTTP_POST, h_set_layout);
     server.on("/layout", HTTP_GET,  h_get_layout);
     server.on("/page",   HTTP_POST, h_page);
     server.on("/",       HTTP_GET,  h_root);
-    server.onNotFound([](){ S->send(404, "text/plain", "Not found\n"); });
+    server.onNotFound([](){
+        // enableCORS(true) ajoute déjà Allow-Origin/Methods/Headers: * à chaque réponse ;
+        // le preflight OPTIONS a juste besoin d'un statut 2xx (sinon le navigateur le rejette).
+        if (S->method() == HTTP_OPTIONS) S->send(204);
+        else                             S->send(404, "text/plain", "Not found\n");
+    });
 }
