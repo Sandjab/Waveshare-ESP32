@@ -121,6 +121,8 @@ Port 80 par défaut. mDNS `guition.local` (sur certains LAN le mDNS est filtré 
 | `GET` | `/status` | ip, hostname, rssi, uptime_s, page courante, liste des pages, composants. |
 | `GET` | `/` | Page d'aide HTML. |
 
+**CORS** : activé (`Allow-Origin: *`, preflight `OPTIONS` → `204`) pour qu'un éditeur web (le designer) puisse pousser un layout depuis un navigateur. Adapté à un usage LAN mono-utilisateur ; restreindre l'origine si l'exposition change.
+
 ### Exemples `curl`
 
 ```bash
