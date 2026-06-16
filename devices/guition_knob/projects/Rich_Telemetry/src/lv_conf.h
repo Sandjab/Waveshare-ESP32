@@ -13,6 +13,10 @@
 #define LV_FONT_MONTSERRAT_36  1
 #define LV_FONT_MONTSERRAT_48  1
 
+// Widgets "extra" utilises par chart/meter
+#define LV_USE_CHART           1
+#define LV_USE_METER           1
+
 #define LV_BUILD_EXAMPLES      0
 
 #endif

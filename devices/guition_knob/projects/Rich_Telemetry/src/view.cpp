@@ -176,6 +176,63 @@ static void sync_ring(Component& c, Placement& q, lv_obj_t* w, lv_obj_t* sub1, l
     ring_place_labels(w, sub1, sub2, q, c.center_pct);
 }
 
+// --- chart : l'historique vit dans le modèle (Component.hist) ; build crée le widget,
+// sync mirroir hist -> y_points (lv_chart_set_next_value n'est PAS idempotent). ---
+static void build_chart(lv_obj_t* parent, Component& c, Placement& q,
+                        lv_obj_t** main, lv_obj_t**, lv_obj_t**) {
+    lv_obj_t* chart = lv_chart_create(parent);
+    lv_obj_set_size(chart, q.width ? q.width : 200, q.height ? q.height : 100);
+    lv_chart_set_type(chart, LV_CHART_TYPE_LINE);
+    int n = c.chart_points;
+    if (n > CHART_MAX_POINTS) n = CHART_MAX_POINTS;
+    if (n < 1) n = 1;
+    lv_chart_set_point_count(chart, n);
+    lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, c.vmin, c.vmax);
+    lv_chart_add_series(chart, lv_color_hex(c.color), LV_CHART_AXIS_PRIMARY_Y);
+    lv_obj_align(chart, ALIGN_MAP[q.anchor], q.dx, q.dy);
+    *main = chart;
+}
+static void sync_chart(Component& c, Placement&, lv_obj_t* chart, lv_obj_t*, lv_obj_t*) {
+    lv_chart_series_t* ser = lv_chart_get_series_next(chart, NULL);   // pas de stockage : on relit la 1re série
+    if (!ser) return;
+    int n = c.chart_points;
+    if (n > CHART_MAX_POINTS) n = CHART_MAX_POINTS;
+    if (n < 1) n = 1;
+    for (int i = 0; i < n; i++)
+        ser->y_points[i] = (i < c.hist_count) ? c.hist[i] : LV_CHART_POINT_NONE;
+    lv_chart_refresh(chart);
+}
+
+// --- meter : jauge à aiguille ; thresholds réutilisés en zones d'arc.
+// Handle aiguille stocké dans le slot sub1 (pas de getter d'indicateur côté lv_meter). ---
+static void build_meter(lv_obj_t* parent, Component& c, Placement& q,
+                        lv_obj_t** main, lv_obj_t** sub1, lv_obj_t**) {
+    lv_obj_t* meter = lv_meter_create(parent);
+    int sz = q.width ? q.width : 160;
+    lv_obj_set_size(meter, sz, q.height ? q.height : sz);
+    lv_meter_scale_t* scale = lv_meter_add_scale(meter);
+    lv_meter_set_scale_ticks(meter, scale, 21, 2, 8, lv_color_hex(0x4B5563));
+    lv_meter_set_scale_major_ticks(meter, scale, 5, 3, 12, lv_color_hex(0x9CA3AF), 10);
+    lv_meter_set_scale_range(meter, scale, c.vmin, c.vmax, 270, 135);   // arc 270° ouvert en bas
+    // zones d'arc depuis thresholds : bande i = (prev, limit[i]] couleur i ; prev démarre à vmin
+    int prev = c.vmin;
+    for (int i = 0; i < c.threshold_count; i++) {
+        lv_meter_indicator_t* arc = lv_meter_add_arc(meter, scale, 5, lv_color_hex(c.thresholds[i].color), 0);
+        lv_meter_set_indicator_start_value(meter, arc, prev);
+        lv_meter_set_indicator_end_value(meter, arc, (int)c.thresholds[i].limit);
+        prev = (int)c.thresholds[i].limit;
+    }
+    lv_meter_indicator_t* needle = lv_meter_add_needle_line(meter, scale, 4, lv_color_hex(c.color), -10);
+    lv_meter_set_indicator_value(meter, needle, c.value);
+    lv_obj_align(meter, ALIGN_MAP[q.anchor], q.dx, q.dy);
+    *main = meter;
+    *sub1 = (lv_obj_t*)(void*)needle;     // handle aiguille pour sync (cast opaque, jamais déréférencé en lv_obj_t)
+}
+static void sync_meter(Component& c, Placement&, lv_obj_t* meter, lv_obj_t* sub1, lv_obj_t*) {
+    lv_meter_indicator_t* needle = (lv_meter_indicator_t*)(void*)sub1;
+    if (needle) lv_meter_set_indicator_value(meter, needle, c.value);
+}
+
 // Vtable vue indexée par CompType. Types physiques (led_ring/sound) : build/sync = nullptr
 // (rendus par leur tick dédié -> le moteur les saute). label/readout partagent build_text.
 struct ViewVTable {
@@ -192,6 +249,8 @@ static const ViewVTable VIEW[] = {
     /* COMP_RING     */ { build_ring, sync_ring    },
     /* COMP_LED_RING */ { nullptr,    nullptr      },
     /* COMP_SOUND    */ { nullptr,    nullptr      },
+    /* COMP_CHART    */ { build_chart, sync_chart },
+    /* COMP_METER    */ { build_meter, sync_meter },
 };
 static_assert(sizeof(VIEW) / sizeof(VIEW[0]) == COMP_COUNT,
               "VIEW desync avec CompType : ajoute la ligne du nouveau type");
