@@ -6,12 +6,10 @@
 
 #define LV_MEM_SIZE            (48U * 1024U)
 
-// Polices utilisees par l'UI telemetry (14 = footer, 20 = lignes, 28 = titre, 36/48 = grosse lecture centrale)
+// Polices de l'UI audio (14 = libellé volume, 20 = items de liste, 28 = titre)
 #define LV_FONT_MONTSERRAT_14  1
 #define LV_FONT_MONTSERRAT_20  1
 #define LV_FONT_MONTSERRAT_28  1
-#define LV_FONT_MONTSERRAT_36  1
-#define LV_FONT_MONTSERRAT_48  1
 
 #define LV_BUILD_EXAMPLES      0
 
