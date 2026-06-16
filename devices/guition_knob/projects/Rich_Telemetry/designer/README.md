@@ -2,7 +2,7 @@
 
 IHM WYSIWYG **autonome** pour concevoir le `layout.json` de Rich_Telemetry et le pousser au device. Web app statique : aucune dépendance, aucun build, cross-platform (navigateur). **Ne touche pas au firmware.**
 
-> État : **fondation (Plan A) en place** — édition via le panneau *JSON avancé* avec validation live contre le schéma (ajv), undo/redo, et load/push `/layout` vers le device. L'éditeur WYSIWYG visuel (palette, canvas drag-and-drop, rendu des widgets, inspecteur) reste à construire — Plans B/C (voir `specs/` et `plans/`).
+> État : **éditeur WYSIWYG multi-pages complet** (Plans A → C2). Palette + bibliothèque de composants réutilisables, canvas drag-and-drop avec snap aux ancrages, inspecteur (props/géométrie/seuils/aperçu mock), onglets de pages (créer/renommer/réordonner/supprimer), export/import `layout.json`, validation live ajv avec messages humanisés, undo/redo. Le panneau *JSON avancé* reste disponible. Le load/push `/layout` vers le device nécessite le CORS firmware (voir plus bas). Détails : `specs/` et `plans/`.
 
 ## Lancer
 
@@ -20,6 +20,8 @@ python3 -m http.server 8000
 Le format est défini par **`../schema/layout.schema.json`** — la *source de vérité unique* partagée avec le firmware (`src/dashboard.cpp`). Le designer produit, le firmware consomme. Toute évolution du format = un commit dédié sur le schéma, mergé sur `master`, puis rebase des branches embarqué/designer.
 
 ## Endpoints utilisés
+
+> Sans device (ou en attendant le CORS firmware), utilise **Exporter / Importer** dans l'en-tête pour sauvegarder/recharger un `layout.json` en fichier local.
 
 | Action | Requête |
 |---|---|

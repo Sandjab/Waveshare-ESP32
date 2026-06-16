@@ -4,7 +4,7 @@
 
 ## TL;DR
 
-L'éditeur WYSIWYG du designer est découpé en plans séquentiels. **Plans A (fondation), B (canvas WYSIWYG) et C1 (palette + inspecteur = édition mono-page) : implémentés, testés, revus (spec + qualité + holistique = SHIP), vérifiés navigateur.** Le « Plan C » a été **scindé en C1 + C2** : **C1 est FAIT** (`plans/2026-06-16-wysiwyg-editor-plan-c1-panels.md`, 6 commits `e8030ea`..`1561478`) ; **C2 (pages CRUD + canvas multi-pages + file-io + humanisation ajv + bibliothèque inter-pages) reste à écrire et exécuter**. Tout vit sur la branche **`feat/rt-designer`** (non mergée).
+L'éditeur WYSIWYG du designer est découpé en plans séquentiels. **Plans A (fondation), B (canvas WYSIWYG) et C1 (palette + inspecteur = édition mono-page) : implémentés, testés, revus (spec + qualité + holistique = SHIP), vérifiés navigateur.** Le « Plan C » a été **scindé en C1 + C2** : **C1 est FAIT** (`plans/2026-06-16-wysiwyg-editor-plan-c1-panels.md`, 6 commits `e8030ea`..`1561478`) ; **C2 (pages CRUD + canvas multi-pages + file-io + humanisation ajv + bibliothèque inter-pages) : implémenté et testé** (`plans/2026-06-16-wysiwyg-editor-plan-c2-pages-fileio.md`). Tout vit sur la branche **`feat/rt-designer`** (non mergée). Reste hors-designer : le **CORS firmware** (Charger/Pousser device) ; et les reportés v2+ du spec (`/update`, `/page`, aperçu animé led_ring, presets).
 
 **Reprise immédiate :** écrire C2 (`superpowers:writing-plans`, même format que A/B/C1), puis l'exécuter en subagent-driven — cf. « Process de reprise » en bas.
 
