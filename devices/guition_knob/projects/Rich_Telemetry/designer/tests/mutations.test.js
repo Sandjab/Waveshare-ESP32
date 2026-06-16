@@ -76,7 +76,8 @@ test('setComponentProp ignore un id inconnu', () => {
 
 test('setPlacementProp ignore un index hors borne', () => {
   const s = fresh();
-  setPlacementProp(s, 0, 99, 'dy', 10); // ne doit pas throw
+  setPlacementProp(s, 0, 99, 'dy', 10); // place index hors borne : ne doit pas throw
+  setPlacementProp(s, 99, 0, 'dy', 10); // page index hors borne : ne doit pas throw (parité add/removePlacement)
   assert.equal(s.pages[0].place.length, 0);
 });
 

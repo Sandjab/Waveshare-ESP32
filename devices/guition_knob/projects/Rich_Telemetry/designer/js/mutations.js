@@ -46,7 +46,7 @@ export function setComponentProp(state, id, key, value) {
 }
 
 export function setPlacementProp(state, pageIndex, placeIndex, key, value) {
-  const p = state.pages[pageIndex].place[placeIndex];
+  const p = state.pages[pageIndex]?.place?.[placeIndex];  // parité avec add/removePlacement : pas de throw sur index invalide
   if (!p) return;
   if (value === '' || value === null || value === undefined) delete p[key];
   else p[key] = value;

@@ -24,7 +24,7 @@ export function createPages(root, model, { getActivePage, setPage } = {}) {
   function render() {
     clampActive();
     root.replaceChildren();
-    const pages = model.state.pages || [];
+    const pages = Array.isArray(model.state.pages) ? model.state.pages : [];  // import au pages non-array : pas de throw → json-view signale la forme
     const active = getActivePage();
 
     const tabs = document.createElement('div');

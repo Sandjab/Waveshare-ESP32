@@ -50,3 +50,10 @@ test("ref absente → erreur de forme seule, pas de 'ref inconnue undefined'", (
   assert.equal(r.valid, false); // la forme échoue (ref requis par le schema)
   assert.ok(!r.errors.some(e => e.includes('undefined')));
 });
+
+test('layout importé au pages non-array → invalide SANS throw (import robuste)', () => {
+  // ajv signale la forme ; le check sémantique des refs ne doit pas planter sur un pages non-array.
+  const r = validate({ components: { x: { type: 'label', text: 'Hi' } }, pages: {} });
+  assert.equal(r.valid, false);
+  assert.ok(r.errors.length > 0);
+});

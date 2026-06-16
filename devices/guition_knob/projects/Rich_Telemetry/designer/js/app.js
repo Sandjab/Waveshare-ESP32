@@ -27,7 +27,7 @@ async function main() {
   const model = createModel();
 
   let inspector;
-  // Canvas WYSIWYG (page 0). onSelect → inspecteur.
+  // Canvas WYSIWYG (page active). onSelect → inspecteur.
   const canvas = createCanvas({ stage: $('stage'), badges: $('badges') }, model, {
     onSelect: s => inspector.select(s)
   });

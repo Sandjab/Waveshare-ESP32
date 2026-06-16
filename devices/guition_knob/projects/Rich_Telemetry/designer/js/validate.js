@@ -20,8 +20,12 @@ export function createValidator(schema) {
       }
     }
     const ids = new Set(Object.keys(layout?.components || {}));
-    (layout?.pages || []).forEach((p, pi) => {
-      (p?.place || []).forEach(pl => {
+    // Array.isArray (pas `|| []`) : un layout importé au pages/place non-array est déjà signalé par
+    // ajv ci-dessus ; ici on ne doit pas throw (sinon le panneau d'erreurs ne s'affiche jamais).
+    const pages = Array.isArray(layout?.pages) ? layout.pages : [];
+    pages.forEach((p, pi) => {
+      const place = Array.isArray(p?.place) ? p.place : [];
+      place.forEach(pl => {
         if (pl && pl.ref !== undefined && !ids.has(pl.ref)) errors.push(`page ${pi + 1} : référence inconnue « ${pl.ref} »`);
       });
     });

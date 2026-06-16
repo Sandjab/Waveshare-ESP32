@@ -1,4 +1,4 @@
-// Canvas WYSIWYG : construit la page active (pages[0]) depuis le modèle, gère sélection,
+// Canvas WYSIWYG : construit la page active depuis le modèle, gère sélection,
 // drag + snap (commit-on-drop) et poignées de redimensionnement. Vérifié au navigateur.
 import {
   snapPlacement, placeAt, resizeBox,
