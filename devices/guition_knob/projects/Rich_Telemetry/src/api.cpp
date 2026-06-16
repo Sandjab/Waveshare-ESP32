@@ -50,6 +50,16 @@ static void h_status() {
     doc["page"]       = D->active_page;
     doc["pages"]      = D->page_count;
     doc["components"] = D->comp_count;
+    if (g_ctx_mutex) xSemaphoreTake(g_ctx_mutex, portMAX_DELAY);
+    JsonArray arr = doc["sources"].to<JsonArray>();
+    for (int i = 0; i < D->source_count; i++) {
+        JsonObject o     = arr.add<JsonObject>();
+        o["name"]        = D->sources[i].name;          // char[] -> ArduinoJson copie
+        o["last_status"] = D->sources[i].last_status;
+        o["err_count"]   = D->sources[i].err_count;
+        o["updated_at"]  = D->sources[i].updated_at;
+    }
+    if (g_ctx_mutex) xSemaphoreGive(g_ctx_mutex);
     String out; serializeJson(doc, out); out += "\n";
     S->send(200, "application/json", out);
 }
