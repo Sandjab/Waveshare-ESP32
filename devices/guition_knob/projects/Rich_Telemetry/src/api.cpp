@@ -7,8 +7,10 @@
 #include "nav_input.h"
 #include "view.h"
 #include "persist.h"
+#include "freertos/semphr.h"
 
 extern String g_layout_json;
+extern SemaphoreHandle_t g_ctx_mutex;
 
 static Dashboard* D = nullptr;
 static WebServer* S = nullptr;
@@ -22,6 +24,14 @@ static void h_update() {
     if (unk[0]) res["unknown"] = unk;
     String out; serializeJson(res, out); out += "\n";
     S->send(200, "application/json", out);
+}
+
+static void h_set_context() {
+    if (!S->hasArg("plain")) { S->send(400, "text/plain", "Empty body\n"); return; }
+    if (g_ctx_mutex) xSemaphoreTake(g_ctx_mutex, portMAX_DELAY);
+    dash_set_context(D, S->arg("plain").c_str(), millis());
+    if (g_ctx_mutex) xSemaphoreGive(g_ctx_mutex);
+    S->send(200, "application/json", "{\"ok\":true}\n");
 }
 
 static void h_status() {
@@ -97,6 +107,7 @@ void api_register(WebServer& server, Dashboard* d) {
     S = &server; D = d;
     server.enableCORS(true);   // Allow-Origin/Methods/Headers: * sur toutes les réponses (outil de dev LAN mono-utilisateur)
     server.on("/update", HTTP_POST, h_update);
+    server.on("/context", HTTP_POST, h_set_context);
     server.on("/status", HTTP_GET,  h_status);
     server.on("/layout", HTTP_POST, h_set_layout);
     server.on("/layout", HTTP_GET,  h_get_layout);

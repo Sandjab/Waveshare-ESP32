@@ -12,11 +12,13 @@
 #include "nav_input.h"
 #include "touch_cst816.h"
 #include "persist.h"
+#include "freertos/semphr.h"
 
 static WebServer server(HTTP_PORT);
 static Dashboard g_dash;
 static bool g_wifi_up = false;
 String g_layout_json;
+SemaphoreHandle_t g_ctx_mutex = nullptr;   // sérialise l'accès à g_dash.ctx / g_dash.sources
 
 static bool wifi_connect() {
     WiFi.mode(WIFI_STA);
@@ -42,6 +44,7 @@ static void start_services() {
 
 void setup() {
     Serial.begin(115200); delay(200);
+    g_ctx_mutex = xSemaphoreCreateMutex();
     Serial.println("\nGuition JC3636K718 - Rich_Telemetry");
     guition_lvgl_init();
     touch_begin();
@@ -84,6 +87,14 @@ void loop() {
         uint32_t elapsed = (now_ms - last_sec) / 1000;
         last_sec += elapsed * 1000;
         dash_tick_countdown(&g_dash, elapsed);
+    }
+    static uint32_t last_ctx = 0;
+    if (millis() - last_ctx >= 100) {
+        last_ctx = millis();
+        if (g_ctx_mutex && xSemaphoreTake(g_ctx_mutex, 0) == pdTRUE) {   // 0 = non bloquant : on saute le tour si occupé
+            context_apply(&g_dash);
+            xSemaphoreGive(g_ctx_mutex);
+        }
     }
     if (g_dash.values_dirty) view_sync(&g_dash);
     static uint32_t last_led = 0;
