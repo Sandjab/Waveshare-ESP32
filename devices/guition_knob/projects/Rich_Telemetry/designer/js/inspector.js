@@ -5,15 +5,21 @@ import { setComponentProp, setPlacementProp, setThresholds, removePlacement } fr
 import { ANCHORS } from './geometry.js';
 import { getMock, setMock } from './mocks.js';
 
-const FONTS = [14, 20, 28];
+const FONTS = [14, 20, 28, 36, 48];
 const nonAscii = v => /[^\x00-\x7F]/.test(v ?? '');
 
-// Champs de composant par type : [clé, libellé, kind]. kind: asciitext|text|num|color|bool|font.
+// Champs de composant par type : [clé, libellé, kind, enableWhen?]. kind: asciitext|text|num|color|bool|font.
+// enableWhen(c) optionnel : false grise le champ (non pertinent dans l'état courant), sans le supprimer.
 const COMP_FIELDS = {
   label:    [['text', 'Texte', 'asciitext'], ['font', 'Police', 'font'], ['color', 'Couleur', 'color']],
   readout:  [['label', 'Label', 'asciitext'], ['unit', 'Unité', 'asciitext'], ['font', 'Police', 'font'], ['color', 'Couleur', 'color']],
   bar:      [['label', 'Label', 'asciitext'], ['min', 'Min', 'num'], ['max', 'Max', 'num'], ['color', 'Couleur', 'color']],
-  ring:     [['color', 'Couleur', 'color'], ['pill', 'Pastille %', 'bool'], ['countdown', 'Countdown', 'bool'], ['min', 'Min', 'num'], ['max', 'Max', 'num']],
+  ring:     [['color', 'Couleur', 'color'],
+             ['pill', 'Pastille %', 'bool', c => !c.center_pct],         // ignoré quand center_pct (prioritaire)
+             ['center_pct', 'Centre %', 'bool'],
+             ['font', 'Police centre', 'font', c => !!c.center_pct],     // dimensionne le chiffre central
+             ['center_color', 'Couleur centre', 'color', c => !!c.center_pct],
+             ['countdown', 'Countdown', 'bool'], ['min', 'Min', 'num'], ['max', 'Max', 'num']],
   led_ring: [['color', 'Couleur', 'color'], ['brightness', 'Luminosité (0-255)', 'num']],
   sound:    []
 };
@@ -23,7 +29,7 @@ const PLACE_FIELDS = {
   label:    [['anchor', 'Ancrage', 'anchor'], ['dx', 'dx', 'num'], ['dy', 'dy', 'num']],
   readout:  [['anchor', 'Ancrage', 'anchor'], ['dx', 'dx', 'num'], ['dy', 'dy', 'num']],
   bar:      [['anchor', 'Ancrage', 'anchor'], ['dx', 'dx', 'num'], ['dy', 'dy', 'num'], ['width', 'Largeur', 'num'], ['height', 'Hauteur', 'num']],
-  ring:     [['radius', 'Rayon', 'num'], ['thickness', 'Épaisseur', 'num'], ['gap_deg', 'Ouverture°', 'num']],
+  ring:     [['radius', 'Rayon', 'num'], ['thickness', 'Épaisseur', 'num'], ['gap_deg', 'Ouverture°', 'num'], ['start_angle', 'Angle départ°', 'num']],
   led_ring: [],
   sound:    []
 };
@@ -154,10 +160,26 @@ export function createInspector(root, model, { rerenderCanvas, clearSelection, g
     head.textContent = `${c.type} · ${sel.ref}`;
     body.appendChild(head);
 
-    for (const [key, label, kind] of COMP_FIELDS[c.type] || []) {
+    const rows = {};
+    for (const [key, label, kind, enableWhen] of COMP_FIELDS[c.type] || []) {
       const input = makeInput(kind, c[key], v => model.commit(s => setComponentProp(s, sel.ref, key, v)));
-      body.appendChild(fieldRow(label, input, { ascii: kind === 'asciitext' }));
+      const row = fieldRow(label, input, { ascii: kind === 'asciitext' });
+      rows[key] = { input, row, enableWhen };
+      body.appendChild(row);
     }
+    // Grise les champs non pertinents dans l'état courant (ex : couleur/police du centre si center_pct off).
+    // En direct, sans rebuild : le garde-focus de render() bloquerait une reconstruction juste après le clic.
+    const syncEnabled = () => {
+      const cc = comp(); if (!cc) return;
+      for (const { input, row, enableWhen } of Object.values(rows)) {
+        if (!enableWhen) continue;
+        const ok = enableWhen(cc);
+        input.disabled = !ok;
+        row.classList.toggle('disabled', !ok);
+      }
+    };
+    syncEnabled();
+    body.addEventListener('change', syncEnabled); // un toggle (ex: center_pct) re-évalue les dépendants
 
     renderExtras(body, c); // Task 6
 

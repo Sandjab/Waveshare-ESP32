@@ -99,6 +99,7 @@ textarea { width: 100%; height: 220px; background: #070d17; color: #cbd5e1; bord
 .insp-label { flex: 0 0 78px; color: #9aa0aa; }
 .insp-row input[type="text"], .insp-row input[type="number"], .insp-row select { flex: 1; min-width: 0; background: #0a1424; border: 1px solid var(--line); color: var(--ink); border-radius: 4px; padding: 2px 5px; }
 .insp-row input[type="color"] { width: 36px; height: 22px; padding: 0; border: 1px solid var(--line); background: none; }
+.insp-row.disabled { opacity: .45; }
 .insp-warn { color: var(--err); font-size: 11px; }
 .insp-del { margin-top: 10px; width: 100%; border-color: var(--err); color: var(--err); }
 .insp-sub { font-size: 11px; color: var(--muted); margin: 10px 0 4px; text-transform: uppercase; }
