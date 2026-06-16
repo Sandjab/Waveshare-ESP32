@@ -19,8 +19,9 @@ struct Component {
     char     unit[8];
     char     text[TEXT_LEN];
     uint32_t color;
+    uint32_t center_color;
     int32_t  vmin, vmax;
-    bool     pill, center_pct, countdown;
+    bool     pill, center_pct, countdown, center_color_set;
     Threshold thresholds[MAX_THRESHOLDS];
     int      threshold_count;
     uint16_t font;

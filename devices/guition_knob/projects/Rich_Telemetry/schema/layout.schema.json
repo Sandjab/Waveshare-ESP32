@@ -40,8 +40,8 @@
       "description": "ASCII uniquement : les polices Montserrat embarquees ne couvrent pas les accents/symboles non-ASCII."
     },
     "font": {
-      "enum": [14, 20, 28],
-      "description": "Taille de police LVGL embarquee. Defaut 20. Une autre valeur retombe sur le defaut cote firmware."
+      "enum": [14, 20, 28, 36, 48],
+      "description": "Taille de police LVGL embarquee. Defaut 20. Une valeur intermediaire est arrondie a la taille disponible inferieure (min 14)."
     },
     "threshold": {
       "type": "array",
@@ -116,6 +116,7 @@
       "properties": {
         "type": { "const": "ring" },
         "color": { "$ref": "#/$defs/hexColor" },
+        "font": { "$ref": "#/$defs/font", "description": "Taille du chiffre central (center_pct)." },
         "pill": { "type": "boolean", "description": "Affiche un pill de pourcentage sur la partie haute de la bande." },
         "countdown": { "type": "boolean", "description": "Decremente reset_in_s d'une unite/s et l'affiche dans l'ouverture." },
         "min": { "type": "number", "description": "Defaut 0." },
@@ -124,7 +125,8 @@
           "type": "array",
           "items": { "$ref": "#/$defs/threshold" }
         },
-        "center_pct": { "type": "boolean", "description": "RESERVE : non rendu en v1 (choix delibere, ne pas \"corriger\")." }
+        "center_pct": { "type": "boolean", "description": "Affiche value+unit au centre de l'anneau, en grand (police = font du composant). Exclusif avec pill (center_pct prioritaire). La couleur suit le seuil par defaut. Unites non-ASCII (degre, micro) non rendues." },
+        "center_color": { "$ref": "#/$defs/hexColor", "description": "Couleur du chiffre central (center_pct). Surcharge la couleur deduite du seuil. Absent = suit le seuil (ou color)." }
       }
     },
     "comp_led_ring": {
@@ -172,8 +174,8 @@
         "height": { "type": "integer", "description": "Hauteur (bar). Defaut 0." },
         "radius": { "type": "integer", "description": "Rayon (ring). Anneaux concentriques = meme centre, radius differents. Defaut 0." },
         "thickness": { "type": "integer", "description": "Epaisseur de bande (ring). Defaut 16." },
-        "gap_deg": { "type": "integer", "description": "Angle d'ouverture en bas (ring). Defaut 70." },
-        "start_angle": { "type": "integer", "description": "RESERVE : non utilise en v1 (l'ouverture est fixee en bas). Defaut 0." }
+        "gap_deg": { "type": "integer", "description": "Angle d'ouverture (ring). Position determinee par start_angle. Defaut 70." },
+        "start_angle": { "type": "integer", "description": "Oriente l'ouverture : offset en degres, horaire, depuis le bas. 0=bas, 90=gauche, 180=haut, 270=droite. Defaut 0." }
       }
     }
   }

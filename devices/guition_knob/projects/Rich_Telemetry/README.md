@@ -45,10 +45,10 @@ Un même `id` peut être placé sur plusieurs pages : il n'existe qu'en un seul 
 
 | Type | Config | Valeur `/update` | Notes |
 |------|--------|-----------------|-------|
-| `label` | `text`, `font` (14/20/28), `color` | string (optionnel) | Texte statique ou mis à jour |
+| `label` | `text`, `font` (14/20/28/36/48), `color` | string (optionnel) | Texte statique ou mis à jour |
 | `readout` | `label`, `unit`, `font`, `color` | nombre ou string | Affiché « CPU 42 % » (label + valeur) |
 | `bar` | `label`, `min`, `max`, `color` | nombre | Géométrie : `width`, `height`. Label affiché au-dessus de la barre. |
-| `ring` | `color`, `pill`, `countdown`, `min`, `max`, `thresholds` | `{"pct":0-100,"reset_in_s":N}` | Voir ci-dessous |
+| `ring` | `color`, `font`, `pill`, `center_pct`, `center_color`, `countdown`, `min`, `max`, `thresholds` | `{"pct":0-100,"reset_in_s":N}` | Voir ci-dessous |
 | `led_ring` | *(physique, pas de géométrie)* | objet mode | Anneau 13 WS2812 |
 | `sound` | *(physique, pas de géométrie)* | objet tone/name | Tir unique |
 
@@ -58,12 +58,13 @@ Anneau circulaire avec ouverture en bas. Paramètres de config :
 
 - `color` : couleur par défaut (hex).
 - `pill` : `true` → affiche un pill de pourcentage sur la partie haute de la bande.
-- `center_pct` : réservé (non rendu en v1).
+- `center_pct` : `true` → affiche `valeur + unité` au centre de l'anneau, en grand (taille = champ `font` : `14`/`20`/`28`/`36`/`48`). Exclusif avec `pill` (si les deux sont à `true`, `center_pct` gagne). Par défaut le chiffre **suit la couleur du seuil** (comme l'arc). Limite : unités non-ASCII (`°`, `µ`) non rendues — utiliser `%`, `C`, `V`, `rpm`…
+- `center_color` : couleur fixe du chiffre central, qui **surcharge** la couleur déduite du seuil. Absent → le chiffre suit le seuil (ou `color` s'il n'y a pas de `thresholds`).
 - `countdown` : `true` → décrémente `reset_in_s` d'une unité par seconde et l'affiche dans l'ouverture (ex. `1h50`, `5j6h`, `45s`). On peut aussi pousser une `"caption"` littérale.
 - `min` / `max` : plage (défaut 0/100).
 - `thresholds` : liste `[[limite, "#hex"], ...]` — la couleur change quand la valeur passe sous la limite.
 
-Géométrie (sur le placement dans `pages`) : `radius`, `thickness`, `gap_deg` (angle d'ouverture). L'ouverture est fixée en bas en v1.
+Géométrie (sur le placement dans `pages`) : `radius`, `thickness`, `gap_deg` (angle d'ouverture), `start_angle` (oriente l'ouverture : offset en degrés horaire depuis le bas — `0`=bas, `90`=gauche, `180`=haut, `270`=droite ; défaut `0`).
 
 Deux anneaux concentriques = même centre, `radius` différents :
 
