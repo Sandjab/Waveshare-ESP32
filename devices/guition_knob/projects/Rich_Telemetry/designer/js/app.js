@@ -6,6 +6,7 @@ import { createCanvas } from './canvas.js';
 import { createPalette } from './palette.js';
 import { createInspector } from './inspector.js';
 import { createPages } from './pages.js';
+import { bindFileIO } from './file-io.js';
 
 const $ = id => document.getElementById(id);
 
@@ -48,6 +49,13 @@ async function main() {
   const pages = createPages($('pages'), model, {
     getActivePage: canvas.getActivePage,
     setPage: i => canvas.setPage(i)
+  });
+
+  // Export / import fichier layout.json (filet indépendant du device). Après import, on revient à la
+  // page 1 (l'ancienne page active peut ne plus exister) et on rafraîchit les onglets.
+  bindFileIO(model, {
+    exportBtn: $('export'), importBtn: $('import'), importInput: $('import-file'),
+    onLoad: () => { canvas.setPage(0); pages.render(); }
   });
 
   bindJsonView(model, {
