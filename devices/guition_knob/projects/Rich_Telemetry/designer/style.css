@@ -83,3 +83,12 @@ textarea { width: 100%; height: 220px; background: #070d17; color: #cbd5e1; bord
 
 .badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; justify-content: center; }
 .badge { font-size: 12px; padding: 3px 8px; border-radius: 12px; border: 1px solid var(--line); color: var(--muted); }
+
+/* --- Plan C1 : palette --- */
+.palette-list { display: flex; flex-direction: column; gap: 6px; }
+.palette-item {
+  padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px;
+  background: #0f1a2b; cursor: grab; user-select: none; font-size: 13px;
+}
+.palette-item:active { cursor: grabbing; }
+.palette-item:hover { border-color: var(--accent); }

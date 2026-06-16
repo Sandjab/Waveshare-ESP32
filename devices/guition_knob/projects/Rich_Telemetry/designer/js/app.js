@@ -3,6 +3,7 @@ import { createValidator } from './validate.js';
 import { bindJsonView } from './json-view.js';
 import { loadLayout, pushLayout } from './device.js';
 import { createCanvas } from './canvas.js';
+import { createPalette } from './palette.js';
 
 const $ = id => document.getElementById(id);
 
@@ -25,6 +26,12 @@ async function main() {
   // Canvas WYSIWYG (page 0). onSelect reçoit { placeIndex, ref } (consommé par l'inspecteur, Task 5).
   const canvas = createCanvas({ stage: $('stage'), badges: $('badges') }, model, {
     onSelect: () => {}
+  });
+
+  // Palette : glisser un type sur le canvas crée le composant, puis on le sélectionne.
+  createPalette($('palette'), model, {
+    stage: $('stage'),
+    onCreated: i => canvas.selectPlacement(i)
   });
 
   bindJsonView(model, {
