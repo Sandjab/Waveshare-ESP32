@@ -15,6 +15,7 @@ int dash_find(const Dashboard* d, const char* id) {
 static const struct { const char* name; CompType type; } COMP_NAMES[] = {
     { "label",    COMP_LABEL    }, { "readout",  COMP_READOUT  }, { "bar",   COMP_BAR   },
     { "ring",     COMP_RING     }, { "led_ring", COMP_LED_RING }, { "sound", COMP_SOUND },
+    { "chart",    COMP_CHART    }, { "meter",    COMP_METER    },
 };
 
 static CompType parse_type(const char* s) {
@@ -72,6 +73,9 @@ bool dash_set_layout(Dashboard* d, const char* json, char* err, size_t errn) {
         c.font        = o["font"] | 20;
         c.led_brightness_cfg = o["brightness"] | 64;
         strlcpy(c.bind, o["bind"] | "", sizeof(c.bind));
+        c.chart_points = o["points"] | 30;
+        if (c.chart_points > CHART_MAX_POINTS) c.chart_points = CHART_MAX_POINTS;
+        if (c.chart_points < 1)                c.chart_points = 1;
         JsonArrayConst th = o["thresholds"].as<JsonArrayConst>();
         for (JsonArrayConst pair : th) {
             if (c.threshold_count >= MAX_THRESHOLDS) break;
@@ -134,6 +138,20 @@ bool dash_set_layout(Dashboard* d, const char* json, char* err, size_t errn) {
     return true;
 }
 
+// Fenêtre glissante d'historique du chart : garde les chart_points dernières valeurs,
+// hist[0..hist_count-1] en ordre chronologique. Utilisé par /update (apply_chart) et bind (context_apply).
+static void chart_push(Component& c, int16_t v) {
+    int n = c.chart_points;
+    if (n > CHART_MAX_POINTS) n = CHART_MAX_POINTS;
+    if (n < 1) n = 1;
+    if (c.hist_count < n) {
+        c.hist[c.hist_count++] = v;
+    } else {
+        memmove(c.hist, c.hist + 1, (size_t)(n - 1) * sizeof(int16_t));
+        c.hist[n - 1] = v;
+    }
+}
+
 // Vtable modèle : un handler /update par type, indexé par CompType. Chaque branche est
 // l'ancien `case` d'apply_one, à l'identique. Ajouter un type = une fn + une ligne de table.
 typedef void (*comp_apply_fn)(Component&, JsonVariantConst);
@@ -176,6 +194,12 @@ static void apply_sound(Component& c, JsonVariantConst v) {
     c.snd_ms   = v["ms"]   | 150;
     strlcpy(c.snd_name, v["name"] | "", sizeof(c.snd_name));
 }
+static void apply_chart(Component& c, JsonVariantConst v) {
+    chart_push(c, (int16_t)v.as<int>());      // push explicite : toujours un point
+}
+static void apply_meter(Component& c, JsonVariantConst v) {
+    c.value = v.as<int>();                    // scalaire -> aiguille (comme bar)
+}
 
 static const comp_apply_fn APPLY[] = {
     /* COMP_NONE     */ nullptr,
@@ -185,6 +209,8 @@ static const comp_apply_fn APPLY[] = {
     /* COMP_RING     */ apply_ring,
     /* COMP_LED_RING */ apply_led_ring,
     /* COMP_SOUND    */ apply_sound,
+    /* COMP_CHART    */ apply_chart,
+    /* COMP_METER    */ apply_meter,
 };
 static_assert(sizeof(APPLY) / sizeof(APPLY[0]) == COMP_COUNT,
               "APPLY desync avec CompType : ajoute la ligne du nouveau type");
@@ -244,6 +270,18 @@ void context_apply(Dashboard* d) {
                 if (strncmp(c.vstr, nb, sizeof(c.vstr)) != 0) { strlcpy(c.vstr, nb, sizeof(c.vstr)); changed = true; }
                 break;
             }
+            case COMP_METER:                            // scalaire -> aiguille (comme bar)
+                if (v.type == CTX_NUM) {
+                    int32_t nv = (int32_t)v.num;
+                    if (c.value != nv) { c.value = nv; changed = true; }
+                }
+                break;
+            case COMP_CHART:                            // append SEULEMENT au changement (évite le flood du tick 100 ms)
+                if (v.type == CTX_NUM) {
+                    int32_t nv = (int32_t)v.num;
+                    if (c.value != nv) { chart_push(c, (int16_t)nv); c.value = nv; changed = true; }
+                }
+                break;
             default: break;                            // led_ring/sound : pas de bind
         }
         if (changed) { c.dirty = true; d->values_dirty = true; }

@@ -243,6 +243,36 @@ void test_update_sound_sets_pending(void) {
     TEST_ASSERT_EQUAL_STRING("beep", d.components[i].snd_name);
 }
 
+// --- chart : fenêtre glissante d'historique (native-testable) ---
+void test_chart_ring_keeps_last_n(void) {
+    Dashboard d{}; char err[80], unk[UNKNOWN_CSV_LEN];
+    dash_set_layout(&d,
+        "{\"components\":{\"g\":{\"type\":\"chart\",\"points\":30}},"
+        "\"pages\":[{\"name\":\"p\",\"place\":[{\"ref\":\"g\"}]}]}", err, sizeof(err));
+    int i = dash_find(&d, "g");
+    char body[24];
+    for (int v = 1; v <= 35; v++) { snprintf(body, sizeof(body), "{\"g\":%d}", v); dash_apply_update(&d, body, unk, sizeof(unk)); }
+    TEST_ASSERT_EQUAL_INT(30, d.components[i].hist_count);
+    TEST_ASSERT_EQUAL_INT(6,  d.components[i].hist[0]);    // v1..v5 sont tombées
+    TEST_ASSERT_EQUAL_INT(35, d.components[i].hist[29]);
+}
+void test_chart_points_parsed_and_clamped(void) {
+    Dashboard d{}; char err[80];
+    dash_set_layout(&d, "{\"components\":{\"g\":{\"type\":\"chart\",\"points\":999}},\"pages\":[]}", err, sizeof(err));
+    TEST_ASSERT_EQUAL_INT(CHART_MAX_POINTS, d.components[dash_find(&d,"g")].chart_points);
+    Dashboard d2{}; char err2[80];
+    dash_set_layout(&d2, "{\"components\":{\"g\":{\"type\":\"chart\"}},\"pages\":[]}", err2, sizeof(err2));
+    TEST_ASSERT_EQUAL_INT(30, d2.components[dash_find(&d2,"g")].chart_points);
+}
+void test_update_meter_value(void) {
+    Dashboard d{}; char err[80], unk[UNKNOWN_CSV_LEN];
+    dash_set_layout(&d,
+        "{\"components\":{\"m\":{\"type\":\"meter\",\"min\":0,\"max\":100}},"
+        "\"pages\":[{\"name\":\"p\",\"place\":[{\"ref\":\"m\"}]}]}", err, sizeof(err));
+    dash_apply_update(&d, "{\"m\":72}", unk, sizeof(unk));
+    TEST_ASSERT_EQUAL_INT(72, d.components[dash_find(&d,"m")].value);
+}
+
 void test_next_mid(void)     { TEST_ASSERT_EQUAL_INT(2, nav_next(1, 3, true)); }
 void test_next_wrap(void)    { TEST_ASSERT_EQUAL_INT(0, nav_next(2, 3, true)); }
 void test_next_clamp(void)   { TEST_ASSERT_EQUAL_INT(2, nav_next(2, 3, false)); }
@@ -420,6 +450,24 @@ void test_ctxapply_missing_var_keeps_value(void) {
     context_apply(&d);                                  // variable "v" absente
     TEST_ASSERT_EQUAL_INT(7, d.components[dash_find(&d,"x")].value);
 }
+void test_ctxapply_meter_value(void) {
+    Dashboard d{}; char err[80];
+    dash_set_layout(&d, bound_layout("meter", ""), err, sizeof(err));
+    dash_set_context(&d, "{\"v\":55}", 1); context_apply(&d);
+    TEST_ASSERT_EQUAL_INT(55, d.components[dash_find(&d,"x")].value);
+}
+void test_ctxapply_chart_appends_on_change(void) {
+    Dashboard d{}; char err[80];
+    dash_set_layout(&d, bound_layout("chart", ",\"points\":5"), err, sizeof(err));
+    int i = dash_find(&d, "x");
+    dash_set_context(&d, "{\"v\":10}", 1); context_apply(&d);
+    dash_set_context(&d, "{\"v\":10}", 2); context_apply(&d);   // même valeur -> pas de 2e append
+    TEST_ASSERT_EQUAL_INT(1, d.components[i].hist_count);
+    dash_set_context(&d, "{\"v\":20}", 3); context_apply(&d);   // change -> append
+    TEST_ASSERT_EQUAL_INT(2,  d.components[i].hist_count);
+    TEST_ASSERT_EQUAL_INT(10, d.components[i].hist[0]);
+    TEST_ASSERT_EQUAL_INT(20, d.components[i].hist[1]);
+}
 
 int main(int, char**) {
     UNITY_BEGIN();
@@ -440,6 +488,11 @@ int main(int, char**) {
     RUN_TEST(test_update_unknown_reported_not_applied);
     RUN_TEST(test_update_led_ring_mode_color_value);
     RUN_TEST(test_update_sound_sets_pending);
+    RUN_TEST(test_chart_ring_keeps_last_n);
+    RUN_TEST(test_chart_points_parsed_and_clamped);
+    RUN_TEST(test_update_meter_value);
+    RUN_TEST(test_ctxapply_meter_value);
+    RUN_TEST(test_ctxapply_chart_appends_on_change);
     RUN_TEST(test_layout_parse_counts);
     RUN_TEST(test_layout_types_and_geom);
     RUN_TEST(test_ring_center_pct_parsed);

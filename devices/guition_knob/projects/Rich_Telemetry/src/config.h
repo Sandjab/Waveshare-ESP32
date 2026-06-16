@@ -3,6 +3,7 @@
 #define MAX_PAGES               8
 #define MAX_PLACEMENTS_PER_PAGE 12
 #define MAX_THRESHOLDS          4
+#define CHART_MAX_POINTS        60
 #define MAX_CTX_VARS            32
 #define MAX_SOURCES             6
 #define MAX_HEADERS_PER_SOURCE  4
