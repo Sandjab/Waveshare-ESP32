@@ -134,49 +134,64 @@ bool dash_set_layout(Dashboard* d, const char* json, char* err, size_t errn) {
     return true;
 }
 
-static void apply_one(Component& c, JsonVariantConst v) {
-    switch (c.type) {
-        case COMP_LABEL:
-            strlcpy(c.vstr, v.as<const char*>() ? v.as<const char*>() : c.vstr, sizeof(c.vstr));
-            break;
-        case COMP_READOUT:
-            if (v.is<const char*>()) strlcpy(c.vstr, v.as<const char*>(), sizeof(c.vstr));
-            else format_value(v.as<double>(), c.unit, c.vstr, sizeof(c.vstr));
-            break;
-        case COMP_BAR:
-            c.value = v.as<int>();
-            break;
-        case COMP_RING:
-            c.value      = v["pct"] | c.value;
-            c.reset_in_s = v["reset_in_s"] | c.reset_in_s;
-            if (v["caption"].is<const char*>()) {
-                strlcpy(c.caption, v["caption"].as<const char*>(), sizeof(c.caption));
-            } else if (c.countdown) {
-                format_remaining(c.reset_in_s, c.caption, sizeof(c.caption));
-            }
-            break;
-        case COMP_LED_RING: {
-            const char* m = v["mode"] | "";
-            if      (!strcmp(m,"off"))      c.led_mode = LED_OFF;
-            else if (!strcmp(m,"solid"))    c.led_mode = LED_SOLID;
-            else if (!strcmp(m,"progress")) c.led_mode = LED_PROGRESS;
-            else if (!strcmp(m,"spinner"))  c.led_mode = LED_SPINNER;
-            else if (!strcmp(m,"blink"))    c.led_mode = LED_BLINK;
-            else if (!strcmp(m,"breathe"))  c.led_mode = LED_BREATHE;
-            if (v["color"].is<const char*>()) c.led_color = parse_hex_color(v["color"], c.led_color);
-            c.led_value      = v["value"]      | c.led_value;
-            c.led_brightness = v["brightness"] | c.led_brightness_cfg;
-            c.led_period_ms  = v["period_ms"]  | (c.led_period_ms ? c.led_period_ms : 1000);
-            break;
-        }
-        case COMP_SOUND:
-            c.snd_pending = true;
-            c.snd_tone = v["tone"] | 0;
-            c.snd_ms   = v["ms"]   | 150;
-            strlcpy(c.snd_name, v["name"] | "", sizeof(c.snd_name));
-            break;
-        default: break;
+// Vtable modèle : un handler /update par type, indexé par CompType. Chaque branche est
+// l'ancien `case` d'apply_one, à l'identique. Ajouter un type = une fn + une ligne de table.
+typedef void (*comp_apply_fn)(Component&, JsonVariantConst);
+
+static void apply_label(Component& c, JsonVariantConst v) {
+    strlcpy(c.vstr, v.as<const char*>() ? v.as<const char*>() : c.vstr, sizeof(c.vstr));
+}
+static void apply_readout(Component& c, JsonVariantConst v) {
+    if (v.is<const char*>()) strlcpy(c.vstr, v.as<const char*>(), sizeof(c.vstr));
+    else format_value(v.as<double>(), c.unit, c.vstr, sizeof(c.vstr));
+}
+static void apply_bar(Component& c, JsonVariantConst v) {
+    c.value = v.as<int>();
+}
+static void apply_ring(Component& c, JsonVariantConst v) {
+    c.value      = v["pct"] | c.value;
+    c.reset_in_s = v["reset_in_s"] | c.reset_in_s;
+    if (v["caption"].is<const char*>()) {
+        strlcpy(c.caption, v["caption"].as<const char*>(), sizeof(c.caption));
+    } else if (c.countdown) {
+        format_remaining(c.reset_in_s, c.caption, sizeof(c.caption));
     }
+}
+static void apply_led_ring(Component& c, JsonVariantConst v) {
+    const char* m = v["mode"] | "";
+    if      (!strcmp(m,"off"))      c.led_mode = LED_OFF;
+    else if (!strcmp(m,"solid"))    c.led_mode = LED_SOLID;
+    else if (!strcmp(m,"progress")) c.led_mode = LED_PROGRESS;
+    else if (!strcmp(m,"spinner"))  c.led_mode = LED_SPINNER;
+    else if (!strcmp(m,"blink"))    c.led_mode = LED_BLINK;
+    else if (!strcmp(m,"breathe"))  c.led_mode = LED_BREATHE;
+    if (v["color"].is<const char*>()) c.led_color = parse_hex_color(v["color"], c.led_color);
+    c.led_value      = v["value"]      | c.led_value;
+    c.led_brightness = v["brightness"] | c.led_brightness_cfg;
+    c.led_period_ms  = v["period_ms"]  | (c.led_period_ms ? c.led_period_ms : 1000);
+}
+static void apply_sound(Component& c, JsonVariantConst v) {
+    c.snd_pending = true;
+    c.snd_tone = v["tone"] | 0;
+    c.snd_ms   = v["ms"]   | 150;
+    strlcpy(c.snd_name, v["name"] | "", sizeof(c.snd_name));
+}
+
+static const comp_apply_fn APPLY[] = {
+    /* COMP_NONE     */ nullptr,
+    /* COMP_LABEL    */ apply_label,
+    /* COMP_READOUT  */ apply_readout,
+    /* COMP_BAR      */ apply_bar,
+    /* COMP_RING     */ apply_ring,
+    /* COMP_LED_RING */ apply_led_ring,
+    /* COMP_SOUND    */ apply_sound,
+};
+static_assert(sizeof(APPLY) / sizeof(APPLY[0]) == COMP_COUNT,
+              "APPLY desync avec CompType : ajoute la ligne du nouveau type");
+
+static void apply_one(Component& c, JsonVariantConst v) {
+    if (c.type > COMP_NONE && (unsigned)c.type < COMP_COUNT && APPLY[c.type])
+        APPLY[c.type](c, v);
 }
 
 int dash_apply_update(Dashboard* d, const char* json, char* unknown_csv, size_t n) {
