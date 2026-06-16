@@ -278,6 +278,16 @@ void test_ptr_escape(void) {
     TEST_ASSERT_EQUAL_INT(7, ctx_extract_pointer(d.as<JsonVariantConst>(), "/a~1b").as<int>());
 }
 
+void test_ctx_apply_json_num_and_str(void) {
+    Context c{};
+    JsonDocument d; deserializeJson(d, "{\"cpu\":42,\"host\":\"srv1\"}");
+    int n = ctx_apply_json(&c, d.as<JsonObjectConst>(), 7);
+    TEST_ASSERT_EQUAL_INT(2, n);
+    TEST_ASSERT_EQUAL_INT(42, (int)c.vars[ctx_find(&c,"cpu")].num);
+    TEST_ASSERT_EQUAL_INT(CTX_STR, c.vars[ctx_find(&c,"host")].type);
+    TEST_ASSERT_EQUAL_STRING("srv1", c.vars[ctx_find(&c,"host")].str);
+}
+
 int main(int, char**) {
     UNITY_BEGIN();
     RUN_TEST(test_remaining_seconds);
@@ -311,6 +321,7 @@ int main(int, char**) {
     RUN_TEST(test_ptr_array_index);
     RUN_TEST(test_ptr_missing_is_null);
     RUN_TEST(test_ptr_escape);
+    RUN_TEST(test_ctx_apply_json_num_and_str);
     RUN_TEST(test_layout_invalid_keeps_old);
     RUN_TEST(test_hex_parse);
     RUN_TEST(test_hex_no_hash);
