@@ -523,22 +523,36 @@ export function createSources(root, model) {
     root.appendChild(add);
   }
 
-  // Editeur generique de map (headers/vars) : liste de paires + ligne d'ajout. onCommit recoit
-  // la liste de paires courante (cle vide ignoree cote mutation).
+  // Editeur generique de map (headers/vars) : liste de paires + ligne d'ajout. Le commit n'a lieu
+  // que sur 'change' d'un champ. Une paire a cle vide est filtree par fromPairs (donc perdue au
+  // re-render global) : le bouton "+" insere la ligne LOCALEMENT, sans commit, et c'est la saisie
+  // de la cle (sur 'change') qui declenche le commit — la paire reapparait alors via toPairs.
+  // [Corrige en execution — commit 5fab967 : la 1re version committait au clic "+", ce qui
+  //  perdait la ligne immediatement (fromPairs filtre la cle vide -> modele inchange -> re-render
+  //  global efface la ligne). Bug trouve a la verif navigateur.]
   function pairEditor(title, pairs, kPlaceholder, vPlaceholder, onCommit) {
     const box = document.createElement('div'); box.className = 'src-pairs';
     const sub = document.createElement('div'); sub.className = 'src-sub'; sub.textContent = title;
     box.appendChild(sub);
-    pairs.forEach((p, idx) => {
-      const k = textInput(p[0], v => { pairs[idx][0] = v; onCommit(pairs); }, kPlaceholder);
-      const v = textInput(p[1], v => { pairs[idx][1] = v; onCommit(pairs); }, vPlaceholder);
+    const rowsBox = document.createElement('div'); box.appendChild(rowsBox);
+    const add = document.createElement('button'); add.className = 'src-pair-add'; add.textContent = '+';
+
+    const addRow = idx => {
+      const k = textInput(pairs[idx][0], v => { pairs[idx][0] = v; onCommit(pairs); }, kPlaceholder);
+      const v = textInput(pairs[idx][1], v => { pairs[idx][1] = v; onCommit(pairs); }, vPlaceholder);
       const rm = document.createElement('button'); rm.className = 'src-pair-rm'; rm.textContent = '×';
       rm.addEventListener('click', () => { pairs.splice(idx, 1); onCommit(pairs); });
-      box.appendChild(row(k, v, rm));
-    });
-    const add = document.createElement('button'); add.className = 'src-pair-add'; add.textContent = '+';
+      rowsBox.appendChild(row(k, v, rm));
+    };
+    pairs.forEach((_, idx) => addRow(idx));
+
     add.disabled = pairs.length >= MAX_PAIRS;
-    add.addEventListener('click', () => { pairs.push(['', '']); onCommit(pairs); });
+    add.addEventListener('click', () => {
+      if (pairs.length >= MAX_PAIRS) return;
+      pairs.push(['', '']);
+      addRow(pairs.length - 1);                    // ligne locale, PAS de commit (cle vide => filtree)
+      add.disabled = pairs.length >= MAX_PAIRS;
+    });
     box.appendChild(add);
     return box;
   }

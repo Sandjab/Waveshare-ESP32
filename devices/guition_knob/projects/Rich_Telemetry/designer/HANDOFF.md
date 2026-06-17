@@ -1,5 +1,15 @@
 # Rich_Telemetry Designer — HANDOFF (reprise après clear context)
 
+> **MISE À JOUR 2026-06-17 — Pull P3 + chart/meter (designer) : FAITS** (branche
+> `feat/rt-designer-p3`, plan `docs/superpowers/plans/2026-06-17-pull-P3-designer.md`). Ajoutés :
+> panneau d'édition des `sources` (pull réseau) dans le footer (`js/sources.js` + mutations
+> `addSource`/… dans `mutations.js`) ; champ `bind` (variable du contexte) dans l'inspecteur pour
+> label/readout/bar/ring/chart/meter ; types **chart** (sparkline) et **meter** (jauge arc 270° +
+> zones + aiguille) de bout en bout (schema `comp_chart`/`comp_meter`, `registry.js`, aperçu SVG dans
+> `render.js`, éditeur de zones du meter dans `inspector.js`). **Secrets délibérément HORS designer**
+> (conforme spec ; `POST /secrets` manuel). Vérifié : `node --test` 88/88 + navigateur. Le reste
+> ci-dessous (Plans A/B/C) reste l'historique de l'éditeur WYSIWYG.
+
 **Dernière mise à jour : 2026-06-16.** Document autoporteur pour reprendre le travail sur l'éditeur WYSIWYG du designer. Lis aussi `specs/` et `plans/` (ils sont la source de vérité ; ce fichier est l'état + le plan de reprise).
 
 ## TL;DR

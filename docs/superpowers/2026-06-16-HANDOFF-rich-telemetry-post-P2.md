@@ -1,5 +1,15 @@
 # HANDOFF — Rich_Telemetry, après Pull P2 (2026-06-16)
 
+> **MISE À JOUR 2026-06-17 — Pull P3 (designer) + chart/meter designer : FAITS.** Sur la branche
+> `feat/rt-designer-p3` (6 commits, `dbe9290`..`04ac3b3`), plan
+> `docs/superpowers/plans/2026-06-17-pull-P3-designer.md`. Livré : schema `sources` top-level +
+> `bind` + `comp_chart`/`comp_meter` ; panneau d'édition des `sources` (footer) ; champ `bind` à
+> l'inspecteur ; types chart/meter de bout en bout (registre + aperçu SVG + éditeur de zones du
+> meter). **Décision : secrets HORS designer** (conforme spec « absent du designer » ; `POST /secrets`
+> manuel). Vérifié : `node --test` **88/88**, `pio test -e native` **66/66**, navigateur (Sources
+> CRUD/undo, chart/meter rendu+inspecteur, bind, mock aiguille). **Firmware et designer désormais
+> alignés — plus aucun track P-series ouvert.** (Reste éventuel hors P-series : voir designer/HANDOFF.md.)
+
 Document **autoporteur** : la session qui reprend a zéro contexte conversationnel.
 Projet : `devices/guition_knob/projects/Rich_Telemetry/` (Guition JC3636K718, ESP32-S3,
 écran rond 360×360). Tout l'historique ci-dessous est **mergé et poussé sur `origin/master`**.
