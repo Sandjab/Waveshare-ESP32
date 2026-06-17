@@ -11,6 +11,7 @@
 #include "freertos/semphr.h"
 #include <lvgl.h>
 #include "esp_heap_caps.h"
+#include <LittleFS.h>
 
 extern String g_layout_json;
 extern SemaphoreHandle_t g_ctx_mutex;
@@ -75,7 +76,8 @@ static void h_root() {
         "<pre>curl -X POST http://" + ip + "/update -H 'Content-Type: application/json' \\\n"
         "  -d '{\"w5h\":{\"pct\":63,\"reset_in_s\":6600}}'</pre>"
         "<p><a href=/status>/status</a> &middot; <a href=/layout>/layout</a> &middot; "
-        "<a href=/screenshot>/screenshot</a> (capture ecran, image/bmp)</p>";
+        "<a href=/screenshot>/screenshot</a> (capture ecran, image/bmp)</p>"
+        "<p><a href=/designer/>Designer embarque</a> (editeur WYSIWYG du layout)</p>";
     S->send(200, "text/html", html);
 }
 
@@ -197,6 +199,12 @@ void api_register(WebServer& server, Dashboard* d) {
     server.on("/layout", HTTP_GET,  h_get_layout);
     server.on("/page",   HTTP_POST, h_page);
     server.on("/screenshot", HTTP_GET, h_screenshot);   // capture ecran -> image/bmp
+    // Designer embarque (LittleFS) : http://<ip>/designer/ sert l'editeur en MEME origin (plus de
+    // serveur local ni de CORS). serveStatic cherche index.htm pour une URL de repertoire ("/designer/").
+    // Fichiers stages par tools/stage_fs.sh puis flashes via --uploadfs. Le schema partage est servi a
+    // part car le designer le fetch en ../schema/.
+    server.serveStatic("/designer", LittleFS, "/designer");
+    server.serveStatic("/schema",   LittleFS, "/schema");
     server.on("/",       HTTP_GET,  h_root);
     server.onNotFound([](){
         // enableCORS(true) ajoute déjà Allow-Origin/Methods/Headers: * à chaque réponse ;

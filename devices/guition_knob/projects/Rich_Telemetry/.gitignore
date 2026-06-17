@@ -1,0 +1,4 @@
+# Artefacts de l'image LittleFS : régénérés par tools/stage_fs.sh (designer + schema embarqués).
+# data/layout.json (layout par défaut) reste tracké.
+data/designer/
+data/schema/
