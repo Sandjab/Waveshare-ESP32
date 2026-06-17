@@ -1,7 +1,8 @@
 import { createModel } from './model.js';
 import { createValidator } from './validate.js';
 import { bindJsonView } from './json-view.js';
-import { loadLayout, pushLayout, captureScreenshot } from './device.js';
+import { loadLayout, pushLayout, captureScreenshot, getStatus, setDevicePage, pushValues } from './device.js';
+import { getMock } from './mocks.js';
 import { createCanvas } from './canvas.js';
 import { createPalette } from './palette.js';
 import { createInspector } from './inspector.js';
@@ -10,6 +11,20 @@ import { bindFileIO } from './file-io.js';
 import { createSources } from './sources.js';
 
 const $ = id => document.getElementById(id);
+
+// Construit un payload POST /update depuis les valeurs d'aperçu (mocks) des composants data.
+// Format par type (cf. README §/update) : scalaire pour readout/bar/meter, {pct,reset_in_s} pour ring,
+// dernier point d'historique pour chart. label/led_ring/sound : pas de valeur de test pertinente.
+function buildUpdatePayload(state) {
+  const out = {};
+  for (const [id, c] of Object.entries(state.components || {})) {
+    const m = getMock(id, c.type);
+    if (c.type === 'readout' || c.type === 'bar' || c.type === 'meter') out[id] = m.value ?? 0;
+    else if (c.type === 'ring') { out[id] = { pct: m.value ?? 0 }; if (c.countdown && m.reset_in_s != null) out[id].reset_in_s = m.reset_in_s; }
+    else if (c.type === 'chart') { const h = m.hist || []; if (h.length) out[id] = h[h.length - 1]; }
+  }
+  return out;
+}
 
 async function main() {
   // Le schema partage vit dans ../schema (hors du dossier designer) : servir depuis le parent.
@@ -92,20 +107,56 @@ async function main() {
     try { await pushLayout($('base').value, model.toJSON()); setStatus('Poussé et persisté', 'ok'); }
     catch (e) { setStatus('Échec : ' + e.message + ' (CORS ? cf. README)', 'err'); }
   };
-  // Capture écran : récupère un BMP du device et l'affiche dans l'overlay. La blob URL précédente
-  // est révoquée pour éviter une fuite mémoire (cf. captureScreenshot).
+  // --- Boucle device : santé (/status), valeurs de test (/update), capture + navigation (/page + /screenshot) ---
+  const devbar = $('devbar');
+  const renderStatus = (s) => {
+    const srcs = (s.sources || []).map(x => `${x.name || '?'}:${x.last_status === 200 ? 'ok' : (x.err_count ? 'err' : '…')}`).join(' ');
+    devbar.className = 'devbar'; devbar.hidden = false;
+    devbar.textContent = `● ${s.ip} · page ${(+s.page) + 1}/${s.pages} · up ${s.uptime_s}s · ${s.components} comp.` + (srcs ? ` · sources ${srcs}` : '');
+  };
+  $('statusbtn').onclick = async () => {
+    if (!$('base').value) return setStatus('URL device ?', 'err');
+    setStatus('Statut…');
+    try { renderStatus(await getStatus($('base').value)); setStatus('Statut OK', 'ok'); }
+    catch (e) { devbar.hidden = false; devbar.className = 'devbar err'; devbar.textContent = '○ injoignable : ' + e.message; setStatus('Échec statut', 'err'); }
+  };
+  $('values').onclick = async () => {
+    if (!$('base').value) return setStatus('URL device ?', 'err');
+    const payload = buildUpdatePayload(model.state);
+    if (!Object.keys(payload).length) return setStatus('Aucune valeur de test à pousser', 'err');
+    setStatus('Valeurs…');
+    try { const r = await pushValues($('base').value, payload); setStatus(`Valeurs poussées (${r.updated ?? '?'})`, 'ok'); }
+    catch (e) { setStatus('Échec : ' + e.message, 'err'); }
+  };
+
+  // Capture écran (+ navigation device dans l'overlay). Révoque l'ancienne blob URL (anti-fuite).
   const shot = $('shot');
+  const doCapture = async () => {
+    const url = await captureScreenshot($('base').value);
+    if (shot.dataset.url) URL.revokeObjectURL(shot.dataset.url);
+    shot.dataset.url = url; shot.src = url;
+  };
+  const refreshShotPage = async () => {
+    try { const s = await getStatus($('base').value); $('shot-page').textContent = `page ${(+s.page) + 1}/${s.pages}`; }
+    catch (e) { $('shot-page').textContent = ''; }
+  };
   $('capture').onclick = async () => {
     if (!$('base').value) return setStatus('URL device ?', 'err');
     setStatus('Capture…');
-    try {
-      const url = await captureScreenshot($('base').value);
-      if (shot.dataset.url) URL.revokeObjectURL(shot.dataset.url);
-      shot.dataset.url = url; shot.src = url;
-      $('shot-overlay').hidden = false;
-      setStatus('Capturé', 'ok');
-    } catch (e) { setStatus('Échec : ' + e.message + ' (CORS ? cf. README)', 'err'); }
+    try { await doCapture(); await refreshShotPage(); $('shot-overlay').hidden = false; setStatus('Capturé', 'ok'); }
+    catch (e) { setStatus('Échec : ' + e.message + ' (CORS ? cf. README)', 'err'); }
   };
+  const navAndCapture = async (dir) => {
+    if (!$('base').value) return;
+    setStatus('Navigation…');
+    try {
+      await setDevicePage($('base').value, { dir });
+      await new Promise(r => setTimeout(r, 350));   // laisse le device basculer + sync avant la capture
+      await doCapture(); await refreshShotPage(); setStatus('Capturé', 'ok');
+    } catch (e) { setStatus('Échec : ' + e.message, 'err'); }
+  };
+  $('shot-prev').onclick = () => navAndCapture('prev');
+  $('shot-next').onclick = () => navAndCapture('next');
   $('shot-close').onclick = () => { $('shot-overlay').hidden = true; };
 }
 

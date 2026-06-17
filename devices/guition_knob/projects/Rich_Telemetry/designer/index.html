@@ -15,12 +15,16 @@
     <label>Device <input id="base" type="text" placeholder="http://192.168.1.35" size="20" /></label>
     <button id="load">Charger</button>
     <button id="push">Pousser</button>
+    <button id="values" title="Pousse les valeurs d'aperçu (mocks) au device via POST /update">Valeurs test</button>
+    <button id="statusbtn" title="Lit GET /status (santé device + état des sources)">Statut</button>
     <button id="capture">Capture écran</button>
     <button id="export">Exporter</button>
     <button id="import">Importer</button>
     <input id="import-file" type="file" accept="application/json,.json" hidden />
     <span id="status" class="status"></span>
   </header>
+
+  <div id="devbar" class="devbar" hidden></div>
 
   <nav id="pages" class="pages-bar"></nav>
 
@@ -56,7 +60,12 @@
   <div id="shot-overlay" class="shot-overlay" hidden>
     <div class="shot-box">
       <img id="shot" alt="Capture écran du device" />
-      <button id="shot-close">Fermer</button>
+      <div class="shot-nav">
+        <button id="shot-prev" title="Page précédente sur le device">◀</button>
+        <span id="shot-page"></span>
+        <button id="shot-next" title="Page suivante sur le device">▶</button>
+        <button id="shot-close">Fermer</button>
+      </div>
     </div>
   </div>
 
