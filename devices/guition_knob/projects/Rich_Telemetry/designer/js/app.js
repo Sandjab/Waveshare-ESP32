@@ -7,6 +7,7 @@ import { createPalette } from './palette.js';
 import { createInspector } from './inspector.js';
 import { createPages } from './pages.js';
 import { bindFileIO } from './file-io.js';
+import { createSources } from './sources.js';
 
 const $ = id => document.getElementById(id);
 
@@ -57,6 +58,9 @@ async function main() {
     exportBtn: $('export'), importBtn: $('import'), importInput: $('import-file'),
     onLoad: () => { canvas.setPage(0); pages.render(); }
   });
+
+  // Panneau Sources (pull réseau) : édition des sources top-level. Indépendant du canvas/pages.
+  createSources($('sources'), model);
 
   bindJsonView(model, {
     textarea: $('json'), applyBtn: $('apply'), validEl: $('valid'), errorsEl: $('errors')
