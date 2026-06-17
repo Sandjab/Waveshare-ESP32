@@ -1,27 +1,48 @@
 :root {
-  --bg: #0b1220;
-  --panel: #0d1117;
-  --line: #1e293b;
-  --ink: #e6edf3;
-  --muted: #64748b;
-  --accent: #38bdf8;
+  /* Palette empruntée au device qu'on édite (cf. default-layout) : near-black chaud #0B0B0F +
+     violet de l'anneau #A78BFA en accent primaire ; le cyan #38BDF8 (lecture/barre du device)
+     reste en info secondaire. Pas de bleu-nuit Tailwind dans le chrome. */
+  --bg: #0c0c10;
+  --panel: #131319;
+  --panel-2: #0f0f14;
+  --line: #26262f;
+  --ink: #ecebf2;
+  --muted: #8b8794;
+  --accent: #a78bfa;          /* primaire (anneau device) : action primaire + sélection */
+  --accent-strong: #8b5cf6;   /* fond du bouton primaire */
+  --info: #38bdf8;            /* device / info */
   --ok: #22c55e;
+  --warn: #fbbf24;
   --err: #f87171;
+  /* Montserrat (déjà embarquée, @font-face plus bas) pour titre+sections : le chrome fait écho à
+     la police de l'aperçu. Aucun asset réseau (le designer est servi hors-ligne depuis le device). */
+  --font-ui: 'Montserrat', system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 }
 * { box-sizing: border-box; }
 body { margin: 0; font: 14px/1.5 system-ui, sans-serif; background: var(--bg); color: var(--ink); }
-header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); }
-header h1 { font-size: 14px; margin: 0; }
+header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+header h1 { font-family: var(--font-ui); font-size: 16px; font-weight: 500; letter-spacing: .04em; margin: 0; color: var(--ink); }
 header .grow { flex: 1; }
-button { background: #0f2233; border: 1px solid var(--accent); color: var(--ink); border-radius: 5px; padding: 4px 10px; cursor: pointer; }
-button:disabled { border-color: var(--line); color: #475569; cursor: default; }
-input { background: #0a1424; border: 1px solid var(--line); color: var(--ink); border-radius: 5px; padding: 3px 6px; }
+/* Familles d'actions séparées visuellement : historique · device · fichier. */
+.hgroup { display: flex; align-items: center; gap: 6px; }
+.hgroup + .hgroup { padding-left: 10px; border-left: 1px solid var(--line); }
+.hgroup label { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12.5px; }
+
+/* Boutons : ghost par défaut (calme) ; .primary = action engageante (Pousser) ; .accent = lecture device courante. */
+button { background: transparent; border: 1px solid var(--line); color: var(--muted); border-radius: 6px; padding: 4px 10px; cursor: pointer; font: inherit; transition: border-color .12s, color .12s, background .12s; }
+button:hover:not(:disabled) { border-color: var(--accent); color: var(--ink); background: rgba(167, 139, 250, .08); }
+button:disabled { border-color: var(--line); color: #55525e; cursor: default; }
+button.primary { background: var(--accent-strong); border-color: var(--accent-strong); color: #fff; font-weight: 600; }
+button.primary:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); color: #160a2e; }
+button.accent { border-color: var(--accent); color: var(--ink); }
+input { background: var(--panel-2); border: 1px solid var(--line); color: var(--ink); border-radius: 5px; padding: 3px 6px; }
 main { display: grid; grid-template-columns: 170px 1fr 200px; gap: 10px; padding: 10px; min-height: 50vh; }
 .col { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
-.col h2 { font-size: 12px; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
-.todo { color: #475569; font-style: italic; }
+.col h2 { font-family: var(--font-ui); font-size: 12px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+.todo { color: #55525e; font-style: italic; }
 footer { padding: 10px 12px; border-top: 1px solid var(--line); }
-textarea { width: 100%; height: 220px; background: #070d17; color: #cbd5e1; border: 1px solid var(--line); border-radius: 8px; font: 12.5px/1.5 monospace; padding: 10px; }
+textarea { width: 100%; height: 220px; background: #0a0a0e; color: #cbd5e1; border: 1px solid var(--line); border-radius: 8px; font: 12.5px/1.5 var(--font-mono); padding: 10px; }
 .row { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
 .status, .valid { font-size: 12.5px; }
 .status.ok, .valid.ok { color: var(--ok); }
@@ -37,12 +58,15 @@ textarea { width: 100%; height: 220px; background: #070d17; color: #cbd5e1; bord
   font-display: swap;
 }
 
-#canvas-col { display: flex; flex-direction: column; align-items: center; }
+/* Halo violet derrière l'écran rond : la marge généreuse devient atmosphère plutôt que vide résiduel. */
+#canvas-col { display: flex; flex-direction: column; align-items: center;
+  background: radial-gradient(circle at 50% 34%, rgba(167, 139, 250, .07), transparent 58%), var(--panel); }
 .stage {
   position: relative;
   width: 360px; height: 360px;     /* 1 px CSS = 1 unité écran (échelle 1:1) */
   border-radius: 50%;
   background: #000;
+  transition: box-shadow .12s;
   /* PAS d'overflow:hidden : il clipperait les poignées de redim (handle-br, poignées
      de ring) près du bord. Le rendu rond vient du border-radius + .screen-circle ;
      un widget hors-cercle est signalé par .w.outside, pas clippé. */
@@ -52,10 +76,15 @@ textarea { width: 100%; height: 220px; background: #070d17; color: #cbd5e1; bord
 .screen-circle {
   position: absolute; inset: 0;
   border-radius: 50%;
-  border: 1px dashed #334155;      /* matérialise la zone ronde visible */
+  border: 1px dashed #33333f;      /* matérialise la zone ronde visible */
   pointer-events: none;
 }
+/* Indice de dépôt : pendant un glisser de la palette, l'écran s'allume. */
+.stage.drop-active { box-shadow: 0 0 0 2px var(--accent), 0 0 28px rgba(167, 139, 250, .45); }
+.stage.drop-active .screen-circle { border-color: var(--accent); border-style: solid; }
 .w { position: absolute; user-select: none; cursor: move; white-space: nowrap; }
+/* Au repos, un widget déplaçable se signale au survol (le ring centré n'est pas déplaçable). */
+.w:not(.w-ring):not(.selected):not(.outside):hover { outline: 1px dashed var(--muted); outline-offset: 2px; }
 .w.selected { outline: 1px solid var(--accent); outline-offset: 2px; }
 .w.snapped { outline: 1px solid var(--ok); }
 .w.outside { outline: 1px dashed var(--err); }  /* coin hors zone ronde */
@@ -99,11 +128,14 @@ textarea { width: 100%; height: 220px; background: #070d17; color: #cbd5e1; bord
 .badge { font-size: 12px; padding: 3px 8px; border-radius: 12px; border: 1px solid var(--line); color: var(--muted); }
 
 /* --- Plan C1 : palette --- */
+.palette-hint { font-size: 11px; color: var(--muted); line-height: 1.45; margin: 0 0 8px; }
 .palette-list { display: flex; flex-direction: column; gap: 6px; }
 .palette-item {
+  display: flex; align-items: center;
   padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px;
-  background: #0f1a2b; cursor: grab; user-select: none; font-size: 13px;
+  background: var(--panel-2); cursor: grab; user-select: none; font-size: 13px;
 }
+.palette-item::before { content: '⠿'; color: var(--muted); margin-right: 8px; font-size: 12px; }  /* poignée : signale le glisser */
 .palette-item:active { cursor: grabbing; }
 .palette-item:hover { border-color: var(--accent); }
 
@@ -111,7 +143,7 @@ textarea { width: 100%; height: 220px; background: #070d17; color: #cbd5e1; bord
 .insp-head { font-size: 12px; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
 .insp-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 12.5px; }
 .insp-label { flex: 0 0 78px; color: #9aa0aa; }
-.insp-row input[type="text"], .insp-row input[type="number"], .insp-row select { flex: 1; min-width: 0; background: #0a1424; border: 1px solid var(--line); color: var(--ink); border-radius: 4px; padding: 2px 5px; }
+.insp-row input[type="text"], .insp-row input[type="number"], .insp-row select { flex: 1; min-width: 0; background: var(--panel-2); border: 1px solid var(--line); color: var(--ink); border-radius: 4px; padding: 2px 5px; }
 .insp-row input[type="color"] { width: 36px; height: 22px; padding: 0; border: 1px solid var(--line); background: none; }
 .insp-row.disabled { opacity: .45; }
 .insp-warn { color: var(--err); font-size: 11px; }
@@ -125,34 +157,34 @@ textarea { width: 100%; height: 220px; background: #070d17; color: #cbd5e1; bord
 .pages-bar { display: flex; align-items: center; gap: 12px; padding: 6px 12px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 .page-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
 .page-tab {
-  background: #0f1a2b; border: 1px solid var(--line); color: var(--muted);
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--muted);
   border-radius: 6px 6px 0 0; padding: 4px 12px; cursor: pointer; font-size: 12.5px;
 }
 .page-tab.active { color: var(--ink); border-color: var(--accent); background: var(--panel); }
 .page-rename { width: 120px; }
 .page-ctrls { display: flex; gap: 4px; }
 .page-btn { padding: 3px 9px; font-size: 12px; }
-.page-btn:disabled { border-color: var(--line); color: #475569; cursor: default; }
+.page-btn:disabled { border-color: var(--line); color: #55525e; cursor: default; }
 .page-del { border-color: var(--err); color: var(--err); }
-.page-del:disabled { border-color: var(--line); color: #475569; }
+.page-del:disabled { border-color: var(--line); color: #55525e; }
 
 /* --- Plan C2 : bibliothèque de composants --- */
 .lib-title { font-size: 11px; text-transform: uppercase; color: var(--muted); margin: 14px 0 6px; }
 .lib-list { display: flex; flex-direction: column; gap: 5px; }
 .lib-item {
-  padding: 6px 9px; border: 1px solid var(--line); border-radius: 6px; background: #0a1424;
+  padding: 6px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2);
   cursor: grab; user-select: none; font-size: 12px; display: flex; justify-content: space-between; gap: 6px;
 }
 .lib-item:active { cursor: grabbing; }
 .lib-item:hover { border-color: var(--accent); }
 .lib-item .lib-type { color: var(--muted); font-size: 10.5px; }
-.lib-empty { font-size: 11px; color: #475569; font-style: italic; }
+.lib-empty { font-size: 11px; color: #55525e; font-style: italic; }
 
 /* --- Panneau Sources (footer) --- */
 .sources-panel { display: flex; flex-direction: column; gap: 10px; padding: 6px 0; }
-.src-card { border: 1px solid #1F2937; border-radius: 6px; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.src-card { border: 1px solid var(--line); border-radius: 6px; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
 .src-head { display: flex; align-items: center; justify-content: space-between; }
-.src-title { font-weight: 600; color: #93C5FD; }
+.src-title { font-weight: 600; color: var(--info); }
 .src-del { font-size: 12px; }
 .src-field { display: grid; grid-template-columns: 120px 1fr; align-items: center; gap: 8px; }
 .src-field > span { color: #9CA3AF; font-size: 13px; }
@@ -168,7 +200,7 @@ textarea { width: 100%; height: 220px; background: #070d17; color: #cbd5e1; bord
 .shot-overlay {
   position: fixed; inset: 0; z-index: 50;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(2, 6, 16, .8);
+  background: rgba(8, 8, 12, .82);
 }
 .shot-overlay[hidden] { display: none; }
 .shot-box {
@@ -184,5 +216,5 @@ textarea { width: 100%; height: 220px; background: #070d17; color: #cbd5e1; bord
 
 /* Barre de santé device (GET /status) */
 .devbar { padding: 5px 12px; font: 12.5px/1.4 ui-monospace, monospace; color: var(--muted);
-  border-bottom: 1px solid var(--line); background: #0a1424; }
+  border-bottom: 1px solid var(--line); background: var(--panel-2); }
 .devbar.err { color: var(--err); }

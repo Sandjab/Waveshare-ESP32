@@ -64,6 +64,27 @@ export function createInspector(root, model, { rerenderCanvas, clearSelection, g
   function sub(body, text) { const h = document.createElement('div'); h.className = 'insp-sub'; h.textContent = text; body.appendChild(h); }
   function note(body, text) { const n = document.createElement('div'); n.className = 'insp-note'; n.textContent = text; body.appendChild(n); }
 
+  // Rien de sélectionné : l'inspecteur édite le layout (titre/fond — jusqu'ici accessibles seulement
+  // via le JSON brut) et résume la page active, au lieu de laisser la colonne droite vide.
+  function renderPagePanel(body) {
+    const s = model.state;
+    const head = document.createElement('div'); head.className = 'insp-head'; head.textContent = 'Layout';
+    body.appendChild(head);
+    const title = makeInput('text', s.title ?? '', v => model.commit(st => { st.title = v; }));
+    body.appendChild(fieldRow('Titre', title, { ascii: true }));            // texte affiché par le device = ASCII
+    const bg = makeInput('color', s.background || '#000000', v => model.commit(st => { st.background = v; }));
+    body.appendChild(fieldRow('Fond', bg));
+    sub(body, 'Page active');
+    const pi = getActivePage();
+    const pg = s.pages?.[pi];
+    const onPage = pg?.place?.length ?? 0;
+    const total = Object.keys(s.components || {}).length;
+    note(body, `${pg?.name || `Page ${pi + 1}`} — ${onPage} placé(s) · ${total} composant(s) au total`);
+    const tip = document.createElement('p'); tip.className = 'todo';
+    tip.textContent = 'Sélectionne un widget sur le canvas pour l’éditer.';
+    body.appendChild(tip);
+  }
+
   function renderExtras(body, c) {
     const p = place();
     // --- Géométrie du placement ---
@@ -122,8 +143,7 @@ export function createInspector(root, model, { rerenderCanvas, clearSelection, g
     const body = document.createElement('div');
     body.className = 'insp-body';
     if (!c || !p) {                               // sélection absente ou devenue obsolète (page changée, undo…)
-      const para = document.createElement('p'); para.className = 'todo'; para.textContent = 'Sélectionne un widget sur le canvas.';
-      body.appendChild(para); root.appendChild(body); return;
+      renderPagePanel(body); root.appendChild(body); return;
     }
     const head = document.createElement('div'); head.className = 'insp-head';
     head.textContent = `${c.type} · ${sel.ref}`;

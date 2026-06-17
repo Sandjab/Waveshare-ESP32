@@ -8,6 +8,12 @@ import { COMPONENTS } from './registry.js';
 export function createPalette(root, model, { stage, getActivePage, onCreated } = {}) {
   const page = () => (getActivePage ? getActivePage() : 0);
 
+  // Indice : le geste central (glisser-déposer sur l'écran) n'est pas évident sans mode d'emploi.
+  const hint = document.createElement('div');
+  hint.className = 'palette-hint';
+  hint.textContent = 'Glisse un élément sur l’écran pour l’ajouter.';
+  root.appendChild(hint);
+
   // --- Section créateurs de type (statique) ---
   const list = document.createElement('div');
   list.className = 'palette-list';
@@ -59,11 +65,14 @@ export function createPalette(root, model, { stage, getActivePage, onCreated } =
   // --- Cible de drop : crée (type) ou place un existant (ref), sur la page active ---
   stage.addEventListener('dragover', e => {
     const t = e.dataTransfer.types;
-    if (t.includes('text/rt-type') || t.includes('text/rt-ref')) e.preventDefault();
+    if (t.includes('text/rt-type') || t.includes('text/rt-ref')) { e.preventDefault(); stage.classList.add('drop-active'); }
   });
+  // relatedTarget hors du stage = on quitte vraiment la cible (pas un passage sur un enfant).
+  stage.addEventListener('dragleave', e => { if (!stage.contains(e.relatedTarget)) stage.classList.remove('drop-active'); });
   stage.addEventListener('drop', e => {
     const type = e.dataTransfer.getData('text/rt-type');
     const ref = e.dataTransfer.getData('text/rt-ref');
+    stage.classList.remove('drop-active');
     if (!type && !ref) return;
     e.preventDefault();
     const r = stage.getBoundingClientRect();
