@@ -77,7 +77,9 @@
         { "$ref": "#/$defs/comp_bar" },
         { "$ref": "#/$defs/comp_ring" },
         { "$ref": "#/$defs/comp_led_ring" },
-        { "$ref": "#/$defs/comp_sound" }
+        { "$ref": "#/$defs/comp_sound" },
+        { "$ref": "#/$defs/comp_chart" },
+        { "$ref": "#/$defs/comp_meter" }
       ]
     },
     "comp_label": {
@@ -157,6 +159,38 @@
         "type": { "const": "sound" }
       },
       "description": "Buzzer physique, tir unique. Pas de geometrie. Declenche via /update : {\"tone\":Hz,\"ms\":N} ou {\"name\":\"ok|alert|error\"}."
+    },
+    "comp_chart": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "description": "Graphe d'historique (lv_chart LINE). L'historique vit dans le device ; /update pousse un scalaire (append). Place via width/height/anchor/dx/dy.",
+      "properties": {
+        "type": { "const": "chart" },
+        "bind": { "$ref": "#/$defs/ascii", "description": "Nom d'une variable du contexte (pull). Present = lit la variable au lieu d'etre pousse par id." },
+        "color": { "$ref": "#/$defs/hexColor", "description": "Couleur de la serie." },
+        "min": { "type": "number", "description": "Borne basse de l'axe Y. Defaut 0." },
+        "max": { "type": "number", "description": "Borne haute de l'axe Y. Defaut 100." },
+        "points": { "type": "integer", "minimum": 1, "maximum": 60, "description": "Longueur de la fenetre d'historique. Defaut 30, borne CHART_MAX_POINTS=60." }
+      }
+    },
+    "comp_meter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "description": "Jauge analogique a aiguille (lv_meter, arc 270°). thresholds reutilises en zones d'arc colorees (bande (prev, limite]). Place via width/height/anchor/dx/dy.",
+      "properties": {
+        "type": { "const": "meter" },
+        "bind": { "$ref": "#/$defs/ascii", "description": "Nom d'une variable du contexte (pull). Present = lit la variable au lieu d'etre pousse par id." },
+        "color": { "$ref": "#/$defs/hexColor", "description": "Couleur de l'aiguille." },
+        "min": { "type": "number", "description": "Borne basse de l'echelle. Defaut 0." },
+        "max": { "type": "number", "description": "Borne haute de l'echelle. Defaut 100." },
+        "thresholds": {
+          "type": "array",
+          "description": "Zones d'arc colorees : chaque [limite, \"#hex\"] colore la bande de la limite precedente (vmin au depart) jusqu'a limite.",
+          "items": { "$ref": "#/$defs/threshold" }
+        }
+      }
     },
     "page": {
       "type": "object",

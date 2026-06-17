@@ -53,3 +53,29 @@ test('schema : secrets top-level reste interdit (write-only, hors layout)', () =
   l.secrets = { weather_key: 'xxx' };
   assert.equal(validate(l).valid, false);
 });
+
+test('schema : composant chart valide (points + bind)', () => {
+  const l = base();
+  l.components.g = { type: 'chart', color: '#38BDF8', min: 0, max: 100, points: 30, bind: 'cpu' };
+  l.pages[0].place.push({ ref: 'g', anchor: 'CENTER', width: 200, height: 100 });
+  const r = validate(l);
+  assert.equal(r.valid, true, JSON.stringify(r.errors));
+});
+
+test('schema : composant meter valide (thresholds + bind)', () => {
+  const l = base();
+  l.components.m = {
+    type: 'meter', color: '#38BDF8', min: 0, max: 100,
+    thresholds: [[50, '#22C55E'], [80, '#F59E0B']], bind: 'temp'
+  };
+  l.pages[0].place.push({ ref: 'm', anchor: 'CENTER', width: 160, height: 160 });
+  const r = validate(l);
+  assert.equal(r.valid, true, JSON.stringify(r.errors));
+});
+
+test('schema : propriete inconnue sur un chart est rejetee', () => {
+  const l = base();
+  l.components.g = { type: 'chart', wat: 1 };
+  l.pages[0].place.push({ ref: 'g' });
+  assert.equal(validate(l).valid, false);
+});

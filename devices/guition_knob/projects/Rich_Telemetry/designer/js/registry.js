@@ -4,7 +4,7 @@
 // L'aperçu (build) reste dans render.js (double-maintenance du rendu firmware) ; ici on le référence
 // via une signature normalisée (comp, placement, mock).
 import { snapPlacement } from './geometry.js';
-import { buildLabel, buildReadout, buildBar, buildRing } from './render.js';
+import { buildLabel, buildReadout, buildBar, buildRing, buildChart, buildMeter } from './render.js';
 
 // Placement initial d'un widget d'écran : ancrage + offset déduits du point de dépôt (boîte ~0).
 const screenPlacement = (id, x, y) => {
@@ -58,6 +58,30 @@ export const COMPONENTS = {
     placeFields: [['radius', 'Rayon', 'num'], ['thickness', 'Épaisseur', 'num'], ['gap_deg', 'Ouverture°', 'num'], ['start_angle', 'Angle départ°', 'num']],
     mockFields: [['value', 'Valeur % (aperçu)'], ['reset_in_s', 'Countdown (s)']],
     build: (comp, pl, mock) => buildRing(comp, pl, mock),
+  },
+  chart: {
+    label: 'Graphe',
+    defaults: () => ({ type: 'chart', color: '#38BDF8', min: 0, max: 100, points: 30 }),
+    makePlacement: screenPlacement,
+    centered: false, physical: false,
+    compFields: [['color', 'Couleur', 'color'], ['min', 'Min', 'num'], ['max', 'Max', 'num'],
+                 ['points', 'Points', 'num'], ['bind', 'Variable (pull)', 'asciitext']],
+    placeFields: [['anchor', 'Ancrage', 'anchor'], ['dx', 'dx', 'num'], ['dy', 'dy', 'num'],
+                  ['width', 'Largeur', 'num'], ['height', 'Hauteur', 'num']],
+    mockFields: [],
+    build: (comp, pl, mock) => buildChart(comp, pl, mock),
+  },
+  meter: {
+    label: 'Jauge',
+    defaults: () => ({ type: 'meter', color: '#38BDF8', min: 0, max: 100 }),
+    makePlacement: screenPlacement,
+    centered: false, physical: false,
+    compFields: [['color', 'Couleur', 'color'], ['min', 'Min', 'num'], ['max', 'Max', 'num'],
+                 ['bind', 'Variable (pull)', 'asciitext']],
+    placeFields: [['anchor', 'Ancrage', 'anchor'], ['dx', 'dx', 'num'], ['dy', 'dy', 'num'],
+                  ['width', 'Largeur', 'num'], ['height', 'Hauteur', 'num']],
+    mockFields: [['value', 'Valeur (aperçu)']],
+    build: (comp, pl, mock) => buildMeter(comp, pl, mock),
   },
   led_ring: {
     label: 'LED ring',

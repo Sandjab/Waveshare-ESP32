@@ -77,9 +77,11 @@ export function createInspector(root, model, { rerenderCanvas, clearSelection, g
       }
     }
 
-    // --- Seuils du ring (liste éditable de [limite, #couleur]) ---
-    if (c.type === 'ring') {
-      sub(body, 'Seuils (couleur si valeur < limite)');
+    // --- Seuils ring/meter (liste éditable de [limite, #couleur]) ---
+    // ring : couleur si valeur < limite ; meter : zone d'arc (limite précédente → limite).
+    if (c.type === 'ring' || c.type === 'meter') {
+      sub(body, c.type === 'meter' ? 'Zones (couleur de la limite précédente à la limite)'
+                                   : 'Seuils (couleur si valeur < limite)');
       const ths = (c.thresholds || []).map(t => [t[0], t[1]]); // copie locale éditable
       const commitThs = () => model.commit(s => setThresholds(s, sel.ref, ths.filter(t => t[1])));
       ths.forEach((t, idx) => {
