@@ -263,11 +263,97 @@ static void gesture_cb(lv_event_t* e) {
     if (!s_dash_for_gesture) return;
     // Seuls les swipes latéraux naviguent : droite = suivant, gauche = précédent.
     // Haut/bas volontairement ignorés (réservés à une future page de config par swipe haut).
-    if (dir == LV_DIR_RIGHT)     nav_goto_dir(s_dash_for_gesture, +1);
-    else if (dir == LV_DIR_LEFT) nav_goto_dir(s_dash_for_gesture, -1);
+    if (dir == LV_DIR_RIGHT)     nav_goto_dir(s_dash_for_gesture, +1, /*animate=*/true);
+    else if (dir == LV_DIR_LEFT) nav_goto_dir(s_dash_for_gesture, -1, /*animate=*/true);
+}
+
+// Met à jour la coloration des points indicateurs sans toucher aux flags hidden des pages
+// (partagé par la bascule instantanée et la transition animée).
+static void set_dots_active(int idx) {
+    if (!s_dots) return;
+    uint32_t n = lv_obj_get_child_cnt(s_dots);
+    for (uint32_t p = 0; p < n; p++)
+        lv_obj_set_style_bg_color(lv_obj_get_child(s_dots, p),
+            lv_color_hex((int)p == idx ? 0xE5E7EB : 0x374151), 0);
+}
+
+// --- Transition de page animée (swipe uniquement) ----------------------------------------
+// Choix d'archi : PAS de lv_scr_load_anim. Ici une « page » n'est pas un écran mais un conteneur
+// plein écran déjà construit (s_page_cont), montré/caché par view_show_page. On glisse donc le x
+// du conteneur sortant et du conteneur entrant — aucune création d'écran, aucun framebuffer plein
+// écran (les pages existent déjà). Une seule transition à la fois (état fichier-statique).
+#define PAGE_ANIM_MS 260
+static struct {
+    lv_obj_t* in;        // conteneur entrant
+    lv_obj_t* out;       // conteneur sortant
+    int       in_base;   // ±largeur écran : position hors-champ de départ de l'entrant
+    bool      active;
+} s_pa = { nullptr, nullptr, 0, false };
+
+// v : distance parcourue 0 -> W. Les deux conteneurs translatent ensemble du même offset.
+static void page_anim_step(void*, int32_t v) {
+    int off = (s_pa.in_base > 0) ? -v : v;            // 0 -> -in_base
+    if (s_pa.in)  lv_obj_set_x(s_pa.in,  s_pa.in_base + off);
+    if (s_pa.out) lv_obj_set_x(s_pa.out, off);
+}
+
+// État final propre : entrant à x=0 visible, sortant caché, x réinitialisés.
+static void page_anim_done(lv_anim_t*) {
+    if (s_pa.in)  lv_obj_set_x(s_pa.in, 0);
+    if (s_pa.out) { lv_obj_set_x(s_pa.out, 0); lv_obj_add_flag(s_pa.out, LV_OBJ_FLAG_HIDDEN); }
+    s_pa.in = s_pa.out = nullptr;
+    s_pa.active = false;
+}
+
+// Solde immédiatement une transition en vol (avant un rebuild qui libère les conteneurs, ou avant
+// une nouvelle transition) pour ne jamais référencer un objet translaté/libéré.
+static void page_anim_settle() {
+    if (!s_pa.active) return;
+    lv_anim_del(&s_pa, page_anim_step);
+    page_anim_done(nullptr);
+}
+
+void view_show_page_anim(Dashboard* d, int idx, int delta) {
+    if (idx < 0 || idx >= d->page_count) return;
+    if (d->page_count <= 1 || idx == d->active_page) { view_show_page(d, idx); return; }
+    page_anim_settle();                                    // solde une transition précédente
+
+    lv_obj_t* out = s_page_cont[d->active_page];
+    lv_obj_t* in  = s_page_cont[idx];
+    if (!in || !out) { view_show_page(d, idx); return; }   // sécurité : conteneurs absents
+
+    const int W = lv_disp_get_hor_res(NULL);
+    // Le contenu suit le doigt : swipe droite (delta>0) -> tout glisse à droite, l'entrant arrive
+    // depuis la GAUCHE ; swipe gauche -> entrant depuis la droite. (Un seul signe à inverser si l'on
+    // préfère « suivant vient de la droite ».)
+    s_pa.in_base = (delta > 0) ? -W : W;
+    s_pa.in = in; s_pa.out = out; s_pa.active = true;
+
+    // Bascule logique immédiate : view_sync et /status reflètent la page cible dès le début.
+    d->active_page = idx;
+    set_dots_active(idx);
+
+    // Tous cachés sauf entrant + sortant (robustesse si un état a dérivé), puis positions de départ.
+    for (int p = 0; p < d->page_count; p++)
+        if (s_page_cont[p] && s_page_cont[p] != in && s_page_cont[p] != out)
+            lv_obj_add_flag(s_page_cont[p], LV_OBJ_FLAG_HIDDEN);
+    lv_obj_clear_flag(in, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_set_x(in, s_pa.in_base);                        // entrant hors-champ avant la 1re frame
+    lv_obj_set_x(out, 0);
+
+    lv_anim_t a;
+    lv_anim_init(&a);
+    lv_anim_set_var(&a, &s_pa);
+    lv_anim_set_exec_cb(&a, page_anim_step);
+    lv_anim_set_values(&a, 0, W);
+    lv_anim_set_time(&a, PAGE_ANIM_MS);
+    lv_anim_set_path_cb(&a, lv_anim_path_ease_out);
+    lv_anim_set_ready_cb(&a, page_anim_done);
+    lv_anim_start(&a);
 }
 
 void view_rebuild(Dashboard* d) {
+    page_anim_settle();                // annule une transition en vol avant de libérer les conteneurs
     lv_obj_t* scr = lv_scr_act();
     lv_obj_clean(scr);
     s_dots = nullptr;  // freed by lv_obj_clean above; drop stale pointer
@@ -322,17 +408,14 @@ void view_rebuild(Dashboard* d) {
 
 void view_show_page(Dashboard* d, int idx) {
     if (idx < 0 || idx >= d->page_count) return;
+    page_anim_settle();              // bascule instantanée : annule une transition glissée en vol
     d->active_page = idx;
     for (int p = 0; p < d->page_count; p++) {
+        lv_obj_set_x(s_page_cont[p], 0);   // remet à plat un éventuel décalage laissé par l'anim
         if (p == idx) lv_obj_clear_flag(s_page_cont[p], LV_OBJ_FLAG_HIDDEN);
         else          lv_obj_add_flag(s_page_cont[p], LV_OBJ_FLAG_HIDDEN);
     }
-    if (s_dots) {
-        uint32_t n = lv_obj_get_child_cnt(s_dots);
-        for (uint32_t p = 0; p < n; p++)
-            lv_obj_set_style_bg_color(lv_obj_get_child(s_dots, p),
-                lv_color_hex((int)p == idx ? 0xE5E7EB : 0x374151), 0);
-    }
+    set_dots_active(idx);
 }
 
 void view_sync(Dashboard* d) {

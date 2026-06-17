@@ -12,11 +12,12 @@ void nav_begin() {
     iot_knob_clear_count_value(knob);
 }
 
-void nav_goto_dir(Dashboard* d, int delta) {
+void nav_goto_dir(Dashboard* d, int delta, bool animate) {
     if (d->page_count <= 1) return;
     int idx = delta > 0 ? nav_next(d->active_page, d->page_count, d->nav_wrap)
                         : nav_prev(d->active_page, d->page_count, d->nav_wrap);
-    view_show_page(d, idx);
+    if (animate) view_show_page_anim(d, idx, delta);   // swipe : transition glissée
+    else         view_show_page(d, idx);               // encodeur / API : bascule instantanée
 }
 
 void nav_tick(Dashboard* d) {
