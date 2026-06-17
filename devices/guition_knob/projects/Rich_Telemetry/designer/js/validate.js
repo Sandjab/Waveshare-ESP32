@@ -23,12 +23,29 @@ export function createValidator(schema) {
     // Array.isArray (pas `|| []`) : un layout importé au pages/place non-array est déjà signalé par
     // ajv ci-dessus ; ici on ne doit pas throw (sinon le panneau d'erreurs ne s'affiche jamais).
     const pages = Array.isArray(layout?.pages) ? layout.pages : [];
+    // Limites firmware (config.h) : un layout au-delà serait tronqué/rejeté au push.
+    const LIM = { components: 32, pages: 8, placements: 12 };  // MAX_COMPONENTS / MAX_PAGES / MAX_PLACEMENTS_PER_PAGE
+    if (ids.size > LIM.components) errors.push(`trop de composants : ${ids.size} (max ${LIM.components})`);
+    if (pages.length > LIM.pages)  errors.push(`trop de pages : ${pages.length} (max ${LIM.pages})`);
     pages.forEach((p, pi) => {
       const place = Array.isArray(p?.place) ? p.place : [];
+      if (place.length > LIM.placements) errors.push(`page ${pi + 1} : trop de placements (${place.length}, max ${LIM.placements})`);
       place.forEach(pl => {
         if (pl && pl.ref !== undefined && !ids.has(pl.ref)) errors.push(`page ${pi + 1} : référence inconnue « ${pl.ref} »`);
       });
     });
-    return { valid: errors.length === 0, errors: [...new Set(errors)] };  // dedupe les doublons humanisés
+    // Avertissements (non bloquants) : un bind sans variable de source correspondante reste valide
+    // (la variable peut être alimentée par POST /context), mais on le signale.
+    const warnings = [];
+    const srcVars = new Set();
+    (Array.isArray(layout?.sources) ? layout.sources : []).forEach(s => {
+      if (s && s.vars && typeof s.vars === 'object') Object.keys(s.vars).forEach(v => srcVars.add(v));
+    });
+    for (const [id, c] of Object.entries(layout?.components || {})) {
+      if (c && typeof c.bind === 'string' && c.bind && !srcVars.has(c.bind))
+        warnings.push(`composant « ${id} » : bind « ${c.bind} » sans variable de source (ok si poussé via POST /context)`);
+    }
+    // valid ne dépend QUE des errors ; les warnings ne bloquent pas le push.
+    return { valid: errors.length === 0, errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
   };
 }

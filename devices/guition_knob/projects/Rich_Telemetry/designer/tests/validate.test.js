@@ -57,3 +57,44 @@ test('layout importé au pages non-array → invalide SANS throw (import robuste
   assert.equal(r.valid, false);
   assert.ok(r.errors.length > 0);
 });
+
+test('limite firmware : trop de composants (>32) → invalide', () => {
+  const comps = {};
+  for (let i = 0; i < 33; i++) comps['c' + i] = { type: 'label', text: 'x' };
+  const r = validate({ components: comps, pages: [{ name: 'p', place: [] }] });
+  assert.equal(r.valid, false);
+  assert.ok(r.errors.some(e => e.includes('composants')));
+});
+
+test('limite firmware : trop de pages (>8) → invalide', () => {
+  const pages = [];
+  for (let i = 0; i < 9; i++) pages.push({ name: 'p' + i, place: [] });
+  const r = validate({ components: { x: { type: 'label', text: 'x' } }, pages });
+  assert.equal(r.valid, false);
+  assert.ok(r.errors.some(e => e.includes('pages')));
+});
+
+test('limite firmware : trop de placements sur une page (>12) → invalide', () => {
+  const place = [];
+  for (let i = 0; i < 13; i++) place.push({ ref: 'x', anchor: 'CENTER' });
+  const r = validate({ components: { x: { type: 'label', text: 'x' } }, pages: [{ name: 'p', place }] });
+  assert.equal(r.valid, false);
+  assert.ok(r.errors.some(e => e.includes('placements')));
+});
+
+test('bind sans variable de source → avertissement non bloquant (reste valide)', () => {
+  const r = validate({ components: { t: { type: 'readout', bind: 'temp', unit: 'C' } }, pages: [{ name: 'p', place: [{ ref: 't', anchor: 'CENTER' }] }] });
+  assert.equal(r.valid, true);
+  assert.equal(r.errors.length, 0);
+  assert.ok(r.warnings.some(w => w.includes('temp')));
+});
+
+test('bind avec variable de source déclarée → pas d\'avertissement', () => {
+  const r = validate({
+    components: { t: { type: 'readout', bind: 'temp', unit: 'C' } },
+    sources: [{ url: 'http://x', vars: { temp: '/main/temp' } }],
+    pages: [{ name: 'p', place: [{ ref: 't', anchor: 'CENTER' }] }]
+  });
+  assert.equal(r.valid, true);
+  assert.deepEqual(r.warnings, []);
+});

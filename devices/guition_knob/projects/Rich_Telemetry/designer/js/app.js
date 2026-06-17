@@ -25,7 +25,13 @@ async function main() {
     return;
   }
   const validate = createValidator(schema);
-  const model = createModel();
+  // Autosave : restaure le dernier layout édité (localStorage) ou repart du défaut ; persiste à chaque modif.
+  // Filet anti-perte : un reload accidentel ne perd plus le travail non exporté/poussé.
+  const SAVE_KEY = 'rt-designer-layout';
+  let saved;
+  try { const s = localStorage.getItem(SAVE_KEY); if (s) saved = JSON.parse(s); } catch (e) {}
+  const model = createModel(saved);
+  model.subscribe(() => { try { localStorage.setItem(SAVE_KEY, model.toJSON()); } catch (e) {} });
 
   let inspector;
   // Canvas WYSIWYG (page active). onSelect → inspecteur.
@@ -63,7 +69,7 @@ async function main() {
   createSources($('sources'), model);
 
   bindJsonView(model, {
-    textarea: $('json'), applyBtn: $('apply'), validEl: $('valid'), errorsEl: $('errors')
+    textarea: $('json'), applyBtn: $('apply'), validEl: $('valid'), errorsEl: $('errors'), warningsEl: $('warnings')
   }, validate);
 
   const syncUndo = () => { $('undo').disabled = !model.canUndo(); $('redo').disabled = !model.canRedo(); };
