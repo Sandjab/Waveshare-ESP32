@@ -6,14 +6,22 @@ IHM WYSIWYG **autonome** pour concevoir le `layout.json` de Rich_Telemetry et le
 
 ## Lancer
 
-À cause de la politique CORS / `file://`, sers le dossier plutôt que d'ouvrir `index.html` en double-clic. De plus, le designer charge le schéma partagé via `../schema/layout.schema.json` — il faut donc **servir depuis le dossier parent** `Rich_Telemetry/` (pas depuis `designer/`) afin que `schema/` soit accessible sur le même origin :
+**Le plus simple — servi par le device.** Une fois le firmware flashé avec son image LittleFS
+(`tools/stage_fs.sh` puis `pio run -e esp32s3 -t uploadfs`), le designer est servi directement par le
+device à **`http://<ip>/designer/`** : même origin (aucun CORS), aucun serveur local. Charger / Pousser /
+Statut / Capture écran fonctionnent sans configuration.
+
+**En local (édition hors device).** Le designer charge le schéma partagé via `../schema/layout.schema.json` ;
+il faut donc **servir depuis le dossier parent** `Rich_Telemetry/` (pas depuis `designer/`), et ne pas
+l'ouvrir en `file://` :
 
 ```bash
-# Servir depuis le dossier parent pour que ../schema soit accessible
 cd devices/guition_knob/projects/Rich_Telemetry
 python3 -m http.server 8000
 # puis http://localhost:8000/designer/
 ```
+
+> Le travail est **auto-sauvegardé** (localStorage) entre les sessions ; **Exporter / Importer** reste le filet pour un fichier `layout.json`.
 
 ## Contrat partagé
 
@@ -21,26 +29,22 @@ Le format est défini par **`../schema/layout.schema.json`** — la *source de v
 
 ## Endpoints utilisés
 
-> Sans device (ou en attendant le CORS firmware), utilise **Exporter / Importer** dans l'en-tête pour sauvegarder/recharger un `layout.json` en fichier local.
-
-| Action | Requête |
-|---|---|
-| Charger le layout actif | `GET <device>/layout` |
-| Pousser un nouveau layout (validé + persisté flash) | `POST <device>/layout` |
-| (à venir) live preview de valeurs | `POST <device>/update` |
-| (à venir) navigation | `POST <device>/page` |
+| Action | Bouton | Requête |
+|---|---|---|
+| Charger le layout actif | Charger | `GET <device>/layout` |
+| Pousser un nouveau layout (validé + persisté flash) | Pousser | `POST <device>/layout` |
+| Pousser les valeurs d'aperçu (mocks) — live preview | Valeurs test | `POST <device>/update` |
+| Naviguer les pages du device (dans l'overlay de capture) | ◀ ▶ | `POST <device>/page` |
+| Santé du device + état des sources de pull | Statut | `GET <device>/status` |
+| Capture pixel-perfect de l'écran | Capture écran | `GET <device>/screenshot` |
 
 mDNS `guition.local` peut être filtré sur certains LAN → utilise l'IP DHCP directe.
 
-## Limite connue à résoudre — CORS
+## CORS — résolu
 
-Le firmware (`WebServer` ESP32) ne renvoie pas d'en-têtes CORS. Depuis un autre origin (localhost:8000 → IP device), le navigateur peut bloquer la lecture des réponses. Pistes pour la session C :
-
-1. ajouter `Access-Control-Allow-Origin: *` aux réponses REST côté firmware (touche l'embarqué → à coordonner avec la session embarqué) ;
-2. ou un petit proxy local côté designer ;
-3. ou, à terme, servir le designer depuis le device.
-
-À trancher au brainstorming de la session C — c'est le seul point qui pourrait recréer un couplage embarqué↔IHM.
+Le firmware renvoie `Access-Control-Allow-Origin: *` (preflight `OPTIONS` → 204) : Charger/Pousser depuis
+un autre origin (localhost → IP device) fonctionne. Et **servi depuis le device** (`/designer/`), tout est
+en même origin → la question ne se pose plus.
 
 ## ASCII uniquement
 
@@ -56,5 +60,7 @@ reste l'arbitre final.** Conséquences à connaître :
 - Le **ring est toujours centré** (le firmware fait `lv_obj_center`) : `anchor`/`dx`/`dy` sont ignorés pour un ring ;
   dans l'éditeur il n'est que redimensionnable (radius / thickness / gap_deg).
 - Tout changement de rendu firmware (nouveau widget, nouveau style) **doit être répliqué** dans `js/render.js`.
-- Le **positionnement vertical de la pastille `%` et de la légende countdown** du ring est approximatif :
-  l'offset diffère légèrement de l'alignement firmware (`lv_obj_align_to`, view.cpp:42-44). Cosmétique.
+- L'aperçu a été **aligné sur le device** (audit de parité, `snapshots/parity/` + `parity-report*.html`) :
+  polices 36/48, `center_pct`, pastille `%` centrée sur la bande, bar (label centré + pilule), chart
+  (panneau/grille/points) et meter (ticks/chiffres/moyeu) corrigés. Restent des écarts esthétiques mineurs
+  sur les widgets natifs LVGL (chart/meter) — best-effort assumé.

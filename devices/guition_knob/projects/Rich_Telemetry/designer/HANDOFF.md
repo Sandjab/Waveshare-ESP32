@@ -1,5 +1,14 @@
 # Rich_Telemetry Designer — HANDOFF (reprise après clear context)
 
+> **MISE À JOUR 2026-06-17 (post-P3) — Améliorations designer : FAITES.** (1) **Filet & gardes** : autosave
+> localStorage (anti-perte), gardes de limites firmware (pages 8 / composants 32 / placements 12) +
+> avertissement `bind`↔sources dans `validate.js`. (2) **Boucle device** : `device.js` câble `/update`
+> (« Valeurs test »), `/page` (nav ◀▶ dans l'overlay de capture), `/status` (barre de santé + état des
+> sources), `/screenshot` (« Capture écran »). (3) **Designer embarqué** : servi par le device à
+> `http://<ip>/designer/` via LittleFS (`tools/stage_fs.sh` → `pio … -t uploadfs`), même origin. (4)
+> **Parité de rendu** alignée sur le device (`snapshots/parity/`). Les mentions « à venir » / « CORS à
+> résoudre » / « pill approximatif » ci-dessous sont **périmées** → voir `README.md` à jour. `node --test` 93/93.
+
 > **MISE À JOUR 2026-06-17 — Pull P3 + chart/meter (designer) : FAITS** (branche
 > `feat/rt-designer-p3`, plan `docs/superpowers/plans/2026-06-17-pull-P3-designer.md`). Ajoutés :
 > panneau d'édition des `sources` (pull réseau) dans le footer (`js/sources.js` + mutations
