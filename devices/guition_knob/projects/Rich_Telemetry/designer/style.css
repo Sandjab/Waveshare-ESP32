@@ -36,7 +36,7 @@ button:disabled { border-color: var(--line); color: #55525e; cursor: default; }
 button.primary { background: var(--accent-strong); border-color: var(--accent-strong); color: #fff; font-weight: 600; }
 button.primary:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); color: #160a2e; }
 button.accent { border-color: var(--accent); color: var(--ink); }
-input { background: var(--panel-2); border: 1px solid var(--line); color: var(--ink); border-radius: 5px; padding: 3px 6px; }
+input, select { background: var(--panel-2); border: 1px solid var(--line); color: var(--ink); border-radius: 5px; padding: 3px 6px; font: inherit; }
 main { display: grid; grid-template-columns: 170px 1fr 200px; gap: 10px; padding: 10px; min-height: 50vh; }
 .col { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
 .col h2 { font-family: var(--font-ui); font-size: 12px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
@@ -59,11 +59,23 @@ textarea { width: 100%; height: 220px; background: #0a0a0e; color: #cbd5e1; bord
 }
 
 /* Halo violet derrière l'écran rond : la marge généreuse devient atmosphère plutôt que vide résiduel. */
-#canvas-col { display: flex; flex-direction: column; align-items: center;
+#canvas-col { display: flex; flex-direction: column; align-items: center; overflow: auto;
   background: radial-gradient(circle at 50% 34%, rgba(167, 139, 250, .07), transparent 58%), var(--panel); }
+/* Boîte qui RÉSERVE la place du canvas zoomé : le transform du .stage ne crée pas de boîte de mise
+   en page, donc le wrap porte la taille à l'échelle pour pousser badges/footer et garder le centrage. */
+.stage-wrap {
+  flex: none;
+  width: calc(360px * var(--zoom, 1));
+  height: calc(360px * var(--zoom, 1));
+}
 .stage {
   position: relative;
-  width: 360px; height: 360px;     /* 1 px CSS = 1 unité écran (échelle 1:1) */
+  width: 360px; height: 360px;     /* 1 px CSS = 1 unité écran à zoom 1 (échelle interne 1:1) */
+  /* Zoom d'affichage : on scale visuellement depuis le coin haut-gauche pour que l'unité écran (0,0)
+     reste l'origine. La math d'interaction (canvas.js, palette.js) divise les coords pointeur par ce
+     facteur (stage.rect.width / 360) → le layout reste en unités écran, le zoom n'est que visuel. */
+  transform: scale(var(--zoom, 1));
+  transform-origin: top left;
   border-radius: 50%;
   background: #000;
   transition: box-shadow .12s;

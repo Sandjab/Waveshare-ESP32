@@ -30,6 +30,16 @@
       <button id="import" title="Charge un layout depuis un fichier .json local">Importer</button>
       <input id="import-file" type="file" accept="application/json,.json" hidden />
     </div>
+    <!-- Affichage : zoom du canvas (visuel uniquement, n'affecte pas le layout) -->
+    <div class="hgroup">
+      <label>Zoom
+        <select id="zoom" title="Échelle d'affichage du canvas (n'affecte pas le layout)">
+          <option value="1">1×</option>
+          <option value="1.5">1,5×</option>
+          <option value="2">2×</option>
+        </select>
+      </label>
+    </div>
     <span id="status" class="status"></span>
   </header>
 
@@ -41,8 +51,10 @@
     <aside id="palette" class="col"><h2>Palette</h2></aside>
     <section id="canvas-col" class="col">
       <h2>Canvas</h2>
-      <div id="stage" class="stage">
-        <div class="screen-circle"></div>
+      <div id="stage-wrap" class="stage-wrap">
+        <div id="stage" class="stage">
+          <div class="screen-circle"></div>
+        </div>
       </div>
       <div id="badges" class="badges"></div>
     </section>

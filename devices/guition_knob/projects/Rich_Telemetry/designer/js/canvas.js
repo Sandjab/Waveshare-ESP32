@@ -18,6 +18,10 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
   const placements = () => model.state.pages?.[activePage]?.place ?? [];
   const comps = () => model.state.components || {};
   const nodeFor = i => stage.querySelector(`.w[data-pi="${i}"]`);
+  // Facteur de zoom d'affichage courant : le .stage est scalé en CSS (transform), donc sa largeur
+  // mesurée vaut 360 × zoom. Toute coord lue depuis le pointeur ou getBoundingClientRect() est en px
+  // viewport (post-transform) et doit être ramenée en unités écran en divisant par ce facteur.
+  const zoomScale = () => stage.getBoundingClientRect().width / SCREEN;
 
   function buildNode(pl, comp) {
     return COMPONENTS[comp.type].build(comp, pl, getMock(pl.ref, comp.type));
@@ -30,11 +34,13 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
       node.style.top  = (SCREEN / 2 - r) + 'px';
       return;
     }
-    const rect = node.getBoundingClientRect();  // 1:1 → px = unités écran
-    const { x, y } = placeAt(pl.anchor || 'CENTER', pl.dx || 0, pl.dy || 0, rect.width, rect.height);
+    const s = zoomScale();
+    const rect = node.getBoundingClientRect();      // px viewport (à l'échelle du zoom)
+    const w = rect.width / s, h = rect.height / s;   // → unités écran
+    const { x, y } = placeAt(pl.anchor || 'CENTER', pl.dx || 0, pl.dy || 0, w, h);
     node.style.left = x + 'px';
     node.style.top  = y + 'px';
-    node.classList.toggle('outside', cornersOutsideCircle(x, y, rect.width, rect.height));
+    node.classList.toggle('outside', cornersOutsideCircle(x, y, w, h));
   }
 
   function render() {
@@ -85,15 +91,16 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
     const def = COMPONENTS[comp.type];
     if (def.centered || def.physical) return;             // ring centré / physique : non déplaçable
     e.preventDefault();
+    const s = zoomScale();                          // constant durant le geste (le zoom ne change pas en plein drag)
     const sr = stage.getBoundingClientRect();
     const nr = node.getBoundingClientRect();
-    const grabX = e.clientX - nr.left, grabY = e.clientY - nr.top;
-    const w = nr.width, h = nr.height;
+    const grabX = (e.clientX - nr.left) / s, grabY = (e.clientY - nr.top) / s;
+    const w = nr.width / s, h = nr.height / s;
     node.setPointerCapture(e.pointerId);
     let live = null;
     const move = ev => {
-      const x = ev.clientX - sr.left - grabX;
-      const y = ev.clientY - sr.top  - grabY;
+      const x = (ev.clientX - sr.left) / s - grabX;
+      const y = (ev.clientY - sr.top)  / s - grabY;
       live = snapPlacement(x, y, w, h, 16);
       const p = placeAt(live.anchor, live.dx, live.dy, w, h);
       node.style.left = p.x + 'px'; node.style.top = p.y + 'px';
@@ -121,13 +128,14 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
     node.appendChild(h);
     h.addEventListener('pointerdown', e => {
       e.stopPropagation(); e.preventDefault();
+      const s = zoomScale();
       const startW = pl.width || 200, startH = pl.height || 16;
       const sx = e.clientX, sy = e.clientY;
       const track = node.querySelector('.w-bar-track');
       h.setPointerCapture(e.pointerId);
       let dim = null;
       const move = ev => {
-        dim = resizeBox(startW, startH, ev.clientX - sx, ev.clientY - sy, 8);
+        dim = resizeBox(startW, startH, (ev.clientX - sx) / s, (ev.clientY - sy) / s, 8);
         track.style.width = dim.width + 'px'; track.style.height = dim.height + 'px';
       };
       const up = () => {
@@ -174,13 +182,14 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
       node.appendChild(h);
       h.addEventListener('pointerdown', e => {
         e.stopPropagation(); e.preventDefault();
+        const s = zoomScale();
         const sr = stage.getBoundingClientRect();
         h.setPointerCapture(e.pointerId);
         let g = geo();
         let moved = false;
         const move = ev => {
           moved = true;
-          const px = ev.clientX - sr.left, py = ev.clientY - sr.top; // coords écran
+          const px = (ev.clientX - sr.left) / s, py = (ev.clientY - sr.top) / s; // → unités écran
           const base = geo();
           if (kind === 'radius')      g = { ...base, r:  ringRadiusAt(px, py) };
           else if (kind === 'thick')  g = { ...base, th: ringThicknessAt(px, py, base.r) };

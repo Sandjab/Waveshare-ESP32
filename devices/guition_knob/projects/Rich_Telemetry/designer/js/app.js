@@ -92,6 +92,17 @@ async function main() {
   $('undo').onclick = () => { $('json').blur(); model.undo(); };
   $('redo').onclick = () => { $('json').blur(); model.redo(); };
 
+  // Zoom d'affichage du canvas (visuel uniquement — le layout reste en unités écran). Persisté comme
+  // l'autosave du layout : un reload ne réinitialise pas l'échelle de travail choisie.
+  const ZOOM_KEY = 'rt-designer-zoom';
+  const ZOOM_ALLOWED = ['1', '1.5', '2'];
+  const stageWrap = $('stage-wrap'), zoomSel = $('zoom');
+  const applyZoom = v => stageWrap.style.setProperty('--zoom', v);
+  let savedZoom = '1';
+  try { const z = localStorage.getItem(ZOOM_KEY); if (ZOOM_ALLOWED.includes(z)) savedZoom = z; } catch (e) {}
+  zoomSel.value = savedZoom; applyZoom(savedZoom);
+  zoomSel.onchange = () => { applyZoom(zoomSel.value); try { localStorage.setItem(ZOOM_KEY, zoomSel.value); } catch (e) {} };
+
   const setStatus = (msg, kind) => { $('status').textContent = msg; $('status').className = 'status' + (kind ? ' ' + kind : ''); };
   $('load').onclick = async () => {
     if (!$('base').value) return setStatus('URL device ?', 'err');

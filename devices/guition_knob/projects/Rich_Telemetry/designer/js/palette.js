@@ -5,6 +5,7 @@
 import { uniqueId, addComponent, addPlacement } from './mutations.js';
 import { COMPONENTS } from './registry.js';
 import { iconFor } from './icons.js';
+import { SCREEN } from './geometry.js';
 
 export function createPalette(root, model, { stage, getActivePage, onCreated } = {}) {
   const page = () => (getActivePage ? getActivePage() : 0);
@@ -80,7 +81,8 @@ export function createPalette(root, model, { stage, getActivePage, onCreated } =
     if (!type && !ref) return;
     e.preventDefault();
     const r = stage.getBoundingClientRect();
-    const x = e.clientX - r.left, y = e.clientY - r.top; // coords écran (1:1)
+    const s = r.width / SCREEN;                            // zoom d'affichage : ramener le drop en unités écran
+    const x = (e.clientX - r.left) / s, y = (e.clientY - r.top) / s;
     const pi = page();
     let newIndex;
     model.commit(s => {
