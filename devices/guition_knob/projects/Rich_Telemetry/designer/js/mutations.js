@@ -75,3 +75,48 @@ export function reorderPages(state, from, to) {
   const [p] = pages.splice(from, 1);
   pages.splice(to, 0, p);
 }
+
+// --- Sources (pull reseau, P3). Top-level state.sources (array d'objets plats). ---
+
+// Nom libre <source><n> : 1er entier sans collision avec les noms existants.
+export function uniqueSourceName(state) {
+  const used = new Set((state.sources || []).map(s => s.name));
+  let n = 1;
+  while (used.has(`source${n}`)) n++;
+  return `source${n}`;
+}
+
+// Ajoute une source en fin de liste. url absente volontairement (l'utilisateur la saisit ;
+// url requise par le schema => signalee invalide tant qu'elle est vide).
+export function addSource(state, name) {
+  (state.sources ||= []).push({ name, interval_s: 60 });
+}
+
+export function removeSource(state, index) {
+  if (!state.sources) return;
+  state.sources.splice(index, 1);
+}
+
+// Edite name/url/interval_s. Valeur vide => suppression de la cle (parite avec setComponentProp).
+export function setSourceProp(state, index, key, value) {
+  const s = state.sources?.[index];
+  if (!s) return;
+  if (value === '' || value === null || value === undefined) delete s[key];
+  else s[key] = value;
+}
+
+// Remplace l'objet headers (reconstruit cote UI depuis une liste de paires). Vide => supprime la cle.
+export function setSourceHeaders(state, index, headers) {
+  const s = state.sources?.[index];
+  if (!s) return;
+  if (headers && Object.keys(headers).length) s.headers = headers;
+  else delete s.headers;
+}
+
+// Remplace l'objet vars (nom -> JSON Pointer). Vide => supprime la cle.
+export function setSourceVars(state, index, vars) {
+  const s = state.sources?.[index];
+  if (!s) return;
+  if (vars && Object.keys(vars).length) s.vars = vars;
+  else delete s.vars;
+}

@@ -108,3 +108,53 @@ test('reorderPages ignore les index hors bornes (no-op)', () => {
   reorderPages(s, 0, 5);
   assert.deepEqual(s.pages.map(p => p.name), ['P1', 'P2']);
 });
+
+import {
+  uniqueSourceName, addSource, removeSource,
+  setSourceProp, setSourceHeaders, setSourceVars
+} from '../js/mutations.js';
+
+test('addSource ajoute une source nommee avec interval par defaut', () => {
+  const s = { components: {}, pages: [] };
+  addSource(s, 'weather');
+  assert.deepEqual(s.sources, [{ name: 'weather', interval_s: 60 }]);
+});
+
+test('uniqueSourceName evite les collisions', () => {
+  const s = { sources: [{ name: 'source1' }, { name: 'source2' }] };
+  assert.equal(uniqueSourceName(s), 'source3');
+  assert.equal(uniqueSourceName({}), 'source1');
+});
+
+test('setSourceProp pose une valeur, vide => supprime la cle', () => {
+  const s = { sources: [{ name: 'a', interval_s: 60 }] };
+  setSourceProp(s, 0, 'url', 'http://x');
+  assert.equal(s.sources[0].url, 'http://x');
+  setSourceProp(s, 0, 'url', '');
+  assert.equal('url' in s.sources[0], false);
+});
+
+test('setSourceHeaders/setSourceVars remplacent ou suppriment', () => {
+  const s = { sources: [{ name: 'a' }] };
+  setSourceHeaders(s, 0, { 'X-Key': '$k' });
+  assert.deepEqual(s.sources[0].headers, { 'X-Key': '$k' });
+  setSourceHeaders(s, 0, {});
+  assert.equal('headers' in s.sources[0], false);
+  setSourceVars(s, 0, { temp: '/t' });
+  assert.deepEqual(s.sources[0].vars, { temp: '/t' });
+  setSourceVars(s, 0, {});
+  assert.equal('vars' in s.sources[0], false);
+});
+
+test('removeSource retire par index', () => {
+  const s = { sources: [{ name: 'a' }, { name: 'b' }] };
+  removeSource(s, 0);
+  assert.deepEqual(s.sources, [{ name: 'b' }]);
+});
+
+test('setSourceProp / setSourceHeaders no-op sur index invalide', () => {
+  const s = { sources: [] };
+  setSourceProp(s, 3, 'url', 'http://x');   // ne doit pas throw
+  setSourceHeaders(s, 3, { a: 'b' });
+  assert.deepEqual(s.sources, []);
+});
