@@ -26,6 +26,12 @@
       "type": "array",
       "description": "Liste ordonnee de pages.",
       "items": { "$ref": "#/$defs/page" }
+    },
+    "sources": {
+      "type": "array",
+      "description": "Pull reseau (P2/P3). Chaque source fetch son url a son interval et ecrit ses vars dans le contexte ; un composant bind:\"var\" lit la valeur. SECRETS NON inclus ici : poses via POST /secrets (write-only), references par $nom dans headers.",
+      "maxItems": 6,
+      "items": { "$ref": "#/$defs/source" }
     }
   },
   "$defs": {
@@ -80,6 +86,7 @@
       "required": ["type"],
       "properties": {
         "type": { "const": "label" },
+        "bind": { "$ref": "#/$defs/ascii", "description": "Nom d'une variable du contexte (pull). Present = lit la variable au lieu d'etre pousse par id. Absent = push par id (defaut)." },
         "text": { "$ref": "#/$defs/ascii", "description": "Texte statique (peut etre remplace via /update avec une string)." },
         "font": { "$ref": "#/$defs/font" },
         "color": { "$ref": "#/$defs/hexColor" }
@@ -91,6 +98,7 @@
       "required": ["type"],
       "properties": {
         "type": { "const": "readout" },
+        "bind": { "$ref": "#/$defs/ascii", "description": "Nom d'une variable du contexte (pull). Present = lit la variable au lieu d'etre pousse par id. Absent = push par id (defaut)." },
         "label": { "$ref": "#/$defs/ascii", "description": "Libelle affiche devant la valeur (ex. \"CPU\")." },
         "unit": { "$ref": "#/$defs/ascii", "description": "Unite ASCII (%, GB, C, Mbps)." },
         "font": { "$ref": "#/$defs/font" },
@@ -103,6 +111,7 @@
       "required": ["type"],
       "properties": {
         "type": { "const": "bar" },
+        "bind": { "$ref": "#/$defs/ascii", "description": "Nom d'une variable du contexte (pull). Present = lit la variable au lieu d'etre pousse par id. Absent = push par id (defaut)." },
         "label": { "$ref": "#/$defs/ascii", "description": "Libelle affiche au-dessus de la barre." },
         "min": { "type": "number", "description": "Defaut 0." },
         "max": { "type": "number", "description": "Defaut 100." },
@@ -115,6 +124,7 @@
       "required": ["type"],
       "properties": {
         "type": { "const": "ring" },
+        "bind": { "$ref": "#/$defs/ascii", "description": "Nom d'une variable du contexte (pull). Present = lit la variable au lieu d'etre pousse par id. Absent = push par id (defaut)." },
         "color": { "$ref": "#/$defs/hexColor" },
         "font": { "$ref": "#/$defs/font", "description": "Taille du chiffre central (center_pct)." },
         "pill": { "type": "boolean", "description": "Affiche un pill de pourcentage sur la partie haute de la bande." },
@@ -176,6 +186,27 @@
         "thickness": { "type": "integer", "description": "Epaisseur de bande (ring). Defaut 16." },
         "gap_deg": { "type": "integer", "description": "Angle d'ouverture (ring). Position determinee par start_angle. Defaut 70." },
         "start_angle": { "type": "integer", "description": "Oriente l'ouverture : offset en degres, horaire, depuis le bas. 0=bas, 90=gauche, 180=haut, 270=droite. Defaut 0." }
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": ["url"],
+      "additionalProperties": false,
+      "description": "Une source de pull (1 source = 1 url). url requis (le firmware rejette une source sans url).",
+      "properties": {
+        "name": { "type": "string", "description": "Nom de la source (libelle ; apparait dans GET /status)." },
+        "url": { "type": "string", "description": "URL HTTP(S) a interroger." },
+        "interval_s": { "type": "integer", "minimum": 5, "description": "Periode de fetch en secondes. Defaut 60. Plancher impose 5 (CTX_MIN_INTERVAL_S)." },
+        "headers": {
+          "type": "object",
+          "description": "En-tetes HTTP. Une valeur \"$nom\" reference un secret du store write-only (resolu au fetch).",
+          "additionalProperties": { "type": "string" }
+        },
+        "vars": {
+          "type": "object",
+          "description": "Map nom_de_variable -> JSON Pointer (RFC 6901, ex. \"/main/temp\") extrait de la reponse.",
+          "additionalProperties": { "type": "string" }
+        }
       }
     }
   }
