@@ -4,6 +4,7 @@
 // nouveau placement. Vérifié au navigateur. (Pages = pages.js ; valeurs d'aperçu = mocks.js.)
 import { uniqueId, addComponent, addPlacement } from './mutations.js';
 import { COMPONENTS } from './registry.js';
+import { iconFor } from './icons.js';
 
 export function createPalette(root, model, { stage, getActivePage, onCreated } = {}) {
   const page = () => (getActivePage ? getActivePage() : 0);
@@ -22,7 +23,9 @@ export function createPalette(root, model, { stage, getActivePage, onCreated } =
     item.className = 'palette-item';
     item.draggable = true;
     item.dataset.type = type;
-    item.textContent = def.label;
+    const ic = iconFor(type); if (ic) item.appendChild(ic);   // icône de type (décorative)
+    const lbl = document.createElement('span'); lbl.textContent = def.label;
+    item.appendChild(lbl);
     item.addEventListener('dragstart', e => e.dataTransfer.setData('text/rt-type', type));
     list.appendChild(item);
   }
@@ -52,6 +55,7 @@ export function createPalette(root, model, { stage, getActivePage, onCreated } =
       const item = document.createElement('div');
       item.className = 'lib-item';
       item.draggable = true;
+      const ic = iconFor(comps[id].type); if (ic) item.appendChild(ic);   // même jeu d'icônes que les types
       const name = document.createElement('span'); name.textContent = id;
       const type = document.createElement('span'); type.className = 'lib-type'; type.textContent = comps[id].type;
       item.appendChild(name); item.appendChild(type);
