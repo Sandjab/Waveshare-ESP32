@@ -158,9 +158,11 @@ textarea { width: 100%; height: 220px; background: #0a0a0e; color: #cbd5e1; bord
 .page-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
 .page-tab {
   background: var(--panel-2); border: 1px solid var(--line); color: var(--muted);
-  border-radius: 6px 6px 0 0; padding: 4px 12px; cursor: pointer; font-size: 12.5px;
+  border-radius: 6px 6px 0 0; padding: 4px 12px; cursor: grab; font-size: 12.5px;
 }
 .page-tab.active { color: var(--ink); border-color: var(--accent); background: var(--panel); }
+.page-tab.dragging { opacity: .45; cursor: grabbing; }                       /* onglet en cours de glisser */
+.page-tab.drag-over { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }  /* cible de dépôt */
 .page-rename { width: 120px; }
 .page-ctrls { display: flex; gap: 4px; }
 .page-btn { padding: 3px 9px; font-size: 12px; }

@@ -14,6 +14,7 @@ function mkBtn(text, onClick, cls) {
 
 export function createPages(root, model, { getActivePage, setPage } = {}) {
   let renaming = null; // index de la page en cours de renommage inline, ou null
+  let dragFrom = null; // index de l'onglet en cours de glisser (réordonnancement), ou null
 
   // Backstop : après removePage (ou undo/import), l'index actif peut dépasser la liste → on le ramène.
   function clampActive() {
@@ -46,7 +47,38 @@ export function createPages(root, model, { getActivePage, setPage } = {}) {
         const tab = document.createElement('button');
         tab.className = 'page-tab' + (i === active ? ' active' : '');
         tab.textContent = p.name || `Page ${i + 1}`;
+        tab.title = 'Glisser pour réordonner';
+        tab.draggable = true;
         tab.addEventListener('click', () => { setPage(i); render(); });
+        // --- Réordonnancement par glisser-déposer (alternative directe aux boutons ◀ ▶) ---
+        // type 'text/rt-page' distinct des drags de la palette ('rt-type'/'rt-ref') → pas d'interférence.
+        tab.addEventListener('dragstart', e => {
+          dragFrom = i;
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/rt-page', String(i));
+          tab.classList.add('dragging');
+        });
+        tab.addEventListener('dragend', () => {
+          dragFrom = null; tab.classList.remove('dragging');
+          tabs.querySelectorAll('.drag-over').forEach(t => t.classList.remove('drag-over'));
+        });
+        tab.addEventListener('dragover', e => {
+          if (dragFrom == null || dragFrom === i) return;   // pas de drop sur soi ; ignore les drags d'ailleurs
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          tab.classList.add('drag-over');
+        });
+        tab.addEventListener('dragleave', () => tab.classList.remove('drag-over'));
+        tab.addEventListener('drop', e => {
+          e.preventDefault();
+          tab.classList.remove('drag-over');
+          const from = dragFrom;
+          dragFrom = null;
+          if (from == null || from === i) return;
+          model.commit(s => reorderPages(s, from, i));      // l'onglet déposé prend l'index i…
+          setPage(i);                                        // …et devient la page active
+          render();
+        });
         tabs.appendChild(tab);
       }
     });
