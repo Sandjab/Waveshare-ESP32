@@ -7,6 +7,13 @@ export async function loadLayout(base) {
   return r.json();
 }
 
+// Renvoie une blob URL (image/bmp) ; l'appelant doit la revoquer (URL.revokeObjectURL) apres usage.
+export async function captureScreenshot(base) {
+  const r = await fetch(clean(base) + '/screenshot');
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return URL.createObjectURL(await r.blob());
+}
+
 export async function pushLayout(base, layoutText) {
   const r = await fetch(clean(base) + '/layout', {
     method: 'POST',

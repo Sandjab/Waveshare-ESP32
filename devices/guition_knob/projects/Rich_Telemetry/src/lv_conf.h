@@ -17,6 +17,9 @@
 #define LV_USE_CHART           1
 #define LV_USE_METER           1
 
+// Capture d'ecran a la demande (endpoint GET /screenshot) : re-render off-screen via lv_snapshot
+#define LV_USE_SNAPSHOT        1
+
 #define LV_BUILD_EXAMPLES      0
 
 #endif

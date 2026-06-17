@@ -1,7 +1,7 @@
 import { createModel } from './model.js';
 import { createValidator } from './validate.js';
 import { bindJsonView } from './json-view.js';
-import { loadLayout, pushLayout } from './device.js';
+import { loadLayout, pushLayout, captureScreenshot } from './device.js';
 import { createCanvas } from './canvas.js';
 import { createPalette } from './palette.js';
 import { createInspector } from './inspector.js';
@@ -86,6 +86,21 @@ async function main() {
     try { await pushLayout($('base').value, model.toJSON()); setStatus('Poussé et persisté', 'ok'); }
     catch (e) { setStatus('Échec : ' + e.message + ' (CORS ? cf. README)', 'err'); }
   };
+  // Capture écran : récupère un BMP du device et l'affiche dans l'overlay. La blob URL précédente
+  // est révoquée pour éviter une fuite mémoire (cf. captureScreenshot).
+  const shot = $('shot');
+  $('capture').onclick = async () => {
+    if (!$('base').value) return setStatus('URL device ?', 'err');
+    setStatus('Capture…');
+    try {
+      const url = await captureScreenshot($('base').value);
+      if (shot.dataset.url) URL.revokeObjectURL(shot.dataset.url);
+      shot.dataset.url = url; shot.src = url;
+      $('shot-overlay').hidden = false;
+      setStatus('Capturé', 'ok');
+    } catch (e) { setStatus('Échec : ' + e.message + ' (CORS ? cf. README)', 'err'); }
+  };
+  $('shot-close').onclick = () => { $('shot-overlay').hidden = true; };
 }
 
 main();

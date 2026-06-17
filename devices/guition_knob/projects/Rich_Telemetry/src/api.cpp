@@ -9,6 +9,8 @@
 #include "persist.h"
 #include "secret_store.h"
 #include "freertos/semphr.h"
+#include <lvgl.h>
+#include "esp_heap_caps.h"
 
 extern String g_layout_json;
 extern SemaphoreHandle_t g_ctx_mutex;
@@ -72,7 +74,8 @@ static void h_root() {
         "<p>POST /update (valeurs partielles), POST /layout, POST /page.</p>"
         "<pre>curl -X POST http://" + ip + "/update -H 'Content-Type: application/json' \\\n"
         "  -d '{\"w5h\":{\"pct\":63,\"reset_in_s\":6600}}'</pre>"
-        "<p><a href=/status>/status</a> &middot; <a href=/layout>/layout</a></p>";
+        "<p><a href=/status>/status</a> &middot; <a href=/layout>/layout</a> &middot; "
+        "<a href=/screenshot>/screenshot</a> (capture ecran, image/bmp)</p>";
     S->send(200, "text/html", html);
 }
 
@@ -123,6 +126,66 @@ static void h_page() {
     S->send(200, "application/json", out);
 }
 
+// GET /screenshot : capture pixel-perfect de l'ecran actif, encodee BMP 24-bit.
+// LVGL est en double buffer partiel (pas de framebuffer plein ecran a relire), donc on
+// re-rend l'ecran off-screen via lv_snapshot dans un buffer PSRAM, puis on streame le BMP
+// ligne par ligne. Sur depuis ce handler : meme thread que lv_timer_handler() (cf. loop()).
+// Contrepartie : bloque loop() (UI figee) le temps de la requete -- acceptable a la demande.
+static void put_u32le(uint8_t* p, uint32_t v) {
+    p[0] = v & 0xFF; p[1] = (v >> 8) & 0xFF; p[2] = (v >> 16) & 0xFF; p[3] = (v >> 24) & 0xFF;
+}
+static void h_screenshot() {
+    lv_obj_t* scr = lv_scr_act();
+    uint32_t need = lv_snapshot_buf_size_needed(scr, LV_IMG_CF_TRUE_COLOR);
+    if (!need) { S->send(500, "text/plain", "snapshot size unavailable\n"); return; }
+    uint8_t* buf = (uint8_t*)heap_caps_malloc(need, MALLOC_CAP_SPIRAM);
+    if (!buf) { S->send(503, "text/plain", "PSRAM alloc failed\n"); return; }
+
+    lv_img_dsc_t dsc;
+    if (lv_snapshot_take_to_buf(scr, LV_IMG_CF_TRUE_COLOR, &dsc, buf, need) != LV_RES_OK) {
+        heap_caps_free(buf);
+        S->send(500, "text/plain", "snapshot failed\n");
+        return;
+    }
+    // Dimensions remplies par take_to_buf (360x360 ici) -- jamais codees en dur.
+    const uint32_t w = dsc.header.w, h = dsc.header.h;
+    const uint32_t stride = w * 3;          // BMP 24-bit ; 360*3 = 1080, deja multiple de 4
+    const uint32_t img_size = stride * h;
+
+    uint8_t hdr[54] = {0};                   // BITMAPFILEHEADER(14) + BITMAPINFOHEADER(40)
+    hdr[0] = 'B'; hdr[1] = 'M';
+    put_u32le(hdr + 2, 54 + img_size);       // taille fichier
+    hdr[10] = 54;                            // offset des pixels
+    hdr[14] = 40;                            // taille BITMAPINFOHEADER
+    put_u32le(hdr + 18, w);
+    put_u32le(hdr + 22, h);                  // h > 0 => bottom-up
+    hdr[26] = 1;                             // planes
+    hdr[28] = 24;                            // bits/pixel
+    put_u32le(hdr + 34, img_size);           // biSizeImage
+
+    uint8_t* row = (uint8_t*)malloc(stride);
+    if (!row) { heap_caps_free(buf); S->send(503, "text/plain", "row alloc failed\n"); return; }
+
+    S->setContentLength(54 + img_size);
+    S->send(200, "image/bmp", "");
+    S->sendContent((const char*)hdr, 54);
+
+    const lv_color_t* px = (const lv_color_t*)dsc.data;
+    for (int32_t y = (int32_t)h - 1; y >= 0; y--) {     // bottom-up
+        const lv_color_t* line = px + (uint32_t)y * w;
+        uint8_t* p = row;
+        for (uint32_t x = 0; x < w; x++) {
+            uint32_t c = lv_color_to32(line[x]);        // gere LV_COLOR_16_SWAP
+            *p++ = c & 0xFF;            // B
+            *p++ = (c >> 8) & 0xFF;     // G
+            *p++ = (c >> 16) & 0xFF;    // R
+        }
+        S->sendContent((const char*)row, stride);
+    }
+    free(row);
+    heap_caps_free(buf);
+}
+
 void api_register(WebServer& server, Dashboard* d) {
     S = &server; D = d;
     server.enableCORS(true);   // Allow-Origin/Methods/Headers: * sur toutes les réponses (outil de dev LAN mono-utilisateur)
@@ -133,6 +196,7 @@ void api_register(WebServer& server, Dashboard* d) {
     server.on("/layout", HTTP_POST, h_set_layout);
     server.on("/layout", HTTP_GET,  h_get_layout);
     server.on("/page",   HTTP_POST, h_page);
+    server.on("/screenshot", HTTP_GET, h_screenshot);   // capture ecran -> image/bmp
     server.on("/",       HTTP_GET,  h_root);
     server.onNotFound([](){
         // enableCORS(true) ajoute déjà Allow-Origin/Methods/Headers: * à chaque réponse ;
