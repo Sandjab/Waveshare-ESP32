@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   pickFontPx, barFill, pickThresholdColor, formatValue, formatRemaining,
-  ringSweepDeg, pointOnArc, arcPath, ringPaths
+  ringSweepDeg, pointOnArc, arcPath, ringPaths, sparklinePoints, meterAngle
 } from '../js/render.js';
 
 test('pickFontPx retombe sur les 3 tailles LVGL', () => {
@@ -62,4 +62,17 @@ test('ringPaths expose rayon de tracé et angle de départ', () => {
   assert.equal(p.start, 125); // 90 + 70/2
   assert.ok(p.track.startsWith('M'));
   assert.ok(p.indicator.startsWith('M'));
+});
+
+test('sparklinePoints : points SVG normalises (x reparti, y inverse)', () => {
+  assert.equal(sparklinePoints([0, 50, 100], 0, 100, 100, 100),
+    '0.00,100.00 50.00,50.00 100.00,0.00');
+  assert.equal(sparklinePoints([], 0, 100, 100, 100), '');
+  assert.equal(sparklinePoints([42], 0, 100, 100, 100), '0.00,58.00'); // 1 point : x=0, y=100-0.42*100
+});
+
+test('meterAngle : 270° de 135° (min) a 405° (max), convention pointOnArc', () => {
+  assert.equal(meterAngle(0, 0, 100), 135);
+  assert.equal(meterAngle(50, 0, 100), 270);
+  assert.equal(meterAngle(100, 0, 100), 405);
 });

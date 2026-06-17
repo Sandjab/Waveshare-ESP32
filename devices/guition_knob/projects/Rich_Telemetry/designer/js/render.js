@@ -6,7 +6,9 @@
 export const MOCKS = {
   readout: { value: 42 },
   bar:     { value: 60 },
-  ring:    { value: 72, reset_in_s: 18000 }
+  ring:    { value: 72, reset_in_s: 18000 },
+  chart:   { hist: [20, 35, 30, 50, 45, 60, 55, 70, 65, 80, 60, 75, 50, 65, 55, 72] },  // serie demo (forme indicative)
+  meter:   { value: 60 }
 };
 
 // Police LVGL embarquée : 14/20/28 px (pick_font, view.cpp:19). Toute autre valeur retombe sur 14.
@@ -74,6 +76,25 @@ export function ringPaths(r, th, gap, value, min, max) {
     track:     arcPath(r, r, rr, start, 360 - gap),
     indicator: arcPath(r, r, rr, start, ringSweepDeg(value, min, max, gap))
   };
+}
+
+// chart : suite de points SVG "x,y …" pour une polyline. x reparti sur la largeur, y inverse
+// (0 en bas) et clampe via barFill. Miroir best-effort de lv_chart LINE (view.cpp:181).
+export function sparklinePoints(hist, min, max, w, h) {
+  if (!hist || hist.length === 0) return '';
+  const n = hist.length;
+  const f = v => v.toFixed(2);
+  return hist.map((v, i) => {
+    const x = n > 1 ? (i / (n - 1)) * w : 0;
+    const y = h - barFill(v, min, max) * h;
+    return `${f(x)},${f(y)}`;
+  }).join(' ');
+}
+
+// meter : angle de l'aiguille (deg, convention pointOnArc : 0°=droite, horaire, y bas). Miroir
+// lv_meter_set_scale_range(min, max, 270, 135) (view.cpp:216) : 135° a min → 405° a max.
+export function meterAngle(value, min, max) {
+  return 135 + barFill(value, min, max) * 270;
 }
 
 // --- Builders DOM (non testés sous Node ; vérifiés au navigateur). Aucun ne s'exécute à l'import. ---
@@ -166,6 +187,62 @@ export function buildRing(comp, placement, mock = MOCKS.ring) {
     cap.style.bottom = th + 'px';
     wrap.appendChild(cap);
   }
+  return wrap;
+}
+
+export function buildChart(comp, placement, mock = MOCKS.chart) {
+  const w = placement.width || 200, h = placement.height || 100;  // defauts firmware (view.cpp:184)
+  const wrap = document.createElement('div');
+  wrap.className = 'w w-chart';
+  wrap.style.width = w + 'px'; wrap.style.height = h + 'px';
+  const svg = document.createElementNS(SVGNS, 'svg');
+  svg.setAttribute('width', w); svg.setAttribute('height', h);
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  const line = document.createElementNS(SVGNS, 'polyline');
+  line.setAttribute('points', sparklinePoints(mock.hist || [], comp.min ?? 0, comp.max ?? 100, w, h));
+  line.setAttribute('fill', 'none');
+  line.setAttribute('stroke', comp.color || '#38BDF8');
+  line.setAttribute('stroke-width', 2);
+  svg.appendChild(line);
+  wrap.appendChild(svg);
+  return wrap;
+}
+
+export function buildMeter(comp, placement, mock = MOCKS.meter) {
+  const w = placement.width || 160;             // defauts firmware (view.cpp:211-212)
+  const h = placement.height || w;
+  const size = Math.min(w, h);
+  const cx = w / 2, cy = h / 2, r = size / 2 - 6;
+  const min = comp.min ?? 0, max = comp.max ?? 100;
+  const wrap = document.createElement('div');
+  wrap.className = 'w w-meter';
+  wrap.style.width = w + 'px'; wrap.style.height = h + 'px';
+  const svg = document.createElementNS(SVGNS, 'svg');
+  svg.setAttribute('width', w); svg.setAttribute('height', h);
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  const mkPath = (d, stroke, sw) => {
+    const p = document.createElementNS(SVGNS, 'path');
+    p.setAttribute('d', d); p.setAttribute('fill', 'none');
+    p.setAttribute('stroke', stroke); p.setAttribute('stroke-width', sw);
+    return p;
+  };
+  svg.appendChild(mkPath(arcPath(cx, cy, r, 135, 270), '#4B5563', 4));   // arc de fond 270° (view.cpp:216)
+  let prev = min;                                                         // zones (prev, limit] (view.cpp:217-224)
+  for (const [limit, color] of comp.thresholds || []) {
+    const a0 = meterAngle(prev, min, max);
+    const a1 = meterAngle(limit, min, max);
+    svg.appendChild(mkPath(arcPath(cx, cy, r, a0, a1 - a0), color, 6));
+    prev = limit;
+  }
+  const [nx, ny] = pointOnArc(cx, cy, r - 4, meterAngle(mock.value, min, max));  // aiguille
+  const needle = document.createElementNS(SVGNS, 'line');
+  needle.setAttribute('x1', cx); needle.setAttribute('y1', cy);
+  needle.setAttribute('x2', nx.toFixed(2)); needle.setAttribute('y2', ny.toFixed(2));
+  needle.setAttribute('stroke', comp.color || '#38BDF8');
+  needle.setAttribute('stroke-width', 3);
+  needle.setAttribute('stroke-linecap', 'round');
+  svg.appendChild(needle);
+  wrap.appendChild(svg);
   return wrap;
 }
 
