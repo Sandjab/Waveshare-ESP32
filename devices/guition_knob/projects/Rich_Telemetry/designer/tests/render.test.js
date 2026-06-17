@@ -5,10 +5,13 @@ import {
   ringSweepDeg, pointOnArc, arcPath, ringPaths, sparklinePoints, meterAngle
 } from '../js/render.js';
 
-test('pickFontPx retombe sur les 3 tailles LVGL', () => {
+test('pickFontPx retombe sur les 5 tailles LVGL', () => {
+  assert.equal(pickFontPx(48), 48);
+  assert.equal(pickFontPx(36), 36);
   assert.equal(pickFontPx(28), 28);
   assert.equal(pickFontPx(20), 20);
   assert.equal(pickFontPx(14), 14);
+  assert.equal(pickFontPx(40), 36); // entre 36 et 48 → 36
   assert.equal(pickFontPx(27), 20); // entre 20 et 28 → 20
   assert.equal(pickFontPx(11), 14); // toute autre valeur → 14
 });

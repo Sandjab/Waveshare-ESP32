@@ -59,9 +59,9 @@ textarea { width: 100%; height: 220px; background: #070d17; color: #cbd5e1; bord
 .w.snapped { outline: 1px solid var(--ok); }
 .w.outside { outline: 1px dashed var(--err); }  /* coin hors zone ronde */
 
-.w-bar-label { font: 12px Montserrat, system-ui, sans-serif; color: #9AA0AA; margin-bottom: 4px; }
-.w-bar-track { background: #1F2937; border-radius: 3px; overflow: hidden; }
-.w-bar-fill { height: 100%; }
+.w-bar-label { font: 14px Montserrat, system-ui, sans-serif; color: #9AA0AA; margin-bottom: 4px; text-align: center; }
+.w-bar-track { background: #1F2937; border-radius: 999px; overflow: hidden; }   /* pilule (lv_bar arrondi) */
+.w-bar-fill { height: 100%; border-radius: 999px; }                            /* extrémité droite arrondie */
 
 .w-ring { cursor: default; }       /* ring centré, non déplaçable (view.cpp:51) */
 .w-ring svg { display: block; }
@@ -69,8 +69,21 @@ textarea { width: 100%; height: 220px; background: #070d17; color: #cbd5e1; bord
   position: absolute; left: 50%; transform: translateX(-50%);
   font: 12px Montserrat, system-ui, sans-serif;
 }
-.w-ring-pill { color: #04121A; border-radius: 13px; padding: 2px 8px; }
-.w-ring-cap { font-size: 13px; }
+.w-ring-pill { color: #04121A; border-radius: 13px; padding: 2px 8px;
+  transform: translate(-50%, -50%); border: 1px solid #000; }   /* centrée sur la bande + liseré (view.cpp:60,101) */
+.w-ring-center {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  white-space: nowrap;                                          /* lecture centrale center_pct (view.cpp:89) */
+}
+.w-ring-cap { font-size: 14px; }
+
+/* chart : panneau + grille (thème lv_chart par défaut, best-effort) */
+.w-chart { background: #FAFBFC; border: 1px solid #D7DEE8; border-radius: 8px; overflow: hidden; }
+.chart-grid { stroke: #E5E7EB; stroke-width: 1; }
+/* meter : panneau + moyeu + chiffres (thème lv_meter, best-effort) */
+.meter-bg { fill: #F8FAFC; stroke: #D7DEE8; stroke-width: 1; }
+.meter-hub { fill: #374151; }
+.meter-num { fill: #9CA3AF; font: 11px Montserrat, system-ui, sans-serif; text-anchor: middle; dominant-baseline: central; }
 
 .handle {
   position: absolute; width: 11px; height: 11px; box-sizing: border-box;

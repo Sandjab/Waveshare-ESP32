@@ -11,8 +11,10 @@ export const MOCKS = {
   meter:   { value: 60 }
 };
 
-// Police LVGL embarquée : 14/20/28 px (pick_font, view.cpp:19). Toute autre valeur retombe sur 14.
+// Police LVGL embarquée : 14/20/28/36/48 px (pick_font, view.cpp:21-27). Toute autre valeur retombe sur 14.
 export function pickFontPx(font) {
+  if (font >= 48) return 48;
+  if (font >= 36) return 36;
   if (font >= 28) return 28;
   if (font >= 20) return 20;
   return 14;
@@ -78,17 +80,18 @@ export function ringPaths(r, th, gap, value, min, max) {
   };
 }
 
-// chart : suite de points SVG "x,y …" pour une polyline. x reparti sur la largeur, y inverse
-// (0 en bas) et clampe via barFill. Miroir best-effort de lv_chart LINE (view.cpp:181).
-export function sparklinePoints(hist, min, max, w, h) {
-  if (!hist || hist.length === 0) return '';
+// chart : coordonnées [x,y] des échantillons. x reparti sur la largeur, y inverse (0 en bas),
+// clampe via barFill. Base partagée de la polyline ET des points (dots). Miroir lv_chart LINE.
+export function sparklineCoords(hist, min, max, w, h) {
+  if (!hist || hist.length === 0) return [];
   const n = hist.length;
+  return hist.map((v, i) => [n > 1 ? (i / (n - 1)) * w : 0, h - barFill(v, min, max) * h]);
+}
+
+// chart : suite de points SVG "x,y …" pour une polyline. Miroir best-effort de lv_chart LINE (view.cpp:181).
+export function sparklinePoints(hist, min, max, w, h) {
   const f = v => v.toFixed(2);
-  return hist.map((v, i) => {
-    const x = n > 1 ? (i / (n - 1)) * w : 0;
-    const y = h - barFill(v, min, max) * h;
-    return `${f(x)},${f(y)}`;
-  }).join(' ');
+  return sparklineCoords(hist, min, max, w, h).map(([x, y]) => `${f(x)},${f(y)}`).join(' ');
 }
 
 // meter : angle de l'aiguille (deg, convention pointOnArc : 0°=droite, horaire, y bas). Miroir
@@ -171,12 +174,19 @@ export function buildRing(comp, placement, mock = MOCKS.ring) {
   svg.appendChild(mk('ring-track', track, '#1F2937')); // fond firmware (view.cpp:58)
   svg.appendChild(mk('ring-ind', indicator, col));
   wrap.appendChild(svg);
-  if (comp.pill) {                            // pastille % en haut de bande (view.cpp:66-74)
+  if (comp.center_pct) {                       // lecture centrale (prioritaire sur la pastille, view.cpp:89)
+    const ctr = document.createElement('div');
+    ctr.className = 'w-ring-center';
+    ctr.style.font = FONT(pickFontPx(comp.font ?? 20));
+    ctr.style.color = comp.center_color || col; // center_color surcharge le seuil (view.cpp:168)
+    ctr.textContent = formatValue(mock.value, comp.unit || '');
+    wrap.appendChild(ctr);
+  } else if (comp.pill) {                       // pastille % en haut de bande (view.cpp:66-74)
     const pill = document.createElement('div');
     pill.className = 'w-ring-pill';
     pill.textContent = `${Math.trunc(mock.value)}%`; // tronque comme (long)c.value, view.cpp:220
     pill.style.background = col;
-    pill.style.top = th + 'px';
+    pill.style.top = (th / 2) + 'px';           // centre de la pill sur le milieu de la bande (view.cpp:60)
     wrap.appendChild(pill);
   }
   if (comp.countdown) {                       // légende dans l'ouverture du bas (view.cpp:43)
@@ -192,18 +202,43 @@ export function buildRing(comp, placement, mock = MOCKS.ring) {
 
 export function buildChart(comp, placement, mock = MOCKS.chart) {
   const w = placement.width || 200, h = placement.height || 100;  // defauts firmware (view.cpp:184)
+  const pad = 8;                                  // marge de plot (le device n'accole pas la courbe au bord)
+  const iw = w - pad * 2, ih = h - pad * 2;
+  const color = comp.color || '#38BDF8';
   const wrap = document.createElement('div');
-  wrap.className = 'w w-chart';
+  wrap.className = 'w w-chart';                   // fond clair + bordure + radius via CSS (thème lv_chart)
   wrap.style.width = w + 'px'; wrap.style.height = h + 'px';
   const svg = document.createElementNS(SVGNS, 'svg');
   svg.setAttribute('width', w); svg.setAttribute('height', h);
   svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  const g = document.createElementNS(SVGNS, 'g');
+  g.setAttribute('transform', `translate(${pad},${pad})`);
+  // grille : lignes de division (best-effort du thème lv_chart par défaut)
+  const VDIV = 5, HDIV = 3;
+  const grid = (x1, y1, x2, y2) => {
+    const l = document.createElementNS(SVGNS, 'line');
+    l.setAttribute('x1', x1); l.setAttribute('y1', y1);
+    l.setAttribute('x2', x2); l.setAttribute('y2', y2);
+    l.setAttribute('class', 'chart-grid');
+    g.appendChild(l);
+  };
+  for (let i = 0; i <= VDIV; i++) grid((i / VDIV) * iw, 0, (i / VDIV) * iw, ih);
+  for (let j = 0; j <= HDIV; j++) grid(0, (j / HDIV) * ih, iw, (j / HDIV) * ih);
+  // courbe + points
+  const coords = sparklineCoords(mock.hist || [], comp.min ?? 0, comp.max ?? 100, iw, ih);
   const line = document.createElementNS(SVGNS, 'polyline');
-  line.setAttribute('points', sparklinePoints(mock.hist || [], comp.min ?? 0, comp.max ?? 100, w, h));
+  line.setAttribute('points', coords.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(' '));
   line.setAttribute('fill', 'none');
-  line.setAttribute('stroke', comp.color || '#38BDF8');
+  line.setAttribute('stroke', color);
   line.setAttribute('stroke-width', 2);
-  svg.appendChild(line);
+  g.appendChild(line);
+  for (const [x, y] of coords) {
+    const c = document.createElementNS(SVGNS, 'circle');
+    c.setAttribute('cx', x.toFixed(2)); c.setAttribute('cy', y.toFixed(2)); c.setAttribute('r', 2.5);
+    c.setAttribute('fill', color);
+    g.appendChild(c);
+  }
+  svg.appendChild(g);
   wrap.appendChild(svg);
   return wrap;
 }
@@ -212,36 +247,68 @@ export function buildMeter(comp, placement, mock = MOCKS.meter) {
   const w = placement.width || 160;             // defauts firmware (view.cpp:211-212)
   const h = placement.height || w;
   const size = Math.min(w, h);
-  const cx = w / 2, cy = h / 2, r = size / 2 - 6;
+  const cx = w / 2, cy = h / 2;
+  const Rout = size / 2 - 6;                     // rim extérieur (arc + ticks)
   const min = comp.min ?? 0, max = comp.max ?? 100;
+  const color = comp.color || '#38BDF8';
   const wrap = document.createElement('div');
   wrap.className = 'w w-meter';
   wrap.style.width = w + 'px'; wrap.style.height = h + 'px';
   const svg = document.createElementNS(SVGNS, 'svg');
   svg.setAttribute('width', w); svg.setAttribute('height', h);
   svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  // fond circulaire (panneau du thème lv_meter)
+  const bg = document.createElementNS(SVGNS, 'circle');
+  bg.setAttribute('cx', cx); bg.setAttribute('cy', cy); bg.setAttribute('r', size / 2 - 1);
+  bg.setAttribute('class', 'meter-bg');
+  svg.appendChild(bg);
   const mkPath = (d, stroke, sw) => {
     const p = document.createElementNS(SVGNS, 'path');
     p.setAttribute('d', d); p.setAttribute('fill', 'none');
     p.setAttribute('stroke', stroke); p.setAttribute('stroke-width', sw);
     return p;
   };
-  svg.appendChild(mkPath(arcPath(cx, cy, r, 135, 270), '#4B5563', 4));   // arc de fond 270° (view.cpp:216)
-  let prev = min;                                                         // zones (prev, limit] (view.cpp:217-224)
-  for (const [limit, color] of comp.thresholds || []) {
-    const a0 = meterAngle(prev, min, max);
-    const a1 = meterAngle(limit, min, max);
-    svg.appendChild(mkPath(arcPath(cx, cy, r, a0, a1 - a0), color, 6));
+  svg.appendChild(mkPath(arcPath(cx, cy, Rout, 135, 270), '#4B5563', 5));  // arc de fond 270° (view.cpp:216)
+  let prev = min;                                                          // zones (prev, limit] width 5 (view.cpp:217-224)
+  for (const [limit, c] of comp.thresholds || []) {
+    svg.appendChild(mkPath(arcPath(cx, cy, Rout, meterAngle(prev, min, max),
+                                   meterAngle(limit, min, max) - meterAngle(prev, min, max)), c, 5));
     prev = limit;
   }
-  const [nx, ny] = pointOnArc(cx, cy, r - 4, meterAngle(mock.value, min, max));  // aiguille
+  // graduations : 21 ticks, 1 majeur/5 → 0/25/50/75/100, + chiffres (view.cpp:214-215)
+  for (let k = 0; k <= 20; k++) {
+    const v = min + (max - min) * k / 20;
+    const ang = meterAngle(v, min, max);
+    const major = k % 5 === 0;
+    const [ox, oy] = pointOnArc(cx, cy, Rout - 3, ang);
+    const [ix, iy] = pointOnArc(cx, cy, Rout - 3 - (major ? 12 : 7), ang);
+    const t = document.createElementNS(SVGNS, 'line');
+    t.setAttribute('x1', ox.toFixed(2)); t.setAttribute('y1', oy.toFixed(2));
+    t.setAttribute('x2', ix.toFixed(2)); t.setAttribute('y2', iy.toFixed(2));
+    t.setAttribute('stroke', major ? '#9CA3AF' : '#4B5563');
+    t.setAttribute('stroke-width', major ? 3 : 2);
+    svg.appendChild(t);
+    if (major) {
+      const [tx, ty] = pointOnArc(cx, cy, Rout - 28, ang);
+      const txt = document.createElementNS(SVGNS, 'text');
+      txt.setAttribute('x', tx.toFixed(2)); txt.setAttribute('y', ty.toFixed(2));
+      txt.setAttribute('class', 'meter-num');
+      txt.textContent = String(Math.round(v));
+      svg.appendChild(txt);
+    }
+  }
+  const [px, py] = pointOnArc(cx, cy, Rout - 16, meterAngle(mock.value, min, max));  // aiguille
   const needle = document.createElementNS(SVGNS, 'line');
   needle.setAttribute('x1', cx); needle.setAttribute('y1', cy);
-  needle.setAttribute('x2', nx.toFixed(2)); needle.setAttribute('y2', ny.toFixed(2));
-  needle.setAttribute('stroke', comp.color || '#38BDF8');
-  needle.setAttribute('stroke-width', 3);
+  needle.setAttribute('x2', px.toFixed(2)); needle.setAttribute('y2', py.toFixed(2));
+  needle.setAttribute('stroke', color);
+  needle.setAttribute('stroke-width', 4);
   needle.setAttribute('stroke-linecap', 'round');
   svg.appendChild(needle);
+  const hub = document.createElementNS(SVGNS, 'circle');  // moyeu
+  hub.setAttribute('cx', cx); hub.setAttribute('cy', cy); hub.setAttribute('r', 6);
+  hub.setAttribute('class', 'meter-hub');
+  svg.appendChild(hub);
   wrap.appendChild(svg);
   return wrap;
 }

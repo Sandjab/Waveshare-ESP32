@@ -161,7 +161,7 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
     const t = svg.querySelector('.ring-track'), ind = svg.querySelector('.ring-ind');
     t.setAttribute('d', p.track); t.setAttribute('stroke-width', g.th);
     ind.setAttribute('d', p.indicator); ind.setAttribute('stroke-width', g.th); ind.setAttribute('stroke', col);
-    const pill = node.querySelector('.w-ring-pill'); if (pill) pill.style.top = g.th + 'px';
+    const pill = node.querySelector('.w-ring-pill'); if (pill) pill.style.top = (g.th / 2) + 'px';
     const cap = node.querySelector('.w-ring-cap');   if (cap)  cap.style.bottom = g.th + 'px';
     positionRingHandles(node, g);
   }
