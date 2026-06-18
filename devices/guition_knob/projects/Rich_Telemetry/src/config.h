@@ -23,3 +23,8 @@
 #define WIFI_BOOT_TIMEOUT_MS    20000
 #define LAYOUT_PATH             "/layout.json"
 #define SECRETS_PATH            "/secrets.json"
+
+#define BG_IMG_W       360
+#define BG_IMG_H       360
+#define BG_IMG_BYTES   (BG_IMG_W * BG_IMG_H * 2)   // RGB565 plein ecran = 259200
+#define BG_DIR         "/bg"                        // repertoire LittleFS des fonds
