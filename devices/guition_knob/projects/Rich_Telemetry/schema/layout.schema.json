@@ -199,6 +199,7 @@
       "properties": {
         "name": { "type": "string", "description": "Nom de page (cible de POST /page {\"name\":...})." },
         "background": { "$ref": "#/$defs/hexColor", "description": "Couleur de fond de la page (optionnel ; herite du background global du layout si absent)." },
+        "background_image": { "$ref": "#/$defs/ascii", "description": "Cle d'asset image de fond (hash de contenu, hex). Bytes RGB565 360x360 uploades via POST /bgimage?key=. Absent = pas d'image (la couleur de fond s'applique)." },
         "place": {
           "type": "array",
           "items": { "$ref": "#/$defs/placement" }
