@@ -91,6 +91,7 @@ bool dash_set_layout(Dashboard* d, const char* json, char* err, size_t errn) {
         if (t.page_count >= MAX_PAGES) { snprintf(err, errn, "trop de pages"); return false; }
         Page& p = t.pages[t.page_count];
         strlcpy(p.name, pg["name"] | "", sizeof(p.name));
+        p.background = parse_hex_color(pg["background"] | "", t.background);   // override de page, sinon fond global ("" → fallback)
         for (JsonObjectConst pl : pg["place"].as<JsonArrayConst>()) {
             if (p.place_count >= MAX_PLACEMENTS_PER_PAGE) { snprintf(err, errn, "trop de placements"); return false; }
             const char* ref = pl["ref"] | "";

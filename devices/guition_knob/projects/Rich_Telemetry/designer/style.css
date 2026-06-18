@@ -169,6 +169,8 @@ textarea { width: 100%; height: 220px; background: #0a0a0e; color: #cbd5e1; bord
 .insp-row input[type="color"] { width: 36px; height: 22px; padding: 0; border: 1px solid var(--line); background: none; }
 .insp-row.disabled { opacity: .45; }
 .insp-warn { color: var(--err); font-size: 11px; }
+.insp-bg-hint { color: var(--muted); font-size: 11px; align-self: center; }   /* fond de page hérité du global */
+.insp-bg-reset { padding: 0 7px; line-height: 1.7; }                          /* ↺ réhériter du fond global */
 .insp-del { margin-top: 10px; width: 100%; border-color: var(--err); color: var(--err); }
 .insp-sub { font-size: 11px; color: var(--muted); margin: 10px 0 4px; text-transform: uppercase; }
 .insp-note { font-size: 11px; color: var(--muted); font-style: italic; margin: 2px 0 6px; }

@@ -374,6 +374,10 @@ void view_rebuild(Dashboard* d) {
         lv_obj_remove_style_all(cont);
         lv_obj_set_size(cont, LV_PCT(100), LV_PCT(100));
         lv_obj_clear_flag(cont, LV_OBJ_FLAG_SCROLLABLE);
+        // Fond par page : conteneur opaque (le fond fait partie de la page qui glisse au swipe) ;
+        // background résolu = override de la page, sinon fond global (cf. dashboard parse).
+        lv_obj_set_style_bg_color(cont, lv_color_hex(d->pages[p].background), 0);
+        lv_obj_set_style_bg_opa(cont, LV_OPA_COVER, 0);
         s_page_cont[p] = cont;
 
         for (int i = 0; i < d->pages[p].place_count; i++) {

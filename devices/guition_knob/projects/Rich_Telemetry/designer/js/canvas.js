@@ -10,6 +10,7 @@ import {
 } from './render.js';
 import { getMock } from './mocks.js';
 import { COMPONENTS } from './registry.js';
+import { effectivePageBg } from './mutations.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 
@@ -87,7 +88,7 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
   function render() {
     stage.querySelectorAll('.w').forEach(n => n.remove());
     badges.replaceChildren();
-    stage.style.background = model.state.background || '#000000';
+    stage.style.background = effectivePageBg(model.state, activePage);   // fond de page (override) ou global
     placements().forEach((pl, i) => {
       const comp = comps()[pl.ref];
       if (!comp) return;                         // ref inconnue : la validation le signale déjà

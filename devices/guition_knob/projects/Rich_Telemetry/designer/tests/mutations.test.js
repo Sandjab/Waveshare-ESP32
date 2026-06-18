@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {
   uniqueId, addComponent, addPlacement, removePlacement,
   setComponentProp, setPlacementProp, setThresholds,
-  addPage, removePage, renamePage, reorderPages, uniquePageName, pageNameTaken
+  addPage, removePage, renamePage, reorderPages, uniquePageName, pageNameTaken,
+  setPageBackground, effectivePageBg
 } from '../js/mutations.js';
 
 const fresh = () => ({ components: {}, pages: [{ name: 'P1', place: [] }] });
@@ -50,6 +51,37 @@ test('pageNameTaken : nom libre → false', () => {
 
 test('pageNameTaken : comparaison exacte (casse, comme le strcmp firmware)', () => {
   assert.equal(pageNameTaken({ pages: [{ name: 'Vue CPU' }, { name: 'X' }] }, 'vue cpu', 1), false);
+});
+
+test('setPageBackground : définit l’override de la page', () => {
+  const s = fresh();
+  setPageBackground(s, 0, '#102030');
+  assert.equal(s.pages[0].background, '#102030');
+});
+
+test('setPageBackground : vide/null supprime l’override (héritage)', () => {
+  const s = fresh(); s.pages[0].background = '#102030';
+  setPageBackground(s, 0, null);
+  assert.equal('background' in s.pages[0], false);
+});
+
+test('setPageBackground : index invalide → no-op (pas de throw)', () => {
+  const s = fresh();
+  assert.doesNotThrow(() => setPageBackground(s, 9, '#FFFFFF'));
+});
+
+test('effectivePageBg : override de la page prioritaire', () => {
+  const s = { background: '#0B0B0F', pages: [{ name: 'P1', place: [], background: '#102030' }] };
+  assert.equal(effectivePageBg(s, 0), '#102030');
+});
+
+test('effectivePageBg : sans override → fond global', () => {
+  const s = { background: '#0B0B0F', pages: [{ name: 'P1', place: [] }] };
+  assert.equal(effectivePageBg(s, 0), '#0B0B0F');
+});
+
+test('effectivePageBg : sans override ni global → #000000', () => {
+  assert.equal(effectivePageBg({ pages: [{ name: 'P1', place: [] }] }, 0), '#000000');
 });
 
 test('addComponent ajoute à la map components', () => {

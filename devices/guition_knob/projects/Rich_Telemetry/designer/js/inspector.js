@@ -1,7 +1,7 @@
 // Inspecteur : édite le composant + le placement sélectionnés. Pilote les champs par des tables de
 // descripteurs (DRY). Chaque édition committée = UN commit (sur 'change', pas par frappe → pas de
 // flood undo). Le signalement ASCII est live (sur 'input'). S'abonne au modèle pour se rafraîchir.
-import { setComponentProp, setPlacementProp, setThresholds, removePlacement } from './mutations.js';
+import { setComponentProp, setPlacementProp, setThresholds, removePlacement, setPageBackground } from './mutations.js';
 import { COMPONENTS } from './registry.js';
 import { ANCHORS } from './geometry.js';
 import { getMock, setMock } from './mocks.js';
@@ -77,6 +77,23 @@ export function createInspector(root, model, { rerenderCanvas, clearSelection, g
     sub(body, 'Page active');
     const pi = getActivePage();
     const pg = s.pages?.[pi];
+    // Fond de la page : override optionnel. (hérité) si absent (= fond global) ; ↺ pour réhériter sinon.
+    if (pg) {
+      const pbg = makeInput('color', pg.background || s.background || '#000000',
+        v => model.commit(st => setPageBackground(st, pi, v)));
+      const row = fieldRow('Fond page', pbg);
+      if (pg.background == null) {
+        const hint = document.createElement('span'); hint.className = 'insp-bg-hint'; hint.textContent = '(hérité)';
+        row.appendChild(hint);
+      } else {
+        const reset = document.createElement('button');
+        reset.type = 'button'; reset.className = 'insp-bg-reset'; reset.textContent = '↺';
+        reset.title = 'Hériter du fond global';
+        reset.addEventListener('click', () => model.commit(st => setPageBackground(st, pi, null)));
+        row.appendChild(reset);
+      }
+      body.appendChild(row);
+    }
     const onPage = pg?.place?.length ?? 0;
     const total = Object.keys(s.components || {}).length;
     note(body, `${pg?.name || `Page ${pi + 1}`} — ${onPage} placé(s) · ${total} composant(s) au total`);

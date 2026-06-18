@@ -198,6 +198,7 @@
       "additionalProperties": false,
       "properties": {
         "name": { "type": "string", "description": "Nom de page (cible de POST /page {\"name\":...})." },
+        "background": { "$ref": "#/$defs/hexColor", "description": "Couleur de fond de la page (optionnel ; herite du background global du layout si absent)." },
         "place": {
           "type": "array",
           "items": { "$ref": "#/$defs/placement" }

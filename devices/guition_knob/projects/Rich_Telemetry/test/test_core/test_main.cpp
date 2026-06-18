@@ -57,6 +57,17 @@ void test_layout_parse_counts(void) {
     TEST_ASSERT_EQUAL_INT(2, d.pages[0].place_count);
     TEST_ASSERT_TRUE(d.nav_wrap);
 }
+void test_page_background_override_and_inherit(void) {
+    static const char* LAYOUT_PAGEBG =
+      "{\"background\":\"#0B0B0F\",\"components\":{\"x\":{\"type\":\"label\",\"text\":\"hi\"}},"
+      "\"pages\":[{\"name\":\"a\",\"place\":[]},"
+                 "{\"name\":\"b\",\"background\":\"#102030\",\"place\":[]}]}";
+    Dashboard d{}; char err[80];
+    TEST_ASSERT_TRUE(dash_set_layout(&d, LAYOUT_PAGEBG, err, sizeof(err)));
+    TEST_ASSERT_EQUAL_INT(2, d.page_count);
+    TEST_ASSERT_EQUAL_HEX32(0x0B0B0F, d.pages[0].background);   // sans override → fond global
+    TEST_ASSERT_EQUAL_HEX32(0x102030, d.pages[1].background);   // override de page
+}
 void test_layout_types_and_geom(void) {
     Dashboard d{}; char err[80];
     dash_set_layout(&d, LAYOUT_OK, err, sizeof(err));
@@ -494,6 +505,7 @@ int main(int, char**) {
     RUN_TEST(test_ctxapply_meter_value);
     RUN_TEST(test_ctxapply_chart_appends_on_change);
     RUN_TEST(test_layout_parse_counts);
+    RUN_TEST(test_page_background_override_and_inherit);
     RUN_TEST(test_layout_types_and_geom);
     RUN_TEST(test_ring_center_pct_parsed);
     RUN_TEST(test_ring_start_angle_parsed);

@@ -77,6 +77,19 @@ export function removePage(state, pageIndex) {
   state.pages.splice(pageIndex, 1);
 }
 
+// Couleur de fond effective d'une page : override de la page, sinon fond global, sinon #000000.
+export function effectivePageBg(state, pageIndex) {
+  return state.pages?.[pageIndex]?.background || state.background || '#000000';
+}
+
+// Définit/supprime l'override de fond d'une page. Couleur vide/null → supprime (la page hérite du global).
+export function setPageBackground(state, pageIndex, color) {
+  const page = state.pages?.[pageIndex];
+  if (!page) return;
+  if (color) page.background = color;
+  else delete page.background;
+}
+
 export function renamePage(state, pageIndex, name) {
   const page = state.pages?.[pageIndex];
   if (page) page.name = name;

@@ -50,6 +50,7 @@ struct Placement {
 
 struct Page {
     char      name[ID_LEN];
+    uint32_t  background;     // couleur de fond résolue (override de la page, sinon fond global du layout)
     Placement places[MAX_PLACEMENTS_PER_PAGE];
     int       place_count;
 };
