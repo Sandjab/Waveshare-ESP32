@@ -50,3 +50,20 @@ export async function pushLayout(base, layoutText) {
   if (!r.ok || body.ok === false) throw new Error(body.error || 'HTTP ' + r.status);
   return body;
 }
+
+// POST /bgimage?key=<hex> : upload d'un fond RGB565 (multipart, streame cote device en LittleFS).
+export async function uploadBgImage(base, key, bytes) {
+  const fd = new FormData();
+  fd.append('img', new Blob([bytes], { type: 'application/octet-stream' }), key + '.565');
+  const r = await fetch(clean(base) + '/bgimage?key=' + encodeURIComponent(key), { method: 'POST', body: fd });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json().catch(() => ({}));
+}
+
+// GET /bgimage?key=<hex> : recupere les octets RGB565 (Uint8Array), ou null si 404.
+export async function fetchBgImage(base, key) {
+  const r = await fetch(clean(base) + '/bgimage?key=' + encodeURIComponent(key));
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return new Uint8Array(await r.arrayBuffer());
+}
