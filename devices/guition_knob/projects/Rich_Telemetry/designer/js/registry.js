@@ -87,7 +87,7 @@ export const COMPONENTS = {
     label: 'LED ring',
     defaults: () => ({ type: 'led_ring', color: '#FFFFFF', brightness: 64 }),
     makePlacement: (id) => ({ ref: id }),
-    centered: false, physical: true,
+    centered: false, physical: true, singleton: true,
     compFields: [['color', 'Couleur', 'color'], ['brightness', 'Luminosité (0-255)', 'num']],
     placeFields: [],
     mockFields: [],
