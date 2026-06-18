@@ -20,6 +20,7 @@ export function createPalette(root, model, { stage, getActivePage, onCreated } =
   const list = document.createElement('div');
   list.className = 'palette-list';
   for (const [type, def] of Object.entries(COMPONENTS)) {
+    if (def.physical) continue;   // physiques : édités dans le panneau « Device », pas glissables sur une page
     const item = document.createElement('div');
     item.className = 'palette-item';
     item.draggable = true;
@@ -44,7 +45,7 @@ export function createPalette(root, model, { stage, getActivePage, onCreated } =
   function renderLibrary() {
     libList.replaceChildren();
     const comps = model.state.components || {};
-    const ids = Object.keys(comps);
+    const ids = Object.keys(comps).filter(id => !COMPONENTS[comps[id].type]?.physical);
     if (!ids.length) {
       const empty = document.createElement('div');
       empty.className = 'lib-empty';
@@ -79,6 +80,7 @@ export function createPalette(root, model, { stage, getActivePage, onCreated } =
     const ref = e.dataTransfer.getData('text/rt-ref');
     stage.classList.remove('drop-active');
     if (!type && !ref) return;
+    if (type && COMPONENTS[type]?.physical) return;                       // type physique : pas de placement
     e.preventDefault();
     const r = stage.getBoundingClientRect();
     const s = r.width / SCREEN;                            // zoom d'affichage : ramener le drop en unités écran
@@ -92,7 +94,7 @@ export function createPalette(root, model, { stage, getActivePage, onCreated } =
         addPlacement(s, pi, COMPONENTS[type].makePlacement(id, x, y));
       } else {
         const existing = s.components[ref];
-        if (!existing) return;                            // ref disparue : rien à placer
+        if (!existing || COMPONENTS[existing.type]?.physical) return;     // ref disparue / physique : pas de placement
         addPlacement(s, pi, COMPONENTS[existing.type].makePlacement(ref, x, y));
       }
       newIndex = s.pages[pi].place.length - 1;

@@ -5,7 +5,6 @@ import {
   ringRadiusAt, ringThicknessAt, gapDegAt, cornersOutsideCircle, SCREEN
 } from './geometry.js';
 import {
-  buildBadge,
   ringPaths, pickThresholdColor
 } from './render.js';
 import { getMock } from './mocks.js';
@@ -102,10 +101,7 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
       if (!comp) return;                         // ref inconnue : la validation le signale déjà
       const def = COMPONENTS[comp.type];
       if (!def) return;                          // type inconnu : signalé par la validation, on ne le dessine pas (repli défini, pas un buildLabel silencieux)
-      if (def.physical) {
-        badges.appendChild(buildBadge(pl.ref, comp));
-        return;
-      }
+      if (def.physical) return;   // physiques édités dans le panneau « Device » ; jamais rendus sur une page
       const node = buildNode(pl, comp);
       node.dataset.pi = i;
       stage.appendChild(node);                   // append avant de mesurer
