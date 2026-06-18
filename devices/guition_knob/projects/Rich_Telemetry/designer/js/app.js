@@ -9,6 +9,8 @@ import { createInspector } from './inspector.js';
 import { createPages } from './pages.js';
 import { bindFileIO } from './file-io.js';
 import { createSources } from './sources.js';
+import { resolveShortcut, isEditableTarget } from './shortcuts.js';
+import { removePlacement } from './mutations.js';
 
 const $ = id => document.getElementById(id);
 
@@ -91,6 +93,24 @@ async function main() {
   model.subscribe(syncUndo); syncUndo();
   $('undo').onclick = () => { $('json').blur(); model.undo(); };
   $('redo').onclick = () => { $('json').blur(); model.redo(); };
+
+  // Raccourcis clavier globaux : Cmd/Ctrl+Z = annuler, Cmd/Ctrl+Shift+Z = rétablir, Suppr = retirer
+  // le composant sélectionné de la page active. Inactifs dans un champ (on garde l'édition native).
+  document.addEventListener('keydown', e => {
+    const action = resolveShortcut({
+      key: e.key, metaKey: e.metaKey, ctrlKey: e.ctrlKey, shiftKey: e.shiftKey,
+      editable: isEditableTarget(e.target)
+    });
+    if (!action) return;
+    if (action === 'undo') { e.preventDefault(); if (model.canUndo()) model.undo(); return; }
+    if (action === 'redo') { e.preventDefault(); if (model.canRedo()) model.redo(); return; }
+    // delete : ne consomme la touche que s'il y a une sélection (sinon Suppr reste inerte).
+    const sel = canvas.getSelected();
+    if (sel == null) return;
+    e.preventDefault();
+    canvas.selectPlacement(null);                       // désélectionne avant le commit (cf. inspector.js)
+    model.commit(s => removePlacement(s, canvas.getActivePage(), sel));
+  });
 
   // Zoom d'affichage du canvas (visuel uniquement — le layout reste en unités écran). Persisté comme
   // l'autosave du layout : un reload ne réinitialise pas l'échelle de travail choisie.
