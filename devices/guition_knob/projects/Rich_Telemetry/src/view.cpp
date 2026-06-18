@@ -6,12 +6,18 @@
 #include <cstdio>
 #include <math.h>
 #include "format.h"
+#include <LittleFS.h>
+#include "esp_heap_caps.h"
+#include "config.h"
 
 static lv_obj_t* s_page_cont[MAX_PAGES];
 static lv_obj_t* s_widget[MAX_PAGES][MAX_PLACEMENTS_PER_PAGE];
 static lv_obj_t* s_sub1  [MAX_PAGES][MAX_PLACEMENTS_PER_PAGE];
 static lv_obj_t* s_sub2  [MAX_PAGES][MAX_PLACEMENTS_PER_PAGE];
 static lv_obj_t* s_dots = nullptr;
+
+static uint8_t*     s_bg_buf[MAX_PAGES] = {0};   // RGB565 en PSRAM par page (nullptr = pas d'image)
+static lv_img_dsc_t s_bg_dsc[MAX_PAGES];
 
 static const lv_align_t ALIGN_MAP[] = {
     LV_ALIGN_CENTER, LV_ALIGN_TOP_MID, LV_ALIGN_BOTTOM_MID, LV_ALIGN_LEFT_MID,
@@ -352,10 +358,39 @@ void view_show_page_anim(Dashboard* d, int idx, int delta) {
     lv_anim_start(&a);
 }
 
+// Charge /bg/<cle>.565 en PSRAM et remplit s_bg_dsc[p]. false si pas de cle / fichier absent /
+// mauvaise taille / alloc ratee -> on retombe alors sur la couleur de fond (deja posee).
+static bool bg_load_page(Dashboard* d, int p) {
+    const char* key = d->pages[p].background_image;
+    if (!key[0]) return false;
+    char path[40];
+    snprintf(path, sizeof(path), "%s/%s.565", BG_DIR, key);
+    File f = LittleFS.open(path, "r");
+    if (!f) return false;
+    if (f.size() != BG_IMG_BYTES) { f.close(); return false; }
+    uint8_t* buf = (uint8_t*)heap_caps_malloc(BG_IMG_BYTES, MALLOC_CAP_SPIRAM);
+    if (!buf) { f.close(); return false; }
+    size_t rd = f.read(buf, BG_IMG_BYTES);
+    f.close();
+    if (rd != BG_IMG_BYTES) { heap_caps_free(buf); return false; }
+    s_bg_buf[p] = buf;
+    lv_img_dsc_t& dsc = s_bg_dsc[p];
+    memset(&dsc, 0, sizeof(dsc));
+    dsc.header.cf  = LV_IMG_CF_TRUE_COLOR;
+    dsc.header.w   = BG_IMG_W;
+    dsc.header.h   = BG_IMG_H;
+    dsc.data       = buf;
+    dsc.data_size  = BG_IMG_BYTES;
+    return true;
+}
+
 void view_rebuild(Dashboard* d) {
     page_anim_settle();                // annule une transition en vol avant de libérer les conteneurs
     lv_obj_t* scr = lv_scr_act();
     lv_obj_clean(scr);
+    for (int i = 0; i < MAX_PAGES; i++) {
+        if (s_bg_buf[i]) { heap_caps_free(s_bg_buf[i]); s_bg_buf[i] = nullptr; }
+    }
     s_dots = nullptr;  // freed by lv_obj_clean above; drop stale pointer
     lv_obj_set_style_bg_color(scr, lv_color_hex(d->background), 0);
     lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
@@ -378,6 +413,8 @@ void view_rebuild(Dashboard* d) {
         // background résolu = override de la page, sinon fond global (cf. dashboard parse).
         lv_obj_set_style_bg_color(cont, lv_color_hex(d->pages[p].background), 0);
         lv_obj_set_style_bg_opa(cont, LV_OPA_COVER, 0);
+        if (bg_load_page(d, p))
+            lv_obj_set_style_bg_img_src(cont, &s_bg_dsc[p], 0);   // image par-dessus la couleur
         s_page_cont[p] = cont;
 
         for (int i = 0; i < d->pages[p].place_count; i++) {
