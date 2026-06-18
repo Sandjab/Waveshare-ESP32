@@ -62,7 +62,7 @@ textarea { width: 100%; height: 220px; background: #0a0a0e; color: #cbd5e1; bord
 #canvas-col { display: flex; flex-direction: column; align-items: center; overflow: auto;
   background: radial-gradient(circle at 50% 34%, rgba(167, 139, 250, .07), transparent 58%), var(--panel); }
 /* Boîte qui RÉSERVE la place du canvas zoomé : le transform du .stage ne crée pas de boîte de mise
-   en page, donc le wrap porte la taille à l'échelle pour pousser badges/footer et garder le centrage. */
+   en page, donc le wrap porte la taille à l'échelle pour pousser le footer et garder le centrage. */
 .stage-wrap {
   flex: none;
   width: calc(360px * var(--zoom, 1));
@@ -144,9 +144,6 @@ textarea { width: 100%; height: 220px; background: #0a0a0e; color: #cbd5e1; bord
 .handle-radius, .handle-thick { cursor: ns-resize; }
 .handle-gap { cursor: ew-resize; }
 .handle-br { right: -6px; bottom: -6px; cursor: nwse-resize; }
-
-.badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; justify-content: center; }
-.badge { font-size: 12px; padding: 3px 8px; border-radius: 12px; border: 1px solid var(--line); color: var(--muted); }
 
 /* --- Plan C1 : palette --- */
 .palette-hint { font-size: 11px; color: var(--muted); line-height: 1.45; margin: 0 0 8px; }

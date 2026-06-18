@@ -312,11 +312,3 @@ export function buildMeter(comp, placement, mock = MOCKS.meter) {
   wrap.appendChild(svg);
   return wrap;
 }
-
-// led_ring / sound : physiques, pas de rendu écran → badge hors canvas (spec § rendu).
-export function buildBadge(id, comp) {
-  const n = document.createElement('span');
-  n.className = 'badge badge-' + comp.type;
-  n.textContent = (comp.type === 'led_ring' ? '◉ LED ring' : '♪ sound') + ' : ' + id;
-  return n;
-}

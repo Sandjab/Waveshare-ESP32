@@ -49,7 +49,7 @@ function createGuide() {
   };
 }
 
-export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
+export function createCanvas({ stage }, model, { onSelect } = {}) {
   let selected = null;    // index du placement sélectionné sur la page active
   let activePage = 0;     // page affichée par le canvas (source de vérité de l'éditeur, hors layout)
 
@@ -87,7 +87,6 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
 
   function render() {
     stage.querySelectorAll('.w').forEach(n => n.remove());
-    badges.replaceChildren();
     stage.style.background = effectivePageBg(model.state, activePage);   // fond de page (override) ou global
     // Image de fond (prime sur la couleur). Apercu depuis le cache ; vide si la cle n'a pas d'octets
     // charges (ex. apres rechargement avant un « Charger » depuis le device) -> la couleur reste visible.
