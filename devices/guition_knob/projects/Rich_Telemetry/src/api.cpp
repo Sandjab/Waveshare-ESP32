@@ -94,6 +94,27 @@ static void h_set_layout() {
     }
     g_layout_json = body;
     if (!persist_save(g_layout_json)) { S->send(500, "text/plain", "FS write failed\n"); return; }
+    // Sweep : supprime les fonds /bg/*.565 que plus aucune page ne reference.
+    {
+        String victims[16]; int nv = 0;
+        File dir = LittleFS.open(BG_DIR);
+        if (dir && dir.isDirectory()) {
+            for (File e = dir.openNextFile(); e && nv < 16; e = dir.openNextFile()) {
+                String full = e.name();                 // peut etre "/bg/<x>.565" ou "<x>.565" selon le core
+                e.close();
+                int slash = full.lastIndexOf('/');
+                String base = (slash >= 0) ? full.substring(slash + 1) : full;
+                if (!base.endsWith(".565")) continue;   // ignore _upload.tmp et autres
+                String key = base.substring(0, base.length() - 4);
+                bool referenced = false;
+                for (int p = 0; p < D->page_count; p++)
+                    if (key.length() && strcmp(D->pages[p].background_image, key.c_str()) == 0) { referenced = true; break; }
+                if (!referenced) victims[nv++] = String(BG_DIR) + "/" + base;
+            }
+            dir.close();
+        }
+        for (int i = 0; i < nv; i++) LittleFS.remove(victims[i]);
+    }
     S->send(200, "application/json", "{\"ok\":true}\n");
 }
 
@@ -188,6 +209,55 @@ static void h_screenshot() {
     heap_caps_free(buf);
 }
 
+// --- POST /bgimage?key=<hex> : upload d'un fond RGB565 (360x360, 259200 octets) ---
+// Multipart streame directement en LittleFS (pas de gros buffer RAM, supporte les octets nuls).
+// Ecrit dans un fichier temp puis renomme vers /bg/<cle>.565 si la taille est exacte.
+static File   s_bg_up;
+static size_t s_bg_written = 0;
+static const char* BG_TMP = BG_DIR "/_upload.tmp";
+
+static void h_bgimage_upload() {
+    HTTPUpload& up = S->upload();
+    if (up.status == UPLOAD_FILE_START) {
+        if (!LittleFS.exists(BG_DIR)) LittleFS.mkdir(BG_DIR);
+        s_bg_written = 0;
+        s_bg_up = LittleFS.open(BG_TMP, "w");
+    } else if (up.status == UPLOAD_FILE_WRITE) {
+        if (s_bg_up) s_bg_written += s_bg_up.write(up.buf, up.currentSize);
+    } else if (up.status == UPLOAD_FILE_END) {
+        if (s_bg_up) s_bg_up.close();
+    }
+}
+
+static void h_bgimage_done() {
+    String key = S->arg("key");
+    if (s_bg_written != BG_IMG_BYTES) {
+        LittleFS.remove(BG_TMP);
+        S->send(400, "text/plain", "bad size (expected 259200)\n"); return;
+    }
+    if (!bg_key_valid(key.c_str())) {
+        LittleFS.remove(BG_TMP);
+        S->send(400, "text/plain", "bad key\n"); return;
+    }
+    String dst = String(BG_DIR) + "/" + key + ".565";
+    LittleFS.remove(dst);                       // rename echoue si la cible existe
+    if (!LittleFS.rename(BG_TMP, dst)) {
+        LittleFS.remove(BG_TMP);
+        S->send(500, "text/plain", "FS rename failed\n"); return;
+    }
+    S->send(200, "application/json", "{\"ok\":true}\n");
+}
+
+static void h_bgimage_get() {
+    String key = S->arg("key");
+    if (!bg_key_valid(key.c_str())) { S->send(400, "text/plain", "bad key\n"); return; }
+    String path = String(BG_DIR) + "/" + key + ".565";
+    File f = LittleFS.open(path, "r");
+    if (!f) { S->send(404, "text/plain", "not found\n"); return; }
+    S->streamFile(f, "application/octet-stream");
+    f.close();
+}
+
 void api_register(WebServer& server, Dashboard* d) {
     S = &server; D = d;
     server.enableCORS(true);   // Allow-Origin/Methods/Headers: * sur toutes les réponses (outil de dev LAN mono-utilisateur)
@@ -199,6 +269,8 @@ void api_register(WebServer& server, Dashboard* d) {
     server.on("/layout", HTTP_GET,  h_get_layout);
     server.on("/page",   HTTP_POST, h_page);
     server.on("/screenshot", HTTP_GET, h_screenshot);   // capture ecran -> image/bmp
+    server.on("/bgimage", HTTP_POST, h_bgimage_done, h_bgimage_upload);  // done + upload handler
+    server.on("/bgimage", HTTP_GET,  h_bgimage_get);
     // Designer embarque (LittleFS) : http://<ip>/designer/ sert l'editeur en MEME origin (plus de
     // serveur local ni de CORS). serveStatic cherche index.htm pour une URL de repertoire ("/designer/").
     // Fichiers stages par tools/stage_fs.sh puis flashes via --uploadfs. Le schema partage est servi a
