@@ -11,6 +11,7 @@ import { createPages } from './pages.js';
 import { bindFileIO } from './file-io.js';
 import { createSources } from './sources.js';
 import { createDevicePanel } from './device-panel.js';
+import { stripPhysicalPlacements } from './physical.js';
 import { showToast } from './toast.js';
 import { resolveShortcut, isEditableTarget } from './shortcuts.js';
 import { removePlacement } from './mutations.js';
@@ -50,6 +51,7 @@ async function main() {
   const SAVE_KEY = 'rt-designer-layout';
   let saved;
   try { const s = localStorage.getItem(SAVE_KEY); if (s) saved = JSON.parse(s); } catch (e) {}
+  if (saved) stripPhysicalPlacements(saved);   // migration : physiques jamais attachés à une page
   const model = createModel(saved);
   model.subscribe(() => { try { localStorage.setItem(SAVE_KEY, model.toJSON()); } catch (e) {} });
 
@@ -82,7 +84,7 @@ async function main() {
   // page 1 (l'ancienne page active peut ne plus exister) et on rafraîchit les onglets.
   bindFileIO(model, {
     exportBtn: $('export'), importBtn: $('import'), importInput: $('import-file'),
-    onLoad: () => { canvas.setPage(0); pages.render(); }
+    onLoad: () => { model.commit(s => stripPhysicalPlacements(s)); canvas.setPage(0); pages.render(); }
   });
 
   // Panneau Sources (pull réseau) : édition des sources top-level. Indépendant du canvas/pages.
@@ -139,7 +141,9 @@ async function main() {
     setStatus('Chargement…');
     try {
       const base = $('base').value;
-      model.loadJSON(JSON.stringify(await loadLayout(base)));
+      const lay = await loadLayout(base);
+      stripPhysicalPlacements(lay);            // migration avant chargement dans le modèle
+      model.loadJSON(JSON.stringify(lay));
       for (const k of referencedKeys(model.state)) {
         if (!previewUrl(k)) { const b = await fetchBgImage(base, k); if (b) cachePut(k, b); }
       }
