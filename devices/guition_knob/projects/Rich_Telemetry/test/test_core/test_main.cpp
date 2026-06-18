@@ -68,6 +68,19 @@ void test_page_background_override_and_inherit(void) {
     TEST_ASSERT_EQUAL_HEX32(0x0B0B0F, d.pages[0].background);   // sans override → fond global
     TEST_ASSERT_EQUAL_HEX32(0x102030, d.pages[1].background);   // override de page
 }
+void test_page_background_image_parsed(void) {
+    Dashboard d = {}; char err[80];
+    static const char* LAYOUT_BGI =
+      "{\"background\":\"#000000\",\"components\":{\"x\":{\"type\":\"label\",\"text\":\"hi\"}},"
+      "\"pages\":[{\"name\":\"a\",\"background_image\":\"abc123\",\"place\":[]},"
+                 "{\"name\":\"b\",\"place\":[]},"
+                 "{\"name\":\"c\",\"background_image\":\"../evil\",\"place\":[]}]}";
+    TEST_ASSERT_TRUE(dash_set_layout(&d, LAYOUT_BGI, err, sizeof(err)));
+    TEST_ASSERT_EQUAL_STRING("abc123", d.pages[0].background_image);  // clé valide conservée
+    TEST_ASSERT_EQUAL_STRING("",       d.pages[1].background_image);  // absente → vide
+    TEST_ASSERT_EQUAL_STRING("",       d.pages[2].background_image);  // invalide → rejetée (vide)
+}
+
 void test_layout_types_and_geom(void) {
     Dashboard d{}; char err[80];
     dash_set_layout(&d, LAYOUT_OK, err, sizeof(err));
@@ -514,6 +527,7 @@ int main(int, char**) {
     RUN_TEST(test_ctxapply_chart_appends_on_change);
     RUN_TEST(test_layout_parse_counts);
     RUN_TEST(test_page_background_override_and_inherit);
+    RUN_TEST(test_page_background_image_parsed);
     RUN_TEST(test_layout_types_and_geom);
     RUN_TEST(test_ring_center_pct_parsed);
     RUN_TEST(test_ring_start_angle_parsed);
