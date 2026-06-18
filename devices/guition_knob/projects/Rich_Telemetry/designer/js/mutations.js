@@ -90,6 +90,19 @@ export function setPageBackground(state, pageIndex, color) {
   else delete page.background;
 }
 
+// Clé d'image de fond effective d'une page (override par page uniquement ; pas de fond image global).
+export function effectivePageBgImage(state, pageIndex) {
+  return state.pages?.[pageIndex]?.background_image || null;
+}
+
+// Définit/supprime la clé d'image de fond d'une page. Vide/null → supprime (pas d'image).
+export function setPageBackgroundImage(state, pageIndex, key) {
+  const page = state.pages?.[pageIndex];
+  if (!page) return;
+  if (key) page.background_image = key;
+  else delete page.background_image;
+}
+
 export function renamePage(state, pageIndex, name) {
   const page = state.pages?.[pageIndex];
   if (page) page.name = name;

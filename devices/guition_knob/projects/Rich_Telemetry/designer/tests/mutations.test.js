@@ -4,7 +4,8 @@ import {
   uniqueId, addComponent, addPlacement, removePlacement,
   setComponentProp, setPlacementProp, setThresholds,
   addPage, removePage, renamePage, reorderPages, uniquePageName, pageNameTaken,
-  setPageBackground, effectivePageBg
+  setPageBackground, effectivePageBg,
+  setPageBackgroundImage, effectivePageBgImage
 } from '../js/mutations.js';
 
 const fresh = () => ({ components: {}, pages: [{ name: 'P1', place: [] }] });
@@ -82,6 +83,33 @@ test('effectivePageBg : sans override → fond global', () => {
 
 test('effectivePageBg : sans override ni global → #000000', () => {
   assert.equal(effectivePageBg({ pages: [{ name: 'P1', place: [] }] }, 0), '#000000');
+});
+
+test('setPageBackgroundImage : pose la clé', () => {
+  const s = fresh();
+  setPageBackgroundImage(s, 0, 'abc123');
+  assert.equal(s.pages[0].background_image, 'abc123');
+});
+
+test('setPageBackgroundImage : vide/null supprime la clé', () => {
+  const s = fresh(); s.pages[0].background_image = 'abc123';
+  setPageBackgroundImage(s, 0, null);
+  assert.equal('background_image' in s.pages[0], false);
+});
+
+test('setPageBackgroundImage : index invalide → no-op (pas de throw)', () => {
+  const s = fresh();
+  assert.doesNotThrow(() => setPageBackgroundImage(s, 9, 'abc123'));
+});
+
+test('effectivePageBgImage : clé de la page', () => {
+  const s = { pages: [{ name: 'P1', place: [], background_image: 'abc123' }] };
+  assert.equal(effectivePageBgImage(s, 0), 'abc123');
+});
+
+test('effectivePageBgImage : sans clé → null (pas de fond image global)', () => {
+  const s = { pages: [{ name: 'P1', place: [] }] };
+  assert.equal(effectivePageBgImage(s, 0), null);
 });
 
 test('addComponent ajoute à la map components', () => {
