@@ -55,3 +55,39 @@ export function fnv1a64Hex(u8) {
   }
   return h.toString(16).padStart(16, '0');
 }
+
+// --- Cache d'apercu (navigateur). cle -> { bytes: Uint8Array RGB565, url: dataURL }. ---
+// Non persiste : au rechargement de page, repeuple via fetchBgImage depuis le device (cf. app.js).
+const _cache = new Map();
+
+export function cacheBytes(key) { return _cache.get(key)?.bytes || null; }
+export function previewUrl(key) { return _cache.get(key)?.url || null; }
+export function referencedKeys(state) {
+  return [...new Set((state.pages || []).map(p => p.background_image).filter(Boolean))];
+}
+
+// Construit un dataURL d'apercu depuis des octets RGB565 et range le couple dans le cache.
+export function cachePut(key, bytes) {
+  const cnv = document.createElement('canvas'); cnv.width = BG_W; cnv.height = BG_H;
+  const ctx = cnv.getContext('2d');
+  const img = ctx.createImageData(BG_W, BG_H);
+  img.data.set(rgb565ToRgba8888(bytes, SWAP));
+  ctx.putImageData(img, 0, 0);
+  _cache.set(key, { bytes, url: cnv.toDataURL() });
+}
+
+// Fichier image -> { key, bytes }. Decode via le navigateur, recadre en cover 360x360,
+// convertit en RGB565, hashe, met en cache. Tout decodage de format se fait ici, cote navigateur.
+export async function imageFileToBg(file) {
+  const bmp = await createImageBitmap(file);
+  const { sx, sy, sw, sh } = coverRect(bmp.width, bmp.height, BG_W, BG_H);
+  const cnv = document.createElement('canvas'); cnv.width = BG_W; cnv.height = BG_H;
+  const ctx = cnv.getContext('2d');
+  ctx.drawImage(bmp, sx, sy, sw, sh, 0, 0, BG_W, BG_H);
+  bmp.close?.();
+  const rgba = ctx.getImageData(0, 0, BG_W, BG_H).data;
+  const bytes = rgba8888ToRgb565(rgba, SWAP);
+  const key = fnv1a64Hex(bytes);
+  cachePut(key, bytes);
+  return { key, bytes };
+}
