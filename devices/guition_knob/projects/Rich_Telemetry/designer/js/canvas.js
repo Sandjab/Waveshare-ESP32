@@ -10,7 +10,8 @@ import {
 } from './render.js';
 import { getMock } from './mocks.js';
 import { COMPONENTS } from './registry.js';
-import { effectivePageBg } from './mutations.js';
+import { effectivePageBg, effectivePageBgImage } from './mutations.js';
+import { previewUrl } from './bg-image.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 
@@ -89,6 +90,13 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
     stage.querySelectorAll('.w').forEach(n => n.remove());
     badges.replaceChildren();
     stage.style.background = effectivePageBg(model.state, activePage);   // fond de page (override) ou global
+    // Image de fond (prime sur la couleur). Apercu depuis le cache ; vide si la cle n'a pas d'octets
+    // charges (ex. apres rechargement avant un « Charger » depuis le device) -> la couleur reste visible.
+    const bgImgKey = effectivePageBgImage(model.state, activePage);
+    const bgImgUrl = bgImgKey ? previewUrl(bgImgKey) : null;
+    stage.style.backgroundImage = bgImgUrl ? `url(${bgImgUrl})` : '';
+    stage.style.backgroundSize = 'cover';
+    stage.style.backgroundPosition = 'center';
     placements().forEach((pl, i) => {
       const comp = comps()[pl.ref];
       if (!comp) return;                         // ref inconnue : la validation le signale déjà
