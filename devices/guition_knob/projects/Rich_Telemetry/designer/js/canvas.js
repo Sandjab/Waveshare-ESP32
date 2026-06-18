@@ -21,7 +21,10 @@ function createGuide() {
   const svg = document.createElementNS(SVGNS, 'svg');
   svg.setAttribute('class', 'ag');
   svg.setAttribute('viewBox', `0 0 ${SCREEN} ${SCREEN}`);
-  svg.hidden = true;
+  // Caché via l'attribut (sélecteur CSS `.ag[hidden]`) et NON la propriété `.hidden` : sur un
+  // SVGElement la propriété n'est pas réfléchie en attribut, donc le guide resterait visible en
+  // permanence. show()/hide() basculent donc l'attribut.
+  svg.setAttribute('hidden', '');
   for (const a of ANCHORS) {                          // 9 repères fixes (un par point d'ancrage parent)
     const [px, py] = parentPoint(a);
     const dot = document.createElementNS(SVGNS, 'circle');
@@ -43,13 +46,13 @@ function createGuide() {
       line.setAttribute('x2', ax);    line.setAttribute('y2', ay);
       active.setAttribute('cx', ax);  active.setAttribute('cy', ay);
       active.classList.toggle('snapped', snapped);
-      svg.hidden = false;
+      svg.removeAttribute('hidden');
     },
-    hide() { svg.hidden = true; }
+    hide() { svg.setAttribute('hidden', ''); }
   };
 }
 
-export function createCanvas({ stage }, model, { onSelect } = {}) {
+export function createCanvas({ stage }, model, { onSelect, onLiveMove } = {}) {
   let selected = null;    // index du placement sélectionné sur la page active
   let activePage = 0;     // page affichée par le canvas (source de vérité de l'éditeur, hors layout)
 
@@ -153,6 +156,7 @@ export function createCanvas({ stage }, model, { onSelect } = {}) {
       node.classList.toggle('outside', cornersOutsideCircle(p.x, p.y, w, h));
       const { from } = anchorGuide(live.anchor, p.x, p.y, w, h);  // point d'ancrage du widget affiché
       guide.show(live.anchor, from[0], from[1], live.snapped);
+      onLiveMove && onLiveMove({ anchor: live.anchor, dx: live.dx, dy: live.dy });  // inspecteur live, sans commit
     };
     const up = () => {
       node.releasePointerCapture(e.pointerId);

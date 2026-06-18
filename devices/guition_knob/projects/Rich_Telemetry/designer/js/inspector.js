@@ -55,6 +55,7 @@ function fieldRow(label, input, { ascii } = {}) {
 
 export function createInspector(root, model, { rerenderCanvas, clearSelection, getActivePage = () => 0 } = {}) {
   let sel = null; // { placeIndex, ref } ou null
+  let placementInputs = {}; // { anchor, dx, dy } → <input>/<select> de la rubrique Placement, pour la MAJ live au drag
 
   const comp = () => sel && model.state.components[sel.ref];
   const place = () => sel && model.state.pages?.[getActivePage()]?.place?.[sel.placeIndex];
@@ -143,6 +144,7 @@ export function createInspector(root, model, { rerenderCanvas, clearSelection, g
       if (c.type === 'ring') note(body, 'Anneau centré : ancrage/dx/dy ignorés par le firmware.');
       for (const [key, label, kind] of gf) {
         const input = makeInput(kind, p[key], v => model.commit(s => setPlacementProp(s, getActivePage(), sel.placeIndex, key, v)));
+        placementInputs[key] = input;   // réf. pour setLivePlacement (drag)
         body.appendChild(fieldRow(label, input));
       }
     }
@@ -187,6 +189,7 @@ export function createInspector(root, model, { rerenderCanvas, clearSelection, g
     // garde focus : ne pas reconstruire pendant qu'un champ de l'inspecteur est en cours d'édition.
     if (root.contains(document.activeElement) && document.activeElement !== document.body) return;
     root.querySelectorAll('.insp-body').forEach(n => n.remove());
+    placementInputs = {};   // les anciens champs viennent d'être retirés
     const c = comp();
     const p = place();
     const body = document.createElement('div');
@@ -232,7 +235,16 @@ export function createInspector(root, model, { rerenderCanvas, clearSelection, g
     root.appendChild(body);
   }
 
+  // Pendant un drag de widget sur le canvas, reflète les valeurs d'ancrage live dans les champs
+  // Placement, sans commit (le commit unique a lieu au drop — cf. canvas.js). Purement visuel ;
+  // no-op si les champs n'existent pas (composant non sélectionné / centré / physique).
+  function setLivePlacement({ anchor, dx, dy } = {}) {
+    if (placementInputs.anchor && anchor != null) placementInputs.anchor.value = anchor;
+    if (placementInputs.dx && dx != null) placementInputs.dx.value = dx;
+    if (placementInputs.dy && dy != null) placementInputs.dy.value = dy;
+  }
+
   model.subscribe(render);
   render();
-  return { select };
+  return { select, setLivePlacement };
 }

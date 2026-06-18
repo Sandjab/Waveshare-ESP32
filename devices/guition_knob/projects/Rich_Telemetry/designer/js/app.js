@@ -58,7 +58,8 @@ async function main() {
   let inspector;
   // Canvas WYSIWYG (page active). onSelect → inspecteur.
   const canvas = createCanvas({ stage: $('stage') }, model, {
-    onSelect: s => inspector.select(s)
+    onSelect: s => inspector.select(s),
+    onLiveMove: p => inspector.setLivePlacement(p)   // MAJ live des champs Placement pendant le drag
   });
   inspector = createInspector($('inspector'), model, {
     rerenderCanvas: canvas.render,
