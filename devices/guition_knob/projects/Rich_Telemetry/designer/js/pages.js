@@ -1,5 +1,6 @@
-// Onglets de pages. Un onglet par page (clic = page active). Les contrôles agissent sur la page
-// ACTIVE : + Page (ajoute en fin et l'active), Renommer (édition inline du nom, pas de prompt()),
+// Onglets de pages. Un onglet par page (clic = page active ; double-clic = éditer le nom). Les
+// contrôles agissent sur la page ACTIVE : + Page (ajoute en fin et l'active), Renommer (édition inline
+// du nom — aussi par double-clic sur l'onglet —, pas de prompt()),
 // ◀/▶ (réordonne la page active), Supprimer (désactivé s'il ne reste qu'une page). La page active
 // vit dans le canvas (source de vérité unique), lue via getActivePage et pilotée via setPage.
 import { addPage, removePage, renamePage, reorderPages } from './mutations.js';
@@ -50,6 +51,8 @@ export function createPages(root, model, { getActivePage, setPage } = {}) {
         tab.title = 'Glisser pour réordonner';
         tab.draggable = true;
         tab.addEventListener('click', () => { setPage(i); render(); });
+        // Double-clic sur l'onglet → édition inline directe du nom (raccourci du bouton « Renommer »).
+        tab.addEventListener('dblclick', () => { setPage(i); renaming = i; render(); });
         // --- Réordonnancement par glisser-déposer (alternative directe aux boutons ◀ ▶) ---
         // type 'text/rt-page' distinct des drags de la palette ('rt-type'/'rt-ref') → pas d'interférence.
         tab.addEventListener('dragstart', e => {
