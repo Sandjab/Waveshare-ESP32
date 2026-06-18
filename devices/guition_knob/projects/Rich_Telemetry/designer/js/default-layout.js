@@ -16,9 +16,8 @@ export const DEFAULT_LAYOUT = {
       { ref: "jauge", radius: 160, thickness: 16, gap_deg: 70 },
       { ref: "titre", anchor: "TOP_MID", dy: 40 },
       { ref: "cpu", anchor: "CENTER", dy: -20 },
-      { ref: "ram", anchor: "BOTTOM_MID", dy: -60, width: 200, height: 16 },
-      { ref: "led" },
-      { ref: "buzz" }
+      { ref: "ram", anchor: "BOTTOM_MID", dy: -60, width: 200, height: 16 }
     ] }
+    // led_ring/sound : sorties device globales, éditées dans le panneau « Device » (pas de placement).
   ]
 };

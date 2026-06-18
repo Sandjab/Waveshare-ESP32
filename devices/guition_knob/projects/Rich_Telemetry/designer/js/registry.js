@@ -91,7 +91,7 @@ export const COMPONENTS = {
     compFields: [['color', 'Couleur', 'color'], ['brightness', 'Luminosité (0-255)', 'num']],
     placeFields: [],
     mockFields: [],
-    build: null,   // physique : rendu en badge hors canvas
+    build: null,   // physique : édité dans le panneau « Device », non rendu sur le canvas
   },
   sound: {
     label: 'Son',
