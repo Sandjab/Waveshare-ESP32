@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   uniqueId, addComponent, addPlacement, removePlacement,
   setComponentProp, setPlacementProp, setThresholds,
-  addPage, removePage, renamePage, reorderPages, uniquePageName
+  addPage, removePage, renamePage, reorderPages, uniquePageName, pageNameTaken
 } from '../js/mutations.js';
 
 const fresh = () => ({ components: {}, pages: [{ name: 'P1', place: [] }] });
@@ -34,6 +34,22 @@ test('uniquePageName : évite un nom auto saisi à la main au renommage', () => 
 
 test('uniquePageName : state sans pages → Page 1', () => {
   assert.equal(uniquePageName({}), 'Page 1');
+});
+
+test('pageNameTaken : nom porté par une autre page → true', () => {
+  assert.equal(pageNameTaken({ pages: [{ name: 'A' }, { name: 'B' }] }, 'B', 0), true);
+});
+
+test('pageNameTaken : la page elle-même (exceptIndex) ne compte pas → false', () => {
+  assert.equal(pageNameTaken({ pages: [{ name: 'A' }, { name: 'B' }] }, 'B', 1), false);
+});
+
+test('pageNameTaken : nom libre → false', () => {
+  assert.equal(pageNameTaken({ pages: [{ name: 'A' }, { name: 'B' }] }, 'C', 0), false);
+});
+
+test('pageNameTaken : comparaison exacte (casse, comme le strcmp firmware)', () => {
+  assert.equal(pageNameTaken({ pages: [{ name: 'Vue CPU' }, { name: 'X' }] }, 'vue cpu', 1), false);
 });
 
 test('addComponent ajoute à la map components', () => {

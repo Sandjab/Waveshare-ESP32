@@ -186,6 +186,7 @@ textarea { width: 100%; height: 220px; background: #0a0a0e; color: #cbd5e1; bord
 .page-tab.dragging { opacity: .45; cursor: grabbing; }                       /* onglet en cours de glisser */
 .page-tab.drag-over { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }  /* cible de dépôt */
 .page-rename { width: 120px; }
+.page-rename.invalid { border-color: var(--err); color: var(--err); }   /* nom de page déjà utilisé */
 .page-ctrls { display: flex; gap: 4px; }
 .page-btn { padding: 3px 9px; font-size: 12px; }
 .page-btn:disabled { border-color: var(--line); color: #55525e; cursor: default; }
@@ -243,3 +244,12 @@ textarea { width: 100%; height: 220px; background: #0a0a0e; color: #cbd5e1; bord
 .devbar { padding: 5px 12px; font: 12.5px/1.4 ui-monospace, monospace; color: var(--muted);
   border-bottom: 1px solid var(--line); background: var(--panel-2); }
 .devbar.err { color: var(--err); }
+
+/* Toasts éphémères (cf. toast.js) : empilés en bas-centre, non bloquants, auto-disparition. */
+.toast-host { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+  display: flex; flex-direction: column; gap: 8px; z-index: 1000; pointer-events: none; }
+.toast { padding: 8px 14px; border-radius: 8px; font: 13px/1.4 var(--font-ui); color: var(--ink);
+  background: var(--panel); border: 1px solid var(--line); box-shadow: 0 6px 20px rgba(0, 0, 0, .45);
+  opacity: 0; transform: translateY(8px); transition: opacity .15s, transform .15s; }
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast-err { border-color: var(--err); color: var(--err); }

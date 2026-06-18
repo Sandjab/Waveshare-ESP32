@@ -3,7 +3,8 @@
 // du nom — aussi par double-clic sur l'onglet —, pas de prompt()),
 // ◀/▶ (réordonne la page active), Supprimer (désactivé s'il ne reste qu'une page). La page active
 // vit dans le canvas (source de vérité unique), lue via getActivePage et pilotée via setPage.
-import { addPage, removePage, renamePage, reorderPages, uniquePageName } from './mutations.js';
+import { addPage, removePage, renamePage, reorderPages, uniquePageName, pageNameTaken } from './mutations.js';
+import { showToast } from './toast.js';
 
 function mkBtn(text, onClick, cls) {
   const b = document.createElement('button');
@@ -36,12 +37,27 @@ export function createPages(root, model, { getActivePage, setPage } = {}) {
         const inp = document.createElement('input');
         inp.className = 'page-rename';
         inp.value = p.name || '';
-        inp.addEventListener('change', () => {
-          const name = inp.value.trim() || `Page ${i + 1}`;
+        const orig = p.name || '';
+        // Valide la saisie : vide → « Page N » unique ; doublon → bloqué (toast, on reste en édition) ;
+        // sinon commit. Renvoie false si bloqué. Le nom de page est la cible de POST /page → pas de doublon.
+        const tryCommit = () => {
+          const name = inp.value.trim() || uniquePageName(model.state);
+          if (name === orig) { renaming = null; render(); return true; }      // pas de changement
+          if (pageNameTaken(model.state, name, i)) { showToast(`« ${name} » est déjà utilisé`); return false; }
           renaming = null;
-          model.commit(s => renamePage(s, i, name));   // → subscribe → render()
+          model.commit(s => renamePage(s, i, name));                          // → subscribe → render()
+          return true;
+        };
+        inp.addEventListener('input', () => {
+          const v = inp.value.trim();
+          inp.classList.toggle('invalid', !!v && pageNameTaken(model.state, v, i));   // feedback live
         });
-        inp.addEventListener('blur', () => { if (renaming === i) { renaming = null; render(); } });
+        inp.addEventListener('keydown', e => {
+          if (e.key === 'Enter')  { e.preventDefault(); tryCommit(); }        // doublon → toast + reste en édition
+          else if (e.key === 'Escape') { e.preventDefault(); renaming = null; render(); }
+        });
+        // Clic ailleurs : valide si possible, sinon annule (revert à l'ancien nom — jamais de doublon).
+        inp.addEventListener('blur', () => { if (renaming === i && !tryCommit()) { renaming = null; render(); } });
         tabs.appendChild(inp);
         queueMicrotask(() => inp.focus());
       } else {

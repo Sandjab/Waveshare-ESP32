@@ -61,6 +61,12 @@ export function uniquePageName(state) {
   return `Page ${n}`;
 }
 
+// `name` est-il déjà porté par une AUTRE page que `exceptIndex` ? Comparaison exacte (comme le strcmp
+// du firmware pour POST /page) → garde anti-doublon du renommage manuel.
+export function pageNameTaken(state, name, exceptIndex) {
+  return (state.pages || []).some((p, i) => i !== exceptIndex && p.name === name);
+}
+
 // Ajoute une page vide en fin de liste. `name` est requis (le schéma exige page.name).
 export function addPage(state, name) {
   (state.pages ||= []).push({ name, place: [] });
