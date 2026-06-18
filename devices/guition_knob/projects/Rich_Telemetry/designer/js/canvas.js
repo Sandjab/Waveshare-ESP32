@@ -1,7 +1,7 @@
 // Canvas WYSIWYG : construit la page active depuis le modèle, gère sélection,
 // drag + snap (commit-on-drop) et poignées de redimensionnement. Vérifié au navigateur.
 import {
-  snapPlacement, placeAt, resizeBox,
+  snapPlacement, placeAt, resizeBox, anchorGuide, parentPoint, ANCHORS,
   ringRadiusAt, ringThicknessAt, gapDegAt, cornersOutsideCircle, SCREEN
 } from './geometry.js';
 import {
@@ -10,6 +10,43 @@ import {
 } from './render.js';
 import { getMock } from './mocks.js';
 import { COMPONENTS } from './registry.js';
+
+const SVGNS = 'http://www.w3.org/2000/svg';
+
+// Overlay SVG du guide d'ancrage, montré pendant un drag de widget. Repères statiques des 9 ancres,
+// une ligne widget→ancre active et un marqueur sur l'ancre active (vert quand magnétisé). En unités
+// écran (viewBox 0..360) : vit dans le .stage, donc scalé avec le zoom comme les widgets.
+function createGuide() {
+  const svg = document.createElementNS(SVGNS, 'svg');
+  svg.setAttribute('class', 'ag');
+  svg.setAttribute('viewBox', `0 0 ${SCREEN} ${SCREEN}`);
+  svg.hidden = true;
+  for (const a of ANCHORS) {                          // 9 repères fixes (un par point d'ancrage parent)
+    const [px, py] = parentPoint(a);
+    const dot = document.createElementNS(SVGNS, 'circle');
+    dot.setAttribute('class', 'ag-dot');
+    dot.setAttribute('cx', px); dot.setAttribute('cy', py); dot.setAttribute('r', 4);
+    svg.appendChild(dot);
+  }
+  const line = document.createElementNS(SVGNS, 'line');
+  line.setAttribute('class', 'ag-line');
+  const active = document.createElementNS(SVGNS, 'circle');
+  active.setAttribute('class', 'ag-active');
+  active.setAttribute('r', 6);
+  svg.append(line, active);
+  return {
+    el: svg,
+    show(anchor, fromX, fromY, snapped) {
+      const [ax, ay] = parentPoint(anchor);
+      line.setAttribute('x1', fromX); line.setAttribute('y1', fromY);
+      line.setAttribute('x2', ax);    line.setAttribute('y2', ay);
+      active.setAttribute('cx', ax);  active.setAttribute('cy', ay);
+      active.classList.toggle('snapped', snapped);
+      svg.hidden = false;
+    },
+    hide() { svg.hidden = true; }
+  };
+}
 
 export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
   let selected = null;    // index du placement sélectionné sur la page active
@@ -22,6 +59,10 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
   // mesurée vaut 360 × zoom. Toute coord lue depuis le pointeur ou getBoundingClientRect() est en px
   // viewport (post-transform) et doit être ramenée en unités écran en divisant par ce facteur.
   const zoomScale = () => stage.getBoundingClientRect().width / SCREEN;
+
+  // Guide d'ancrage : créé une fois, survit aux render() (qui ne retirent que les .w) ; affiché pendant le drag.
+  const guide = createGuide();
+  stage.appendChild(guide.el);
 
   function buildNode(pl, comp) {
     return COMPONENTS[comp.type].build(comp, pl, getMock(pl.ref, comp.type));
@@ -106,12 +147,15 @@ export function createCanvas({ stage, badges }, model, { onSelect } = {}) {
       node.style.left = p.x + 'px'; node.style.top = p.y + 'px';
       node.classList.toggle('snapped', live.snapped);
       node.classList.toggle('outside', cornersOutsideCircle(p.x, p.y, w, h));
+      const { from } = anchorGuide(live.anchor, p.x, p.y, w, h);  // point d'ancrage du widget affiché
+      guide.show(live.anchor, from[0], from[1], live.snapped);
     };
     const up = () => {
       node.releasePointerCapture(e.pointerId);
       node.removeEventListener('pointermove', move);
       node.removeEventListener('pointerup', up);
       node.classList.remove('snapped');
+      guide.hide();
       if (live) model.commit(s => {                    // commit unique, pas par frame
         const q = s.pages[activePage].place[i];
         q.anchor = live.anchor; q.dx = live.dx; q.dy = live.dy;

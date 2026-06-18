@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { offsetFor, nearestAnchor, snapPlacement, placeAt } from '../js/geometry.js';
+import { offsetFor, nearestAnchor, snapPlacement, placeAt, anchorGuide } from '../js/geometry.js';
 
 const W = 120, H = 34;
 
@@ -46,6 +46,24 @@ test('offsetFor/placeAt round-trip sur un coin (BOTTOM_RIGHT)', () => {
 test('nearestAnchor près du coin bas-droit → BOTTOM_RIGHT', () => {
   // coin bas-droit du widget proche de (360,360)
   assert.equal(nearestAnchor(275, 315, 80, 40), 'BOTTOM_RIGHT');
+});
+
+test('anchorGuide : widget sur l’ancre → segment nul (from == to)', () => {
+  const g = anchorGuide('CENTER', 120, 163, W, H);   // widget centré → point d'ancrage au centre écran
+  assert.deepEqual(g.from, [180, 180]);
+  assert.deepEqual(g.to, [180, 180]);
+});
+
+test('anchorGuide : widget décalé → from = point d’ancrage du widget, to = ancre parent', () => {
+  const g = anchorGuide('TOP_MID', 100, 50, W, H);
+  assert.deepEqual(g.from, [160, 50]);   // (x+w/2, y) pour TOP_MID
+  assert.deepEqual(g.to, [180, 0]);      // parentPoint(TOP_MID)
+});
+
+test('anchorGuide : coin BOTTOM_RIGHT → from = coin bas-droit du widget', () => {
+  const g = anchorGuide('BOTTOM_RIGHT', 300, 300, 80, 40);
+  assert.deepEqual(g.from, [380, 340]);  // (x+w, y+h)
+  assert.deepEqual(g.to, [360, 360]);    // parentPoint(BOTTOM_RIGHT)
 });
 
 import {

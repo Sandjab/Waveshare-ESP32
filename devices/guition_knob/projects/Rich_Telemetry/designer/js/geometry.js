@@ -48,6 +48,13 @@ export function placeAt(anchor, dx, dy, w, h) {
   return { x: Math.round(x), y: Math.round(y) };
 }
 
+// Guide visuel d'ancrage (consommé par le canvas pendant le drag) : segment reliant le point
+// d'ancrage du widget (à sa position écran x,y,w,h) au point d'ancrage parent de la même ancre.
+// Quand le widget est pile sur l'ancre (offset nul, cf. snap), from == to → segment de longueur nulle.
+export function anchorGuide(anchor, x, y, w, h) {
+  return { from: widgetPoint(anchor, x, y, w, h), to: parentPoint(anchor) };
+}
+
 // --- Plan B : redimensionnement + conscience de l'écran rond (net-new, consommé par canvas.js) ---
 
 // Bar : redim depuis la poignée bas-droite. dxPx/dyPx = déplacement pointeur en px écran (1:1).
