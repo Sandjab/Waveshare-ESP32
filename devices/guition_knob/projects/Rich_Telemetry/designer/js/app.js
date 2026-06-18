@@ -10,6 +10,7 @@ import { createInspector } from './inspector.js';
 import { createPages } from './pages.js';
 import { bindFileIO } from './file-io.js';
 import { createSources } from './sources.js';
+import { createDevicePanel } from './device-panel.js';
 import { showToast } from './toast.js';
 import { resolveShortcut, isEditableTarget } from './shortcuts.js';
 import { removePlacement } from './mutations.js';
@@ -86,6 +87,8 @@ async function main() {
 
   // Panneau Sources (pull réseau) : édition des sources top-level. Indépendant du canvas/pages.
   createSources($('sources'), model);
+  // Panneau Device : composants physiques (led_ring/sound) édités hors pages (sorties globales).
+  createDevicePanel($('device'), model);
 
   bindJsonView(model, {
     textarea: $('json'), applyBtn: $('apply'), validEl: $('valid'), errorsEl: $('errors'), warningsEl: $('warnings')
