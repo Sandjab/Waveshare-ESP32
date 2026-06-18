@@ -52,6 +52,15 @@ export function setThresholds(state, id, thresholds) {
 
 // --- Pages (Plan C2) ---
 
+// Nom de page auto unique (« Page N » au premier N libre) : évite les collisions à la création, le
+// nom de page étant la cible de POST /page {"name":...}. Le renommage manuel reste libre. Cf. uniqueSourceName.
+export function uniquePageName(state) {
+  const used = new Set((state.pages || []).map(p => p.name));
+  let n = 1;
+  while (used.has(`Page ${n}`)) n++;
+  return `Page ${n}`;
+}
+
 // Ajoute une page vide en fin de liste. `name` est requis (le schéma exige page.name).
 export function addPage(state, name) {
   (state.pages ||= []).push({ name, place: [] });

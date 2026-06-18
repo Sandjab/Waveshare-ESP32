@@ -3,7 +3,7 @@
 // du nom — aussi par double-clic sur l'onglet —, pas de prompt()),
 // ◀/▶ (réordonne la page active), Supprimer (désactivé s'il ne reste qu'une page). La page active
 // vit dans le canvas (source de vérité unique), lue via getActivePage et pilotée via setPage.
-import { addPage, removePage, renamePage, reorderPages } from './mutations.js';
+import { addPage, removePage, renamePage, reorderPages, uniquePageName } from './mutations.js';
 
 function mkBtn(text, onClick, cls) {
   const b = document.createElement('button');
@@ -91,7 +91,7 @@ export function createPages(root, model, { getActivePage, setPage } = {}) {
     ctrls.className = 'page-ctrls';
 
     ctrls.appendChild(mkBtn('+ Page', () => {
-      model.commit(s => addPage(s, `Page ${s.pages.length + 1}`));
+      model.commit(s => addPage(s, uniquePageName(s)));   // nom auto sans collision (cf. uniquePageName)
       setPage(model.state.pages.length - 1);
       render();
     }));

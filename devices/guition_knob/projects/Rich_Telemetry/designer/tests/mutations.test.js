@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   uniqueId, addComponent, addPlacement, removePlacement,
   setComponentProp, setPlacementProp, setThresholds,
-  addPage, removePage, renamePage, reorderPages
+  addPage, removePage, renamePage, reorderPages, uniquePageName
 } from '../js/mutations.js';
 
 const fresh = () => ({ components: {}, pages: [{ name: 'P1', place: [] }] });
@@ -13,6 +13,27 @@ test('uniqueId incrémente par type', () => {
   assert.equal(uniqueId(s, 'label'), 'label1');
   s.components.label1 = { type: 'label' };
   assert.equal(uniqueId(s, 'label'), 'label2');
+});
+
+test('uniquePageName : aucune collision « Page N » → Page 1', () => {
+  assert.equal(uniquePageName({ pages: [{ name: 'Accueil' }] }), 'Page 1');
+});
+
+test('uniquePageName : incrémente au-delà des « Page N » existants', () => {
+  assert.equal(uniquePageName({ pages: [{ name: 'Page 1' }, { name: 'Page 2' }] }), 'Page 3');
+});
+
+test('uniquePageName : réutilise un trou (Page 2 libre)', () => {
+  assert.equal(uniquePageName({ pages: [{ name: 'Page 1' }, { name: 'Page 3' }] }), 'Page 2');
+});
+
+test('uniquePageName : évite un nom auto saisi à la main au renommage', () => {
+  // renommage manuel libre, mais la création suivante ne doit pas entrer en collision
+  assert.equal(uniquePageName({ pages: [{ name: 'Page 1' }, { name: 'Page 1' }] }), 'Page 2');
+});
+
+test('uniquePageName : state sans pages → Page 1', () => {
+  assert.equal(uniquePageName({}), 'Page 1');
 });
 
 test('addComponent ajoute à la map components', () => {
