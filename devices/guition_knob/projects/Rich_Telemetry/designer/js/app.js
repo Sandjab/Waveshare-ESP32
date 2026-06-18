@@ -1,7 +1,8 @@
 import { createModel } from './model.js';
 import { createValidator } from './validate.js';
 import { bindJsonView } from './json-view.js';
-import { loadLayout, pushLayout, captureScreenshot, getStatus, setDevicePage, pushValues } from './device.js';
+import { loadLayout, pushLayout, captureScreenshot, getStatus, setDevicePage, pushValues, uploadBgImage, fetchBgImage } from './device.js';
+import { referencedKeys, cacheBytes, cachePut, previewUrl } from './bg-image.js';
 import { getMock } from './mocks.js';
 import { createCanvas } from './canvas.js';
 import { createPalette } from './palette.js';
@@ -133,7 +134,14 @@ async function main() {
   $('load').onclick = async () => {
     if (!$('base').value) return setStatus('URL device ?', 'err');
     setStatus('Chargement…');
-    try { model.loadJSON(JSON.stringify(await loadLayout($('base').value))); setStatus('Chargé', 'ok'); }
+    try {
+      const base = $('base').value;
+      model.loadJSON(JSON.stringify(await loadLayout(base)));
+      for (const k of referencedKeys(model.state)) {
+        if (!previewUrl(k)) { const b = await fetchBgImage(base, k); if (b) cachePut(k, b); }
+      }
+      setStatus('Chargé', 'ok');
+    }
     catch (e) { setStatus('Échec : ' + e.message + ' (CORS ? cf. README)', 'err'); }
   };
   $('push').onclick = async () => {
@@ -141,7 +149,15 @@ async function main() {
     if ($('json').value.trim() !== model.toJSON().trim()) return setStatus('Modifs JSON non appliquées — clique « Appliquer » d’abord', 'err');
     if (!validate(model.state).valid) return setStatus('Layout invalide', 'err');
     setStatus('Envoi…');
-    try { await pushLayout($('base').value, model.toJSON()); setStatus('Poussé et persisté', 'ok'); }
+    try {
+      const base = $('base').value;
+      for (const k of referencedKeys(model.state)) {
+        const bytes = cacheBytes(k);
+        if (bytes) await uploadBgImage(base, k, bytes);   // avant pushLayout (le sweep tourne au POST /layout)
+      }
+      await pushLayout(base, model.toJSON());
+      setStatus('Poussé et persisté', 'ok');
+    }
     catch (e) { setStatus('Échec : ' + e.message + ' (CORS ? cf. README)', 'err'); }
   };
   // --- Boucle device : santé (/status), valeurs de test (/update), capture + navigation (/page + /screenshot) ---
