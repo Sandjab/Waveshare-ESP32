@@ -89,6 +89,7 @@ struct Dashboard {
     int       source_count;
 };
 
+bool bg_key_valid(const char* key);   // clé d'asset image de fond : 1..16 hex minuscules (garde de chemin)
 int  dash_find(const Dashboard* d, const char* id);
 bool dash_set_layout(Dashboard* d, const char* json, char* err, size_t errn);
 int  dash_apply_update(Dashboard* d, const char* json, char* unknown_csv, size_t n);

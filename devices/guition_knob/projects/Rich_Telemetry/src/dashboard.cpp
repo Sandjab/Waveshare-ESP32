@@ -4,6 +4,18 @@
 #include <ArduinoJson.h>
 #include <string.h>
 
+bool bg_key_valid(const char* key) {
+    if (!key || !key[0]) return false;
+    size_t n = 0;
+    for (const char* p = key; *p; p++, n++) {
+        if (n >= 16) return false;
+        char c = *p;
+        bool hex = (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
+        if (!hex) return false;
+    }
+    return true;
+}
+
 int dash_find(const Dashboard* d, const char* id) {
     for (int i = 0; i < d->comp_count; i++)
         if (strncmp(d->components[i].id, id, ID_LEN) == 0) return i;

@@ -284,6 +284,14 @@ void test_update_meter_value(void) {
     TEST_ASSERT_EQUAL_INT(72, d.components[dash_find(&d,"m")].value);
 }
 
+void test_bgkey_valid_hex(void)      { TEST_ASSERT_TRUE(bg_key_valid("a1b2c3d4e5f60718")); }   // 16 hex
+void test_bgkey_valid_short(void)    { TEST_ASSERT_TRUE(bg_key_valid("0")); }
+void test_bgkey_reject_empty(void)   { TEST_ASSERT_FALSE(bg_key_valid("")); }
+void test_bgkey_reject_slash(void)   { TEST_ASSERT_FALSE(bg_key_valid("../x")); }
+void test_bgkey_reject_dot(void)     { TEST_ASSERT_FALSE(bg_key_valid("a.b")); }
+void test_bgkey_reject_upper(void)   { TEST_ASSERT_FALSE(bg_key_valid("ABCD")); }
+void test_bgkey_reject_toolong(void) { TEST_ASSERT_FALSE(bg_key_valid("00112233445566778")); } // 17
+
 void test_next_mid(void)     { TEST_ASSERT_EQUAL_INT(2, nav_next(1, 3, true)); }
 void test_next_wrap(void)    { TEST_ASSERT_EQUAL_INT(0, nav_next(2, 3, true)); }
 void test_next_clamp(void)   { TEST_ASSERT_EQUAL_INT(2, nav_next(2, 3, false)); }
@@ -538,6 +546,13 @@ int main(int, char**) {
     RUN_TEST(test_hex_parse);
     RUN_TEST(test_hex_no_hash);
     RUN_TEST(test_hex_fallback);
+    RUN_TEST(test_bgkey_valid_hex);
+    RUN_TEST(test_bgkey_valid_short);
+    RUN_TEST(test_bgkey_reject_empty);
+    RUN_TEST(test_bgkey_reject_slash);
+    RUN_TEST(test_bgkey_reject_dot);
+    RUN_TEST(test_bgkey_reject_upper);
+    RUN_TEST(test_bgkey_reject_toolong);
     RUN_TEST(test_threshold_below);
     RUN_TEST(test_threshold_mid);
     RUN_TEST(test_threshold_over);
