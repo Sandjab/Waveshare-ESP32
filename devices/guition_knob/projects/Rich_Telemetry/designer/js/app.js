@@ -9,6 +9,7 @@ import { createInspector } from './inspector.js';
 import { createPages } from './pages.js';
 import { bindFileIO } from './file-io.js';
 import { createSources } from './sources.js';
+import { showToast } from './toast.js';
 import { resolveShortcut, isEditableTarget } from './shortcuts.js';
 import { removePlacement } from './mutations.js';
 
@@ -123,7 +124,12 @@ async function main() {
   zoomSel.value = savedZoom; applyZoom(savedZoom);
   zoomSel.onchange = () => { applyZoom(zoomSel.value); try { localStorage.setItem(ZOOM_KEY, zoomSel.value); } catch (e) {} };
 
-  const setStatus = (msg, kind) => { $('status').textContent = msg; $('status').className = 'status' + (kind ? ' ' + kind : ''); };
+  // La barre #status garde la trace (dont la progression « … » sans kind) ; un verdict ok/err part aussi
+  // en toast (échec rouge / succès vert) — plus visible que la petite barre. Cf. toast.js.
+  const setStatus = (msg, kind) => {
+    $('status').textContent = msg; $('status').className = 'status' + (kind ? ' ' + kind : '');
+    if (kind === 'ok' || kind === 'err') showToast(msg, { kind });
+  };
   $('load').onclick = async () => {
     if (!$('base').value) return setStatus('URL device ?', 'err');
     setStatus('Chargement…');
