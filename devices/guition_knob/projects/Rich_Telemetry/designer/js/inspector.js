@@ -1,7 +1,8 @@
 // Inspecteur : édite le composant + le placement sélectionnés. Pilote les champs par des tables de
 // descripteurs (DRY). Chaque édition committée = UN commit (sur 'change', pas par frappe → pas de
 // flood undo). Le signalement ASCII est live (sur 'input'). S'abonne au modèle pour se rafraîchir.
-import { setComponentProp, setPlacementProp, setThresholds, removePlacement, setPageBackground } from './mutations.js';
+import { setComponentProp, setPlacementProp, setThresholds, removePlacement, setPageBackground, setPageBackgroundImage } from './mutations.js';
+import { imageFileToBg, previewUrl } from './bg-image.js';
 import { COMPONENTS } from './registry.js';
 import { ANCHORS } from './geometry.js';
 import { getMock, setMock } from './mocks.js';
@@ -93,6 +94,37 @@ export function createInspector(root, model, { rerenderCanvas, clearSelection, g
         row.appendChild(reset);
       }
       body.appendChild(row);
+      // Image de fond de la page : override optionnel, prime sur la couleur. Conversion + upload
+      // au navigateur (cf. bg-image.js) ; la cle (hash) est posee dans le layout, les octets sont
+      // pousses au device au « Pousser » (app.js).
+      const imgRow = document.createElement('div'); imgRow.className = 'insp-row';
+      const imgLabel = document.createElement('span'); imgLabel.className = 'insp-label';
+      imgLabel.textContent = 'Image de fond';
+      imgRow.appendChild(imgLabel);
+      const file = document.createElement('input');
+      file.type = 'file'; file.accept = 'image/*'; file.className = 'insp-bg-file';
+      file.addEventListener('change', async () => {
+        const f = file.files?.[0]; if (!f) return;
+        try {
+          const { key } = await imageFileToBg(f);
+          model.commit(st => setPageBackgroundImage(st, pi, key));
+        } catch (e) { console.error('bg image:', e); }
+        file.value = '';
+      });
+      imgRow.appendChild(file);
+      if (pg.background_image) {
+        const thumb = document.createElement('img');
+        thumb.className = 'insp-bg-thumb';
+        const u = previewUrl(pg.background_image);
+        if (u) thumb.src = u; else thumb.alt = '(recharger depuis le device)';
+        imgRow.appendChild(thumb);
+        const del = document.createElement('button');
+        del.type = 'button'; del.className = 'insp-bg-reset'; del.textContent = '↺';
+        del.title = "Retirer l'image";
+        del.addEventListener('click', () => model.commit(st => setPageBackgroundImage(st, pi, null)));
+        imgRow.appendChild(del);
+      }
+      body.appendChild(imgRow);
     }
     const onPage = pg?.place?.length ?? 0;
     const total = Object.keys(s.components || {}).length;
