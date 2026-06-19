@@ -34,3 +34,10 @@
 #define IMG_PX_BYTES   3                                     // RGB565A8 = 2 octets couleur + 1 alpha
 #define IMG_MAX_BYTES  (IMG_MAX_W * IMG_MAX_H * IMG_PX_BYTES) // 388800
 #define IMG_DIR        "/img"                                // repertoire LittleFS des images placees
+
+#define AIMG_MAX_W      360                                   // image animee : frame <= ecran
+#define AIMG_MAX_H      360
+#define AIMG_PX_BYTES   3                                     // RGB565A8 (2 couleur + 1 alpha), comme l'image statique
+#define AIMG_MAX_FRAMES 32                                    // nombre max de frames par pack
+#define AIMG_MAX_BYTES  1572864                               // ~1,5 Mo : plafond du pack par composant
+#define AIMG_DIR        "/aimg"                               // repertoire LittleFS des packs animes
