@@ -378,6 +378,41 @@ sont <b>physiques</b>. La colonne « <code>/update</code> » donne la forme de l
   </div>
 </div>
 
+<div class="comp">
+  <div>
+    <h3 id="c-image_anim">image_anim — image animée</h3>
+    <p>Séquence d'images animées placée sur une page. Le navigateur accepte un GIF animé (les frames sont
+    extraites et la période moyenne est importée) ou une série d'images triées par nom. Chaque frame est
+    convertie en RGB565A8 et toutes sont empaquetées en un unique fichier
+    <code>/aimg/&lt;clé&gt;.565p</code> (N frames concaténées, envoyé au device à l'import).
+    La taille (<code>w</code>, <code>h</code>) et le nombre de frames (<code>frames</code>) sont portés par
+    le composant. Limites&nbsp;: 32 frames max, pack ≤&nbsp;~1,5&nbsp;Mo par composant (RGB565A8&nbsp;=&nbsp;3&nbsp;octets/pixel).</p>
+    <table><tbody>
+      <tr><th>Config</th><td>
+        <code class="fieldname">src</code> (clé du pack, posée automatiquement à l'import),
+        <code class="fieldname">w</code>, <code class="fieldname">h</code> (dimensions d'une frame en pixels),
+        <code class="fieldname">frames</code> (nombre de frames),
+        <code class="fieldname">period</code> (ms inter-frame par défaut, défaut&nbsp;100),
+        <code class="fieldname">rest_frame</code> (frame affichée au repos, défaut&nbsp;0),
+        <code class="fieldname">loop</code> (nb de passes par défaut, 0&nbsp;=&nbsp;infini),
+        <code class="fieldname">autoplay</code> (démarre au chargement, défaut&nbsp;false),
+        <code class="fieldname">bind</code>
+      </td></tr>
+      <tr><th>Géométrie</th><td><code class="fieldname">w</code>, <code class="fieldname">h</code>, <code>anchor</code>, <code>dx</code>, <code>dy</code></td></tr>
+      <tr><th><code>/update</code></th><td>objet JSON — affichage, lecture ou arrêt (voir exemples ci-dessous)</td></tr>
+    </tbody></table>
+    <p>Pilotage à l'exécution via <code>POST /update</code>&nbsp;:</p>
+    <pre><code>{ "&lt;id&gt;": { "frame": 2 } }                           // affiche la frame 2 et stoppe l'animation
+{ "&lt;id&gt;": { "play": true, "loop": 3, "period": 80 } }  // joue 3 fois à 80 ms/frame (loop et period optionnels = défauts du composant)
+{ "&lt;id&gt;": { "stop": true } }                          // stoppe et retombe sur la frame de repos</code></pre>
+    <p><code>loop:&nbsp;0</code> joue en boucle infinie jusqu'à un <code>stop</code> explicite.
+    <code>loop</code> et <code>period</code> omis dans <code>play</code>&nbsp;= défauts du composant.</p>
+    <p><b>bind</b>&nbsp;: si défini, la variable liée sélectionne la frame affichée au repos
+    (clampée à <code>0..frames-1</code>&nbsp;; ex. un booléen 0/1 pour un indicateur marche/arrêt).
+    Elle est ignorée pendant la lecture d'une animation.</p>
+  </div>
+</div>
+
 <h3 id="c-led">led_ring — anneau LED physique <span class="badge badge-info">physique</span></h3>
 <p>Commande l'anneau de 13 WS2812. Config : <code class="fieldname">color</code>, <code class="fieldname">brightness</code> (0-255, défaut 64).
 Pas de géométrie. Mode &amp; valeur via <code>/update</code> :</p>
