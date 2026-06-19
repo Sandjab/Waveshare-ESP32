@@ -3,6 +3,7 @@
 // flood undo). Le signalement ASCII est live (sur 'input'). S'abonne au modèle pour se rafraîchir.
 import { setComponentProp, setPlacementProp, setThresholds, removePlacement, setPageBackground, setPageBackgroundImage } from './mutations.js';
 import { imageFileToBg, previewUrl } from './bg-image.js';
+import { imageFileToAsset, previewUrl as imagePreviewUrl } from './image-asset.js';
 import { COMPONENTS } from './registry.js';
 import { ANCHORS, ANCHORS_OUT } from './geometry.js';
 import { getMock, setMock } from './mocks.js';
@@ -189,6 +190,38 @@ export function createInspector(root, model, { rerenderCanvas, clearSelection, g
     }
   }
 
+  // Champ « Image » d'un composant image : file picker + miniature + reset. Convertit au navigateur a
+  // la taille COURANTE du composant (c.w×c.h) et committe la cle dans `src` ; la source est memorisee
+  // (image-asset) pour permettre le re-render au resize (cf. canvas.addImageHandles).
+  function imageField(label, c) {
+    const row = document.createElement('div'); row.className = 'insp-row';
+    const span = document.createElement('span'); span.className = 'insp-label'; span.textContent = label;
+    row.appendChild(span);
+    const file = document.createElement('input');
+    file.type = 'file'; file.accept = 'image/*'; file.className = 'insp-bg-file';
+    file.addEventListener('change', async () => {
+      const f = file.files?.[0]; if (!f) return;
+      try {
+        const { key } = await imageFileToAsset(f, sel.ref, c.w || 120, c.h || 120);
+        model.commit(st => setComponentProp(st, sel.ref, 'src', key));
+      } catch (e) { console.error('image:', e); }
+      file.value = '';
+    });
+    row.appendChild(file);
+    if (c.src) {
+      const thumb = document.createElement('img'); thumb.className = 'insp-bg-thumb';
+      const u = imagePreviewUrl(c.src);
+      if (u) thumb.src = u; else thumb.alt = '(recharger depuis le device)';
+      row.appendChild(thumb);
+      const del = document.createElement('button');
+      del.type = 'button'; del.className = 'insp-bg-reset'; del.textContent = '↺';
+      del.title = "Retirer l'image";
+      del.addEventListener('click', () => model.commit(st => setComponentProp(st, sel.ref, 'src', null)));
+      row.appendChild(del);
+    }
+    return row;
+  }
+
   function render() {
     // garde focus : ne pas reconstruire pendant qu'un champ de l'inspecteur est en cours d'édition.
     if (root.contains(document.activeElement) && document.activeElement !== document.body) return;
@@ -207,6 +240,7 @@ export function createInspector(root, model, { rerenderCanvas, clearSelection, g
 
     const rows = {};
     for (const [key, label, kind, enableWhen] of COMPONENTS[c.type].compFields) {
+      if (kind === 'image') { body.appendChild(imageField(label, c)); continue; }   // picker bespoke
       const input = makeInput(kind, c[key], v => model.commit(s => setComponentProp(s, sel.ref, key, v)));
       const row = fieldRow(label, input, { ascii: kind === 'asciitext' });
       rows[key] = { input, row, enableWhen };
