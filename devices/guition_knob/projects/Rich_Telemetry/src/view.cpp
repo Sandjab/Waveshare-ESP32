@@ -19,6 +19,10 @@ static lv_obj_t* s_dots = nullptr;
 static uint8_t*     s_bg_buf[MAX_PAGES] = {0};   // RGB565 en PSRAM par page (nullptr = pas d'image)
 static lv_img_dsc_t s_bg_dsc[MAX_PAGES];
 
+// Images placees : RGB565A8 en PSRAM, indexees par composant (un component partage = un seul buffer).
+static uint8_t*     s_img_buf[MAX_COMPONENTS] = {0};
+static lv_img_dsc_t s_img_dsc[MAX_COMPONENTS];
+
 static const lv_align_t ALIGN_MAP[] = {
     LV_ALIGN_CENTER, LV_ALIGN_TOP_MID, LV_ALIGN_BOTTOM_MID, LV_ALIGN_LEFT_MID,
     LV_ALIGN_RIGHT_MID, LV_ALIGN_TOP_LEFT, LV_ALIGN_TOP_RIGHT, LV_ALIGN_BOTTOM_LEFT, LV_ALIGN_BOTTOM_RIGHT
@@ -256,6 +260,23 @@ static void sync_meter(Component& c, Placement&, lv_obj_t* meter, lv_obj_t* sub1
     if (needle) lv_meter_set_indicator_value(meter, needle, c.value);
 }
 
+static void build_image(lv_obj_t* parent, Component& c, Placement& q,
+                        lv_obj_t** main, lv_obj_t**, lv_obj_t**) {
+    lv_obj_t* img = lv_img_create(parent);
+    int idx = q.comp_index;
+    if (idx >= 0 && idx < MAX_COMPONENTS && s_img_buf[idx]) {
+        lv_img_set_src(img, &s_img_dsc[idx]);     // lv_img dimensionne via header.w/h
+    } else {
+        // Asset non charge : placeholder borde a w×h (ou 120 par defaut).
+        lv_obj_set_size(img, c.image_w > 0 ? c.image_w : 120, c.image_h > 0 ? c.image_h : 120);
+        lv_obj_set_style_border_width(img, 1, 0);
+        lv_obj_set_style_border_color(img, lv_color_hex(0x4B5563), 0);
+        lv_obj_set_style_border_opa(img, LV_OPA_COVER, 0);
+    }
+    lv_obj_align(img, ALIGN_MAP[q.anchor], q.dx, q.dy);
+    *main = img;
+}
+
 // Vtable vue indexée par CompType. Types physiques (led_ring/sound) : build/sync = nullptr
 // (rendus par leur tick dédié -> le moteur les saute). label/readout partagent build_text.
 struct ViewVTable {
@@ -274,7 +295,7 @@ static const ViewVTable VIEW[] = {
     /* COMP_SOUND    */ { nullptr,    nullptr      },
     /* COMP_CHART    */ { build_chart, sync_chart },
     /* COMP_METER    */ { build_meter, sync_meter },
-    /* COMP_IMAGE    */ { nullptr,     nullptr     },
+    /* COMP_IMAGE    */ { build_image, nullptr     },
 };
 static_assert(sizeof(VIEW) / sizeof(VIEW[0]) == COMP_COUNT,
               "VIEW desync avec CompType : ajoute la ligne du nouveau type");
@@ -402,12 +423,46 @@ static bool bg_load_page(Dashboard* d, int p) {
     return true;
 }
 
+// Charge /img/<src>.565a en PSRAM pour un composant image (RGB565A8, w×h lus du composant).
+// Idempotent : un component partage sur plusieurs pages n'est charge qu'une fois. false si invalide.
+static bool img_load_component(Dashboard* d, int idx) {
+    if (idx < 0 || idx >= d->comp_count || idx >= MAX_COMPONENTS) return false;
+    Component& c = d->components[idx];
+    if (!c.image_src[0] || c.image_w <= 0 || c.image_h <= 0) return false;
+    if (s_img_buf[idx]) return true;                      // deja charge
+    size_t need = (size_t)c.image_w * c.image_h * IMG_PX_BYTES;
+    if (need == 0 || need > (size_t)IMG_MAX_BYTES) return false;
+    char path[40];
+    snprintf(path, sizeof(path), "%s/%s.565a", IMG_DIR, c.image_src);
+    File f = LittleFS.open(path, "r");
+    if (!f) return false;
+    if ((size_t)f.size() != need) { f.close(); return false; }
+    uint8_t* buf = (uint8_t*)heap_caps_malloc(need, MALLOC_CAP_SPIRAM);
+    if (!buf) { f.close(); return false; }
+    size_t rd = f.read(buf, need);
+    f.close();
+    if (rd != need) { heap_caps_free(buf); return false; }
+    s_img_buf[idx] = buf;
+    lv_img_dsc_t& dsc = s_img_dsc[idx];
+    memset(&dsc, 0, sizeof(dsc));
+    dsc.header.always_zero = 0;
+    dsc.header.cf  = LV_IMG_CF_TRUE_COLOR_ALPHA;
+    dsc.header.w   = c.image_w;
+    dsc.header.h   = c.image_h;
+    dsc.data       = buf;
+    dsc.data_size  = need;
+    return true;
+}
+
 void view_rebuild(Dashboard* d) {
     page_anim_settle();                // annule une transition en vol avant de libérer les conteneurs
     lv_obj_t* scr = lv_scr_act();
     lv_obj_clean(scr);
     for (int i = 0; i < MAX_PAGES; i++) {
         if (s_bg_buf[i]) { heap_caps_free(s_bg_buf[i]); s_bg_buf[i] = nullptr; }
+    }
+    for (int i = 0; i < MAX_COMPONENTS; i++) {
+        if (s_img_buf[i]) { heap_caps_free(s_img_buf[i]); s_img_buf[i] = nullptr; }
     }
     s_dots = nullptr;  // freed by lv_obj_clean above; drop stale pointer
     lv_obj_set_style_bg_color(scr, lv_color_hex(d->background), 0);
@@ -438,6 +493,7 @@ void view_rebuild(Dashboard* d) {
         for (int i = 0; i < d->pages[p].place_count; i++) {
             Placement& q = d->pages[p].places[i];
             Component& c = d->components[q.comp_index];
+            if (c.type == COMP_IMAGE) img_load_component(d, q.comp_index);
             if ((unsigned)c.type < COMP_COUNT && VIEW[c.type].build)
                 VIEW[c.type].build(cont, c, q, &s_widget[p][i], &s_sub1[p][i], &s_sub2[p][i]);
         }
