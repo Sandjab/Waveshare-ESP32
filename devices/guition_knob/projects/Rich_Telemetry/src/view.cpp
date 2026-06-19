@@ -24,6 +24,16 @@ static const lv_align_t ALIGN_MAP[] = {
     LV_ALIGN_RIGHT_MID, LV_ALIGN_TOP_LEFT, LV_ALIGN_TOP_RIGHT, LV_ALIGN_BOTTOM_LEFT, LV_ALIGN_BOTTOM_RIGHT
 };
 
+// Parallele a ALIGN_MAP, mais en alignement EXTERIEUR (label autour de son parent).
+// A_CENTER n'a pas d'equivalent OUT -> repli sur OUT_TOP_MID (= comportement historique du label de barre).
+static const lv_align_t ALIGN_OUT_MAP[] = {
+    LV_ALIGN_OUT_TOP_MID,
+    LV_ALIGN_OUT_TOP_MID, LV_ALIGN_OUT_BOTTOM_MID, LV_ALIGN_OUT_LEFT_MID, LV_ALIGN_OUT_RIGHT_MID,
+    LV_ALIGN_OUT_TOP_LEFT, LV_ALIGN_OUT_TOP_RIGHT, LV_ALIGN_OUT_BOTTOM_LEFT, LV_ALIGN_OUT_BOTTOM_RIGHT
+};
+
+static const int16_t BAR_LABEL_GAP = 6;   // ecart fixe label<->barre (conserve le rendu actuel pour TOP_MID)
+
 static const lv_font_t* pick_font(uint16_t px) {
     if (px >= 48) return &lv_font_montserrat_48;
     if (px >= 36) return &lv_font_montserrat_36;
@@ -139,10 +149,17 @@ static void build_bar(lv_obj_t* parent, Component& c, Placement& q,
     *main = b;
     if (c.label[0]) {
         lv_obj_t* bl = lv_label_create(parent);
-        lv_obj_set_style_text_font(bl, &lv_font_montserrat_14, 0);
-        lv_obj_set_style_text_color(bl, lv_color_hex(0x9AA0AA), 0);
+        lv_obj_set_style_text_font(bl, pick_font(c.label_font), 0);
+        lv_obj_set_style_text_color(bl, lv_color_hex(c.label_color), 0);
         lv_label_set_text(bl, c.label);
-        lv_obj_align_to(bl, b, LV_ALIGN_OUT_TOP_MID, 0, -6);
+        int16_t gx = 0, gy = 0;
+        switch (c.label_align) {
+            case A_BOTTOM_MID: case A_BOTTOM_LEFT: case A_BOTTOM_RIGHT: gy =  BAR_LABEL_GAP; break;
+            case A_LEFT_MID:  gx = -BAR_LABEL_GAP; break;
+            case A_RIGHT_MID: gx =  BAR_LABEL_GAP; break;
+            default:          gy = -BAR_LABEL_GAP; break;   // TOP_* et repli A_CENTER
+        }
+        lv_obj_align_to(bl, b, ALIGN_OUT_MAP[c.label_align], gx, gy);
         *sub1 = bl;
     }
 }
