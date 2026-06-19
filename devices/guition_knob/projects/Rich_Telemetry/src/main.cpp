@@ -100,6 +100,7 @@ void loop() {
             xSemaphoreGive(g_ctx_mutex);
         }
     }
+    dash_tick_aimg(&g_dash, now_ms);     // avance les frames des image_anim en lecture (marque dirty)
     if (g_dash.values_dirty) view_sync(&g_dash);
     static uint32_t last_led = 0;
     if (millis() - last_led >= 33) { last_led = millis(); led_ring_tick(&g_dash, millis()); }
