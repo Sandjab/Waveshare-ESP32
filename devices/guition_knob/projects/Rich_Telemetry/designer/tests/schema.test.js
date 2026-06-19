@@ -79,3 +79,25 @@ test('schema : propriete inconnue sur un chart est rejetee', () => {
   l.pages[0].place.push({ ref: 'g' });
   assert.equal(validate(l).valid, false);
 });
+
+test('schema : bar avec style de label (couleur/police/alignement) valide', () => {
+  const l = base();
+  l.components.b = { type: 'bar', label: 'RAM', label_color: '#FF0000', label_font: 20, label_align: 'BOTTOM_MID' };
+  l.pages[0].place.push({ ref: 'b', anchor: 'CENTER', width: 200, height: 16 });
+  const r = validate(l);
+  assert.equal(r.valid, true, JSON.stringify(r.errors));
+});
+
+test('schema : bar label_align = CENTER rejeté (8 positions extérieures seulement)', () => {
+  const l = base();
+  l.components.b = { type: 'bar', label_align: 'CENTER' };
+  l.pages[0].place.push({ ref: 'b' });
+  assert.equal(validate(l).valid, false);
+});
+
+test('schema : bar label_font hors enum rejeté', () => {
+  const l = base();
+  l.components.b = { type: 'bar', label_font: 17 };
+  l.pages[0].place.push({ ref: 'b' });
+  assert.equal(validate(l).valid, false);
+});

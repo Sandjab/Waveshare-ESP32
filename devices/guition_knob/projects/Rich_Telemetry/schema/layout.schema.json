@@ -68,6 +68,14 @@
       ],
       "description": "Ancrage LVGL du placement. Defaut CENTER. (parse_anchor, dashboard.cpp)"
     },
+    "anchorOut": {
+      "enum": [
+        "TOP_LEFT", "TOP_MID", "TOP_RIGHT",
+        "LEFT_MID", "RIGHT_MID",
+        "BOTTOM_LEFT", "BOTTOM_MID", "BOTTOM_RIGHT"
+      ],
+      "description": "Position d'un libelle autour de son widget (LV_ALIGN_OUT_*). Les 8 bords/coins exterieurs, sans CENTER."
+    },
     "component": {
       "type": "object",
       "required": ["type"],
@@ -117,7 +125,10 @@
         "label": { "$ref": "#/$defs/ascii", "description": "Libelle affiche au-dessus de la barre." },
         "min": { "type": "number", "description": "Defaut 0." },
         "max": { "type": "number", "description": "Defaut 100." },
-        "color": { "$ref": "#/$defs/hexColor" }
+        "color": { "$ref": "#/$defs/hexColor" },
+        "label_color": { "$ref": "#/$defs/hexColor", "description": "Couleur du libelle. Defaut #9AA0AA." },
+        "label_font": { "$ref": "#/$defs/font", "description": "Taille de police du libelle. Defaut 14." },
+        "label_align": { "$ref": "#/$defs/anchorOut", "description": "Position du libelle autour de la barre. Defaut TOP_MID." }
       }
     },
     "comp_ring": {
