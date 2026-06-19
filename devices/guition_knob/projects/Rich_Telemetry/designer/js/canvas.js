@@ -11,6 +11,7 @@ import { getMock } from './mocks.js';
 import { COMPONENTS } from './registry.js';
 import { effectivePageBg, effectivePageBgImage } from './mutations.js';
 import { previewUrl } from './bg-image.js';
+import { sourceFor, renderToAsset } from './image-asset.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 
@@ -124,6 +125,7 @@ export function createCanvas({ stage }, model, { onSelect, onLiveMove } = {}) {
     const comp = comps()[pl.ref];
     if (comp.type === 'bar')  addBarHandles(node, selected, pl);
     if (comp.type === 'ring') addRingHandles(node, selected, comp, pl);
+    if (comp.type === 'image') addImageHandles(node, pl, comp);
   }
 
   function select(i) {
@@ -194,6 +196,41 @@ export function createCanvas({ stage }, model, { onSelect, onLiveMove } = {}) {
         h.releasePointerCapture(e.pointerId);
         h.removeEventListener('pointermove', move); h.removeEventListener('pointerup', up);
         if (dim) model.commit(s => { const q = s.pages[activePage].place[i]; q.width = dim.width; q.height = dim.height; });
+      };
+      h.addEventListener('pointermove', move); h.addEventListener('pointerup', up);
+    });
+  }
+
+  // --- Resize image : poignee bas-droite -> component.w/h (la taille vit sur le composant). Au drop,
+  // re-rasterise la source a la nouvelle taille (etirement libre) -> nouvelle cle `src`, gardant l'asset
+  // coherent avec w×h. Sans source memorisee (ex. asset jamais charge), on met juste a jour w/h.
+  function addImageHandles(node, pl, comp) {
+    const h = document.createElement('div');
+    h.className = 'handle handle-br';
+    node.appendChild(h);
+    h.addEventListener('pointerdown', e => {
+      e.stopPropagation(); e.preventDefault();
+      const s = zoomScale();
+      const startW = comp.w || 120, startH = comp.h || 120;
+      const sx = e.clientX, sy = e.clientY;
+      h.setPointerCapture(e.pointerId);
+      let dim = null;
+      const move = ev => {
+        dim = resizeBox(startW, startH, (ev.clientX - sx) / s, (ev.clientY - sy) / s, 8);
+        node.style.width = dim.width + 'px'; node.style.height = dim.height + 'px';
+        const img = node.querySelector('img'); if (img) { img.style.width = '100%'; img.style.height = '100%'; }
+      };
+      const up = () => {
+        h.releasePointerCapture(e.pointerId);
+        h.removeEventListener('pointermove', move); h.removeEventListener('pointerup', up);
+        if (!dim) return;
+        const src = sourceFor(pl.ref);
+        const key = src ? renderToAsset(src, dim.width, dim.height).key : null;
+        model.commit(st => {
+          const c = st.components[pl.ref];
+          c.w = dim.width; c.h = dim.height;
+          if (key) c.src = key;   // garde src <-> w×h coherent ; sans source on ne touche pas src
+        });
       };
       h.addEventListener('pointermove', move); h.addEventListener('pointerup', up);
     });
