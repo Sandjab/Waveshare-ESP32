@@ -107,6 +107,7 @@ export function createCanvas({ stage }, model, { onSelect, onLiveMove } = {}) {
       if (def.physical) return;   // physiques édités dans le panneau « Device » ; jamais rendus sur une page
       const node = buildNode(pl, comp);
       node.dataset.pi = i;
+      node.dataset.ref = pl.ref;               // permet la lookup par ref (ex: apercu image_anim)
       stage.appendChild(node);                   // append avant de mesurer
       position(node, pl, comp);
       node.addEventListener('pointerdown', e => onPointerDown(e, i, node, comp));

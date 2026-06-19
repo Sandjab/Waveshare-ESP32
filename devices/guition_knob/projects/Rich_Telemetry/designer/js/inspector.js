@@ -4,6 +4,7 @@
 import { setComponentProp, setPlacementProp, setThresholds, removePlacement, setPageBackground, setPageBackgroundImage } from './mutations.js';
 import { imageFileToBg, previewUrl } from './bg-image.js';
 import { imageFileToAsset, previewUrl as imagePreviewUrl } from './image-asset.js';
+import { decodeGif, decodeImages, framesToAsset, previewUrls as aimgPreviewUrls } from './image-anim-asset.js';
 import { COMPONENTS } from './registry.js';
 import { ANCHORS, ANCHORS_OUT } from './geometry.js';
 import { getMock, setMock } from './mocks.js';
@@ -222,6 +223,77 @@ export function createInspector(root, model, { rerenderCanvas, clearSelection, g
     return row;
   }
 
+  // Champ « Animation » d'un composant image_anim : import GIF/serie d'images -> pack, bande de
+  // vignettes (choix de la frame de repos), bouton Apercu (anime le canvas). Convertit au navigateur
+  // a la taille COURANTE du composant (c.w×c.h). Commit en bloc : src + frames + w/h (+ period si GIF).
+  let _aimgPreviewTimer = null;
+  function imageAnimField(label, c) {
+    const wrap = document.createElement('div'); wrap.className = 'insp-aimg';
+    const row = document.createElement('div'); row.className = 'insp-row';
+    const span = document.createElement('span'); span.className = 'insp-label'; span.textContent = label;
+    row.appendChild(span);
+    const file = document.createElement('input');
+    file.type = 'file'; file.accept = 'image/*'; file.multiple = true; file.className = 'insp-bg-file';
+    file.addEventListener('change', async () => {
+      const fs = file.files; if (!fs || !fs.length) return;
+      try {
+        const w = c.w || 120, h = c.h || 120;
+        const isGif = fs.length === 1 && /gif$/i.test(fs[0].type || fs[0].name);
+        const { drawables, periodMs } = isGif ? await decodeGif(fs[0]) : await decodeImages([...fs]);
+        const { key, frames } = framesToAsset(drawables, w, h);
+        model.commit(st => {
+          setComponentProp(st, sel.ref, 'src', key);
+          setComponentProp(st, sel.ref, 'frames', frames);
+          setComponentProp(st, sel.ref, 'w', w);
+          setComponentProp(st, sel.ref, 'h', h);
+          if (isGif) setComponentProp(st, sel.ref, 'period', periodMs);
+          if ((c.rest_frame || 0) >= frames) setComponentProp(st, sel.ref, 'rest_frame', 0);
+        });
+      } catch (e) { console.error('image_anim:', e); }
+      file.value = '';
+    });
+    row.appendChild(file);
+    if (c.src) {
+      const del = document.createElement('button');
+      del.type = 'button'; del.className = 'insp-bg-reset'; del.textContent = '↺';
+      del.title = "Retirer l'animation";
+      del.addEventListener('click', () => model.commit(st => {
+        setComponentProp(st, sel.ref, 'src', null);
+        setComponentProp(st, sel.ref, 'frames', null);
+      }));
+      row.appendChild(del);
+    }
+    wrap.appendChild(row);
+    const urls = c.src ? aimgPreviewUrls(c.src) : [];
+    if (urls.length) {
+      const strip = document.createElement('div'); strip.className = 'insp-aimg-strip';
+      urls.forEach((u, i) => {
+        const t = document.createElement('img'); t.className = 'insp-aimg-frame'; t.src = u;
+        if (i === (c.rest_frame || 0)) t.classList.add('is-rest');
+        t.title = 'Frame ' + i + ' — clic = frame de repos';
+        t.addEventListener('click', () => model.commit(st => setComponentProp(st, sel.ref, 'rest_frame', i)));
+        strip.appendChild(t);
+      });
+      wrap.appendChild(strip);
+      const play = document.createElement('button');
+      play.type = 'button'; play.className = 'insp-aimg-play'; play.textContent = '▶ Aperçu';
+      play.addEventListener('click', () => {
+        if (_aimgPreviewTimer) { clearInterval(_aimgPreviewTimer); _aimgPreviewTimer = null; play.textContent = '▶ Aperçu'; return; }
+        const node = document.querySelector(`#stage [data-ref="${sel.ref}"]`);
+        const imgEl = node ? node.querySelector('.w-image-img') : null;
+        if (!imgEl) return;
+        let f = 0;
+        play.textContent = '⏸ Aperçu';
+        _aimgPreviewTimer = setInterval(() => {
+          f = (f + 1) % urls.length;
+          imgEl.src = urls[f];
+        }, Math.max(20, c.period || 100));
+      });
+      wrap.appendChild(play);
+    }
+    return wrap;
+  }
+
   function render() {
     // garde focus : ne pas reconstruire pendant qu'un champ de l'inspecteur est en cours d'édition.
     if (root.contains(document.activeElement) && document.activeElement !== document.body) return;
@@ -241,6 +313,7 @@ export function createInspector(root, model, { rerenderCanvas, clearSelection, g
     const rows = {};
     for (const [key, label, kind, enableWhen] of COMPONENTS[c.type].compFields) {
       if (kind === 'image') { body.appendChild(imageField(label, c)); continue; }   // picker bespoke
+      if (kind === 'image_anim') { body.appendChild(imageAnimField(label, c)); continue; }   // editeur bespoke
       const input = makeInput(kind, c[key], v => model.commit(s => setComponentProp(s, sel.ref, key, v)));
       const row = fieldRow(label, input, { ascii: kind === 'asciitext' });
       rows[key] = { input, row, enableWhen };
