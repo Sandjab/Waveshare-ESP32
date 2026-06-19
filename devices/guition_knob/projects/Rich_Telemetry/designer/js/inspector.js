@@ -228,6 +228,7 @@ export function createInspector(root, model, { rerenderCanvas, clearSelection, g
   // a la taille COURANTE du composant (c.w×c.h). Commit en bloc : src + frames + w/h (+ period si GIF).
   let _aimgPreviewTimer = null;
   function imageAnimField(label, c) {
+    if (_aimgPreviewTimer) { clearInterval(_aimgPreviewTimer); _aimgPreviewTimer = null; }  // stoppe un apercu au rebuild
     const wrap = document.createElement('div'); wrap.className = 'insp-aimg';
     const row = document.createElement('div'); row.className = 'insp-row';
     const span = document.createElement('span'); span.className = 'insp-label'; span.textContent = label;
