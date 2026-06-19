@@ -87,7 +87,8 @@
         { "$ref": "#/$defs/comp_led_ring" },
         { "$ref": "#/$defs/comp_sound" },
         { "$ref": "#/$defs/comp_chart" },
-        { "$ref": "#/$defs/comp_meter" }
+        { "$ref": "#/$defs/comp_meter" },
+        { "$ref": "#/$defs/comp_image" }
       ]
     },
     "comp_label": {
@@ -201,6 +202,18 @@
           "description": "Zones d'arc colorees : chaque [limite, \"#hex\"] colore la bande de la limite precedente (vmin au depart) jusqu'a limite.",
           "items": { "$ref": "#/$defs/threshold" }
         }
+      }
+    },
+    "comp_image": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "description": "Image bitmap statique RGB565A8 (alpha). Rasterisee par le navigateur a w×h exacts (etirement libre), uploadee via POST /image?key=. La taille vit sur le composant (couplee a l'asset : LVGL 8 ne sait pas etirer un lv_img non-uniformement). Le placement ne porte que la position.",
+      "properties": {
+        "type": { "const": "image" },
+        "src": { "$ref": "#/$defs/ascii", "description": "Cle d'asset (hash FNV-1a du contenu RGB565A8). Absente tant qu'aucune image n'est choisie." },
+        "w": { "type": "integer", "minimum": 1, "maximum": 360, "description": "Largeur en pixels (= largeur de l'asset). Defaut 120." },
+        "h": { "type": "integer", "minimum": 1, "maximum": 360, "description": "Hauteur en pixels (= hauteur de l'asset). Defaut 120." }
       }
     },
     "page": {

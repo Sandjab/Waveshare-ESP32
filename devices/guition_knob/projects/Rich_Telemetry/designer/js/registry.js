@@ -4,7 +4,7 @@
 // L'aperçu (build) reste dans render.js (double-maintenance du rendu firmware) ; ici on le référence
 // via une signature normalisée (comp, placement, mock).
 import { snapPlacement } from './geometry.js';
-import { buildLabel, buildReadout, buildBar, buildRing, buildChart, buildMeter } from './render.js';
+import { buildLabel, buildReadout, buildBar, buildRing, buildChart, buildMeter, buildImage } from './render.js';
 
 // Placement initial d'un widget d'écran : ancrage + offset déduits du point de dépôt (boîte ~0).
 const screenPlacement = (id, x, y) => {
@@ -82,6 +82,16 @@ export const COMPONENTS = {
                   ['width', 'Largeur', 'num'], ['height', 'Hauteur', 'num']],
     mockFields: [['value', 'Valeur (aperçu)']],
     build: (comp, pl, mock) => buildMeter(comp, pl, mock),
+  },
+  image: {
+    label: 'Image',
+    defaults: () => ({ type: 'image', w: 120, h: 120 }),
+    makePlacement: screenPlacement,
+    centered: false, physical: false,
+    compFields: [['src', 'Image', 'image']],
+    placeFields: [['anchor', 'Ancrage', 'anchor'], ['dx', 'dx', 'num'], ['dy', 'dy', 'num']],
+    mockFields: [],
+    build: (comp) => buildImage(comp),
   },
   led_ring: {
     label: 'LED ring',

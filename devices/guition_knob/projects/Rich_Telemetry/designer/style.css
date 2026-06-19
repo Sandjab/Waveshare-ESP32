@@ -263,3 +263,7 @@ textarea { width: 100%; height: 220px; background: #0a0a0e; color: #cbd5e1; bord
 .toast.show { opacity: 1; transform: translateY(0); }
 .toast-err { border-color: var(--err); color: var(--err); }
 .toast-ok { border-color: var(--ok); color: var(--ok); }
+
+/* Composant image : conteneur a la taille du composant (w×h) ; placeholder si pas d'asset. */
+.w-image { overflow: hidden; }
+.w-image--empty { border: 1px dashed #4B5563; box-sizing: border-box; }

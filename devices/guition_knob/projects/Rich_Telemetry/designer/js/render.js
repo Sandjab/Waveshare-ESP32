@@ -2,6 +2,8 @@
 // ⚠ Double-maintenance assumée : tout changement de rendu firmware doit être répliqué ici. Le device arbitre.
 // La math (ci-dessous) est pure et testée ; les builders DOM (plus bas) sont vérifiés au navigateur.
 
+import { previewUrl } from './image-asset.js';
+
 // Valeurs d'aperçu mock par défaut. Plan C les rendra éditables via l'inspecteur ; ici elles sont fixes.
 export const MOCKS = {
   readout: { value: 42 },
@@ -312,5 +314,27 @@ export function buildMeter(comp, placement, mock = MOCKS.meter) {
   hub.setAttribute('class', 'meter-hub');
   svg.appendChild(hub);
   wrap.appendChild(svg);
+  return wrap;
+}
+
+// Image placee : bitmap statique a w×h (taille sur le composant). Apercu depuis le cache image-asset
+// (previewUrl) ; placeholder borde tant qu'aucune image n'est choisie ou que le cache n'a pas d'octets
+// (post-reload avant « Charger »). Le firmware rend un lv_img RGB565A8 (cf. view.cpp build_image).
+export function buildImage(comp) {
+  const wrap = document.createElement('div');
+  wrap.className = 'w w-image';
+  wrap.style.width  = (comp.w || 120) + 'px';
+  wrap.style.height = (comp.h || 120) + 'px';
+  const url = comp.src ? previewUrl(comp.src) : null;
+  if (url) {
+    const img = document.createElement('img');
+    img.className = 'w-image-img';
+    img.src = url;
+    img.style.width = '100%'; img.style.height = '100%';
+    img.style.display = 'block'; img.style.objectFit = 'fill';   // etirement libre = deformation assumee
+    wrap.appendChild(img);
+  } else {
+    wrap.classList.add('w-image--empty');
+  }
   return wrap;
 }

@@ -101,3 +101,18 @@ test('schema : bar label_font hors enum rejeté', () => {
   l.pages[0].place.push({ ref: 'b' });
   assert.equal(validate(l).valid, false);
 });
+
+test('schema : composant image valide (src/w/h)', () => {
+  const l = base();
+  l.components.logo = { type: 'image', src: 'deadbeef', w: 120, h: 80 };
+  l.pages[0].place.push({ ref: 'logo', anchor: 'TOP_LEFT' });
+  const r = validate(l);
+  assert.equal(r.valid, true, JSON.stringify(r.errors));
+});
+
+test('schema : composant image — propriété inconnue rejetée', () => {
+  const l = base();
+  l.components.logo = { type: 'image', src: 'deadbeef', zoom: 2 };
+  l.pages[0].place.push({ ref: 'logo', anchor: 'CENTER' });
+  assert.equal(validate(l).valid, false);
+});
