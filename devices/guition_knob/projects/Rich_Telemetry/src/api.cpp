@@ -137,6 +137,28 @@ static void h_set_layout() {
         }
         for (int i = 0; i < nv; i++) LittleFS.remove(victims[i]);
     }
+    // Sweep : supprime les packs /aimg/*.565p que plus aucun composant image_anim ne reference.
+    {
+        String victims[16]; int nv = 0;
+        File dir = LittleFS.open(AIMG_DIR);
+        if (dir && dir.isDirectory()) {
+            for (File e = dir.openNextFile(); e && nv < 16; e = dir.openNextFile()) {
+                String full = e.name();
+                e.close();
+                int slash = full.lastIndexOf('/');
+                String b = (slash >= 0) ? full.substring(slash + 1) : full;
+                if (!b.endsWith(".565p")) continue;
+                String key = b.substring(0, b.length() - 5);   // ".565p" = 5 caracteres
+                bool referenced = false;
+                for (int c = 0; c < D->comp_count; c++)
+                    if (D->components[c].type == COMP_IMAGE_ANIM && key.length() &&
+                        strcmp(D->components[c].image_src, key.c_str()) == 0) { referenced = true; break; }
+                if (!referenced) victims[nv++] = String(AIMG_DIR) + "/" + b;
+            }
+            dir.close();
+        }
+        for (int i = 0; i < nv; i++) LittleFS.remove(victims[i]);
+    }
     S->send(200, "application/json", "{\"ok\":true}\n");
 }
 
@@ -329,6 +351,52 @@ static void h_image_get() {
     f.close();
 }
 
+// --- POST /aimg?key=<hex> : upload d'un pack image animee RGB565A8 (N frames concatenees) ---
+static File   s_aimg_up;
+static size_t s_aimg_written = 0;
+static const char* AIMG_TMP = AIMG_DIR "/_upload.tmp";
+
+static void h_aimg_upload() {
+    HTTPUpload& up = S->upload();
+    if (up.status == UPLOAD_FILE_START) {
+        if (!LittleFS.exists(AIMG_DIR)) LittleFS.mkdir(AIMG_DIR);
+        s_aimg_written = 0;
+        s_aimg_up = LittleFS.open(AIMG_TMP, "w");
+    } else if (up.status == UPLOAD_FILE_WRITE) {
+        if (s_aimg_up) s_aimg_written += s_aimg_up.write(up.buf, up.currentSize);
+    } else if (up.status == UPLOAD_FILE_END) {
+        if (s_aimg_up) s_aimg_up.close();
+    }
+}
+static void h_aimg_done() {
+    String key = S->arg("key");
+    // Borne (<= AIMG_MAX_BYTES) + multiple de 3 (RGB565A8). Validation forte (== N*w*h*3) au chargement.
+    if (s_aimg_written == 0 || s_aimg_written > (size_t)AIMG_MAX_BYTES || (s_aimg_written % AIMG_PX_BYTES) != 0) {
+        LittleFS.remove(AIMG_TMP);
+        S->send(400, "text/plain", "bad size\n"); return;
+    }
+    if (!bg_key_valid(key.c_str())) {
+        LittleFS.remove(AIMG_TMP);
+        S->send(400, "text/plain", "bad key\n"); return;
+    }
+    String dst = String(AIMG_DIR) + "/" + key + ".565p";
+    LittleFS.remove(dst);
+    if (!LittleFS.rename(AIMG_TMP, dst)) {
+        LittleFS.remove(AIMG_TMP);
+        S->send(500, "text/plain", "FS rename failed\n"); return;
+    }
+    S->send(200, "application/json", "{\"ok\":true}\n");
+}
+static void h_aimg_get() {
+    String key = S->arg("key");
+    if (!bg_key_valid(key.c_str())) { S->send(400, "text/plain", "bad key\n"); return; }
+    String path = String(AIMG_DIR) + "/" + key + ".565p";
+    File f = LittleFS.open(path, "r");
+    if (!f) { S->send(404, "text/plain", "not found\n"); return; }
+    S->streamFile(f, "application/octet-stream");
+    f.close();
+}
+
 void api_register(WebServer& server, Dashboard* d) {
     S = &server; D = d;
     server.enableCORS(true);   // Allow-Origin/Methods/Headers: * sur toutes les réponses (outil de dev LAN mono-utilisateur)
@@ -344,6 +412,8 @@ void api_register(WebServer& server, Dashboard* d) {
     server.on("/bgimage", HTTP_GET,  h_bgimage_get);
     server.on("/image", HTTP_POST, h_image_done, h_image_upload);
     server.on("/image", HTTP_GET,  h_image_get);
+    server.on("/aimg", HTTP_POST, h_aimg_done, h_aimg_upload);
+    server.on("/aimg", HTTP_GET,  h_aimg_get);
     // Designer embarque (LittleFS) : http://<ip>/designer/ sert l'editeur en MEME origin (plus de
     // serveur local ni de CORS). serveStatic cherche index.htm pour une URL de repertoire ("/designer/").
     // Fichiers stages par tools/stage_fs.sh puis flashes via --uploadfs. Le schema partage est servi a
