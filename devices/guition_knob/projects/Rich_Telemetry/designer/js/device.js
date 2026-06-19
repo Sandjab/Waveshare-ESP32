@@ -67,3 +67,20 @@ export async function fetchBgImage(base, key) {
   if (!r.ok) throw new Error('HTTP ' + r.status);
   return new Uint8Array(await r.arrayBuffer());
 }
+
+// POST /image?key=<hex> : upload d'une image placee RGB565A8 (multipart, streame en LittleFS).
+export async function uploadImage(base, key, bytes) {
+  const fd = new FormData();
+  fd.append('img', new Blob([bytes], { type: 'application/octet-stream' }), key + '.565a');
+  const r = await fetch(clean(base) + '/image?key=' + encodeURIComponent(key), { method: 'POST', body: fd });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json().catch(() => ({}));
+}
+
+// GET /image?key=<hex> : recupere les octets RGB565A8 (Uint8Array), ou null si 404.
+export async function fetchImage(base, key) {
+  const r = await fetch(clean(base) + '/image?key=' + encodeURIComponent(key));
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return new Uint8Array(await r.arrayBuffer());
+}

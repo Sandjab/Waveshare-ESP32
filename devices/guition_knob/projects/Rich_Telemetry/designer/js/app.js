@@ -1,8 +1,9 @@
 import { createModel } from './model.js';
 import { createValidator } from './validate.js';
 import { bindJsonView } from './json-view.js';
-import { loadLayout, pushLayout, captureScreenshot, getStatus, setDevicePage, pushValues, uploadBgImage, fetchBgImage } from './device.js';
+import { loadLayout, pushLayout, captureScreenshot, getStatus, setDevicePage, pushValues, uploadBgImage, fetchBgImage, uploadImage, fetchImage } from './device.js';
 import { referencedKeys, cacheBytes, cachePut, previewUrl } from './bg-image.js';
+import { referencedImageKeys, cacheBytes as imageCacheBytes, previewUrl as imagePreviewUrl, rehydrate as rehydrateImage } from './image-asset.js';
 import { getMock } from './mocks.js';
 import { createCanvas } from './canvas.js';
 import { createPalette } from './palette.js';
@@ -148,6 +149,11 @@ async function main() {
       for (const k of referencedKeys(model.state)) {
         if (!previewUrl(k)) { const b = await fetchBgImage(base, k); if (b) cachePut(k, b); }
       }
+      for (const [id, ic] of Object.entries(model.state.components || {})) {
+        if (ic.type !== 'image' || !ic.src || imagePreviewUrl(ic.src)) continue;
+        const b = await fetchImage(base, ic.src);
+        if (b) rehydrateImage(ic.src, id, b, ic.w || 0, ic.h || 0);
+      }
       setStatus('Chargé', 'ok');
     }
     catch (e) { setStatus('Échec : ' + e.message + ' (CORS ? cf. README)', 'err'); }
@@ -162,6 +168,10 @@ async function main() {
       for (const k of referencedKeys(model.state)) {
         const bytes = cacheBytes(k);
         if (bytes) await uploadBgImage(base, k, bytes);   // avant pushLayout (le sweep tourne au POST /layout)
+      }
+      for (const k of referencedImageKeys(model.state)) {
+        const bytes = imageCacheBytes(k);
+        if (bytes) await uploadImage(base, k, bytes);   // avant pushLayout (le sweep tourne au POST /layout)
       }
       await pushLayout(base, model.toJSON());
       setStatus('Poussé et persisté', 'ok');
