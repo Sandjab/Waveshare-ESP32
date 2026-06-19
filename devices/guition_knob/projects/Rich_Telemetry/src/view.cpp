@@ -274,6 +274,7 @@ static const ViewVTable VIEW[] = {
     /* COMP_SOUND    */ { nullptr,    nullptr      },
     /* COMP_CHART    */ { build_chart, sync_chart },
     /* COMP_METER    */ { build_meter, sync_meter },
+    /* COMP_IMAGE    */ { nullptr,     nullptr     },
 };
 static_assert(sizeof(VIEW) / sizeof(VIEW[0]) == COMP_COUNT,
               "VIEW desync avec CompType : ajoute la ligne du nouveau type");

@@ -27,7 +27,7 @@ int dash_find(const Dashboard* d, const char* id) {
 static const struct { const char* name; CompType type; } COMP_NAMES[] = {
     { "label",    COMP_LABEL    }, { "readout",  COMP_READOUT  }, { "bar",   COMP_BAR   },
     { "ring",     COMP_RING     }, { "led_ring", COMP_LED_RING }, { "sound", COMP_SOUND },
-    { "chart",    COMP_CHART    }, { "meter",    COMP_METER    },
+    { "chart",    COMP_CHART    }, { "meter",    COMP_METER    }, { "image", COMP_IMAGE },
 };
 
 static CompType parse_type(const char* s) {
@@ -91,6 +91,10 @@ bool dash_set_layout(Dashboard* d, const char* json, char* err, size_t errn) {
         c.chart_points = o["points"] | 30;
         if (c.chart_points > CHART_MAX_POINTS) c.chart_points = CHART_MAX_POINTS;
         if (c.chart_points < 1)                c.chart_points = 1;
+        const char* isrc = o["src"] | "";
+        strlcpy(c.image_src, bg_key_valid(isrc) ? isrc : "", sizeof(c.image_src));
+        c.image_w = o["w"] | 0;
+        c.image_h = o["h"] | 0;
         JsonArrayConst th = o["thresholds"].as<JsonArrayConst>();
         for (JsonArrayConst pair : th) {
             if (c.threshold_count >= MAX_THRESHOLDS) break;
@@ -218,6 +222,9 @@ static void apply_chart(Component& c, JsonVariantConst v) {
 static void apply_meter(Component& c, JsonVariantConst v) {
     c.value = v.as<int>();                    // scalaire -> aiguille (comme bar)
 }
+static void apply_image(Component&, JsonVariantConst) {
+    // Image statique : pas de /update en v1 (asset GET-only). Entree de vtable requise.
+}
 
 static const comp_apply_fn APPLY[] = {
     /* COMP_NONE     */ nullptr,
@@ -229,6 +236,7 @@ static const comp_apply_fn APPLY[] = {
     /* COMP_SOUND    */ apply_sound,
     /* COMP_CHART    */ apply_chart,
     /* COMP_METER    */ apply_meter,
+    /* COMP_IMAGE    */ apply_image,
 };
 static_assert(sizeof(APPLY) / sizeof(APPLY[0]) == COMP_COUNT,
               "APPLY desync avec CompType : ajoute la ligne du nouveau type");

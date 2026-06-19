@@ -4,7 +4,7 @@
 #include "config.h"
 #include "context.h"
 
-enum CompType { COMP_NONE, COMP_LABEL, COMP_READOUT, COMP_BAR, COMP_RING, COMP_LED_RING, COMP_SOUND, COMP_CHART, COMP_METER, COMP_COUNT };
+enum CompType { COMP_NONE, COMP_LABEL, COMP_READOUT, COMP_BAR, COMP_RING, COMP_LED_RING, COMP_SOUND, COMP_CHART, COMP_METER, COMP_IMAGE, COMP_COUNT };
 enum LedMode  { LED_OFF, LED_SOLID, LED_PROGRESS, LED_SPINNER, LED_BLINK, LED_BREATHE };
 enum Anchor   { A_CENTER, A_TOP_MID, A_BOTTOM_MID, A_LEFT_MID, A_RIGHT_MID,
                 A_TOP_LEFT, A_TOP_RIGHT, A_BOTTOM_LEFT, A_BOTTOM_RIGHT };
@@ -32,6 +32,8 @@ struct Component {
     uint8_t  led_brightness_cfg;
     char     bind[ID_LEN];           // nom de variable du contexte (pull) ; vide = push par id
     int      chart_points;           // chart : longueur de la fenêtre d'historique (défaut 30, borné CHART_MAX_POINTS)
+    char     image_src[ID_LEN];      // image : cle d'asset (/img/<src>.565a) ; vide = pas d'image
+    int      image_w, image_h;       // image : dimensions de l'asset RGB565A8 (octets attendus = w*h*3)
 
     // --- etat (modifie par /update) ---
     int32_t  value;

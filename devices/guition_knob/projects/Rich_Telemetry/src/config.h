@@ -28,3 +28,9 @@
 #define BG_IMG_H       360
 #define BG_IMG_BYTES   (BG_IMG_W * BG_IMG_H * 2)   // RGB565 plein ecran = 259200
 #define BG_DIR         "/bg"                        // repertoire LittleFS des fonds
+
+#define IMG_MAX_W      360                                   // image placee : ne depasse pas l'ecran
+#define IMG_MAX_H      360
+#define IMG_PX_BYTES   3                                     // RGB565A8 = 2 octets couleur + 1 alpha
+#define IMG_MAX_BYTES  (IMG_MAX_W * IMG_MAX_H * IMG_PX_BYTES) // 388800
+#define IMG_DIR        "/img"                                // repertoire LittleFS des images placees
