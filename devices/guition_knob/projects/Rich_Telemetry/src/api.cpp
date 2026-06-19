@@ -115,6 +115,28 @@ static void h_set_layout() {
         }
         for (int i = 0; i < nv; i++) LittleFS.remove(victims[i]);
     }
+    // Sweep : supprime les images /img/*.565a que plus aucun composant image ne reference.
+    {
+        String victims[16]; int nv = 0;
+        File dir = LittleFS.open(IMG_DIR);
+        if (dir && dir.isDirectory()) {
+            for (File e = dir.openNextFile(); e && nv < 16; e = dir.openNextFile()) {
+                String full = e.name();
+                e.close();
+                int slash = full.lastIndexOf('/');
+                String b = (slash >= 0) ? full.substring(slash + 1) : full;
+                if (!b.endsWith(".565a")) continue;           // ignore _upload.tmp
+                String key = b.substring(0, b.length() - 5);  // ".565a" = 5 caracteres
+                bool referenced = false;
+                for (int c = 0; c < D->comp_count; c++)
+                    if (D->components[c].type == COMP_IMAGE && key.length() &&
+                        strcmp(D->components[c].image_src, key.c_str()) == 0) { referenced = true; break; }
+                if (!referenced) victims[nv++] = String(IMG_DIR) + "/" + b;
+            }
+            dir.close();
+        }
+        for (int i = 0; i < nv; i++) LittleFS.remove(victims[i]);
+    }
     S->send(200, "application/json", "{\"ok\":true}\n");
 }
 
@@ -258,6 +280,55 @@ static void h_bgimage_get() {
     f.close();
 }
 
+// --- POST /image?key=<hex> : upload d'une image placee RGB565A8 (taille variable) ---
+static File   s_img_up;
+static size_t s_img_written = 0;
+static const char* IMG_TMP = IMG_DIR "/_upload.tmp";
+
+static void h_image_upload() {
+    HTTPUpload& up = S->upload();
+    if (up.status == UPLOAD_FILE_START) {
+        if (!LittleFS.exists(IMG_DIR)) LittleFS.mkdir(IMG_DIR);
+        s_img_written = 0;
+        s_img_up = LittleFS.open(IMG_TMP, "w");
+    } else if (up.status == UPLOAD_FILE_WRITE) {
+        if (s_img_up) s_img_written += s_img_up.write(up.buf, up.currentSize);
+    } else if (up.status == UPLOAD_FILE_END) {
+        if (s_img_up) s_img_up.close();
+    }
+}
+
+static void h_image_done() {
+    String key = S->arg("key");
+    // Taille variable : on borne (<= plein ecran) et on exige un multiple de 3 (RGB565A8). La validation
+    // forte len == w*h*3 a lieu au chargement (img_load_component, ou w/h sont connus).
+    if (s_img_written == 0 || s_img_written > (size_t)IMG_MAX_BYTES || (s_img_written % IMG_PX_BYTES) != 0) {
+        LittleFS.remove(IMG_TMP);
+        S->send(400, "text/plain", "bad size\n"); return;
+    }
+    if (!bg_key_valid(key.c_str())) {
+        LittleFS.remove(IMG_TMP);
+        S->send(400, "text/plain", "bad key\n"); return;
+    }
+    String dst = String(IMG_DIR) + "/" + key + ".565a";
+    LittleFS.remove(dst);
+    if (!LittleFS.rename(IMG_TMP, dst)) {
+        LittleFS.remove(IMG_TMP);
+        S->send(500, "text/plain", "FS rename failed\n"); return;
+    }
+    S->send(200, "application/json", "{\"ok\":true}\n");
+}
+
+static void h_image_get() {
+    String key = S->arg("key");
+    if (!bg_key_valid(key.c_str())) { S->send(400, "text/plain", "bad key\n"); return; }
+    String path = String(IMG_DIR) + "/" + key + ".565a";
+    File f = LittleFS.open(path, "r");
+    if (!f) { S->send(404, "text/plain", "not found\n"); return; }
+    S->streamFile(f, "application/octet-stream");
+    f.close();
+}
+
 void api_register(WebServer& server, Dashboard* d) {
     S = &server; D = d;
     server.enableCORS(true);   // Allow-Origin/Methods/Headers: * sur toutes les réponses (outil de dev LAN mono-utilisateur)
@@ -271,6 +342,8 @@ void api_register(WebServer& server, Dashboard* d) {
     server.on("/screenshot", HTTP_GET, h_screenshot);   // capture ecran -> image/bmp
     server.on("/bgimage", HTTP_POST, h_bgimage_done, h_bgimage_upload);  // done + upload handler
     server.on("/bgimage", HTTP_GET,  h_bgimage_get);
+    server.on("/image", HTTP_POST, h_image_done, h_image_upload);
+    server.on("/image", HTTP_GET,  h_image_get);
     // Designer embarque (LittleFS) : http://<ip>/designer/ sert l'editeur en MEME origin (plus de
     // serveur local ni de CORS). serveStatic cherche index.htm pour une URL de repertoire ("/designer/").
     // Fichiers stages par tools/stage_fs.sh puis flashes via --uploadfs. Le schema partage est servi a
