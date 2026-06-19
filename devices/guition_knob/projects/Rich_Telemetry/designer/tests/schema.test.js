@@ -116,3 +116,18 @@ test('schema : composant image — propriété inconnue rejetée', () => {
   l.pages[0].place.push({ ref: 'logo', anchor: 'CENTER' });
   assert.equal(validate(l).valid, false);
 });
+
+test('schema : image_anim valide (src/w/h/frames/period/loop/autoplay)', () => {
+  const l = base();
+  l.components.sp = { type: 'image_anim', src: 'abcd1234', w: 64, h: 64, frames: 6, period: 80, rest_frame: 2, loop: 3, autoplay: true };
+  l.pages[0].place.push({ ref: 'sp', anchor: 'CENTER' });
+  const r = validate(l);
+  assert.equal(r.valid, true, JSON.stringify(r.errors));
+});
+
+test('schema : image_anim rejette frames > 32', () => {
+  const l = base();
+  l.components.sp = { type: 'image_anim', src: 'abcd1234', w: 64, h: 64, frames: 99 };
+  l.pages[0].place.push({ ref: 'sp', anchor: 'CENTER' });
+  assert.equal(validate(l).valid, false);
+});

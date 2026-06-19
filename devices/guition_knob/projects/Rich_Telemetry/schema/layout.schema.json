@@ -88,7 +88,8 @@
         { "$ref": "#/$defs/comp_sound" },
         { "$ref": "#/$defs/comp_chart" },
         { "$ref": "#/$defs/comp_meter" },
-        { "$ref": "#/$defs/comp_image" }
+        { "$ref": "#/$defs/comp_image" },
+        { "$ref": "#/$defs/comp_image_anim" }
       ]
     },
     "comp_label": {
@@ -214,6 +215,24 @@
         "src": { "$ref": "#/$defs/ascii", "description": "Cle d'asset (hash FNV-1a du contenu RGB565A8). Absente tant qu'aucune image n'est choisie." },
         "w": { "type": "integer", "minimum": 1, "maximum": 360, "description": "Largeur en pixels (= largeur de l'asset). Defaut 120." },
         "h": { "type": "integer", "minimum": 1, "maximum": 360, "description": "Hauteur en pixels (= hauteur de l'asset). Defaut 120." }
+      }
+    },
+    "comp_image_anim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "description": "Image animee : pack RGB565A8 multi-frames (N frames brutes concatenees), rasterise par le navigateur a w×h, uploade via POST /aimg?key=. Runtime via /update : {\"frame\":K} | {\"play\":true,\"loop\":L,\"period\":ms} | {\"stop\":true}. bind = frame d'etat au repos (clamp 0..frames-1). Place via anchor/dx/dy.",
+      "properties": {
+        "type": { "const": "image_anim" },
+        "src": { "$ref": "#/$defs/ascii", "description": "Cle d'asset (hash FNV-1a du pack). Absente tant qu'aucune animation n'est choisie." },
+        "w": { "type": "integer", "minimum": 1, "maximum": 360, "description": "Largeur d'une frame (px) = largeur de l'asset." },
+        "h": { "type": "integer", "minimum": 1, "maximum": 360, "description": "Hauteur d'une frame (px) = hauteur de l'asset." },
+        "frames": { "type": "integer", "minimum": 1, "maximum": 32, "description": "Nombre de frames du pack. Borne AIMG_MAX_FRAMES=32." },
+        "period": { "type": "integer", "minimum": 1, "description": "Temps inter-frame par defaut (ms). Defaut 100. Surchargable via /update." },
+        "rest_frame": { "type": "integer", "minimum": 0, "description": "Frame affichee au repos / apres un play fini. Defaut 0." },
+        "loop": { "type": "integer", "minimum": 0, "description": "Nb de passes par defaut d'un play. 0 = infini (jusqu'a stop). Defaut 0." },
+        "autoplay": { "type": "boolean", "description": "Demarre la lecture au chargement de la page. Defaut false." },
+        "bind": { "$ref": "#/$defs/ascii", "description": "Variable du contexte (pull) : selectionne la frame d'etat (clamp 0..frames-1) quand l'anim est a l'arret." }
       }
     },
     "page": {
