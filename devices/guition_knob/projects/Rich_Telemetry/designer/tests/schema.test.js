@@ -131,3 +131,13 @@ test('schema : image_anim rejette frames > 32', () => {
   l.pages[0].place.push({ ref: 'sp', anchor: 'CENTER' });
   assert.equal(validate(l).valid, false);
 });
+
+test('validate : image_anim au-dela du plafond memoire -> erreur', () => {
+  const l = base();
+  // 360*360*3*8 = 3 110 400 octets > 1 572 864
+  l.components.sp = { type: 'image_anim', src: 'abcd1234', w: 360, h: 360, frames: 8 };
+  l.pages[0].place.push({ ref: 'sp', anchor: 'CENTER' });
+  const r = validate(l);
+  assert.equal(r.valid, false);
+  assert.ok(r.errors.some(e => /pack trop gros|trop de frames/.test(e)));
+});

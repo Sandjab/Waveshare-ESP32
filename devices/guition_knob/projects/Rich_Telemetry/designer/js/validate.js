@@ -34,6 +34,13 @@ export function createValidator(schema) {
         if (pl && pl.ref !== undefined && !ids.has(pl.ref)) errors.push(`page ${pi + 1} : référence inconnue « ${pl.ref} »`);
       });
     });
+    // Limites image_anim (config.h : AIMG_MAX_FRAMES=32, AIMG_MAX_BYTES=1572864).
+    Object.entries(layout?.components || {}).forEach(([id, c]) => {
+      if (!c || c.type !== 'image_anim') return;
+      if (c.frames > 32) errors.push(`composant « ${id} » : trop de frames (${c.frames}, max 32)`);
+      const bytes = (c.w || 0) * (c.h || 0) * 3 * (c.frames || 0);
+      if (bytes > 1572864) errors.push(`composant « ${id} » : pack trop gros (${bytes} o, max 1572864)`);
+    });
     // Avertissements (non bloquants) : un bind sans variable de source correspondante reste valide
     // (la variable peut être alimentée par POST /context), mais on le signale.
     const warnings = [];
