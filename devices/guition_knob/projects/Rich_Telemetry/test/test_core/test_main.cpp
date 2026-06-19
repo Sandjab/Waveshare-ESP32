@@ -536,6 +536,7 @@ void test_layout_image_anim_parsed(void) {
     TEST_ASSERT_EQUAL_INT(COMP_IMAGE_ANIM, c.type);
     TEST_ASSERT_EQUAL_STRING("abcd1234", c.image_src);
     TEST_ASSERT_EQUAL_INT(64, c.image_w);
+    TEST_ASSERT_EQUAL_INT(64, c.image_h);
     TEST_ASSERT_EQUAL_INT(6,  c.aimg_frames);
     TEST_ASSERT_EQUAL_INT(80, c.aimg_period);
     TEST_ASSERT_EQUAL_INT(2,  c.aimg_rest);
@@ -581,6 +582,19 @@ void test_update_aimg_stop(void) {
     dash_set_layout(&d, LAYOUT_AIMG, err, sizeof(err));
     dash_apply_update(&d, "{\"sp\":{\"stop\":true}}", unk, sizeof(unk));
     TEST_ASSERT_FALSE(d.components[0].aimg_playing);
+    TEST_ASSERT_EQUAL_INT(2, d.components[0].value);   // stop -> frame de repos (spec)
+}
+void test_update_aimg_frame_clamps_negative(void) {
+    static Dashboard d; char err[64], unk[64];
+    dash_set_layout(&d, LAYOUT_AIMG, err, sizeof(err));
+    dash_apply_update(&d, "{\"sp\":{\"frame\":-3}}", unk, sizeof(unk));
+    TEST_ASSERT_EQUAL_INT(0, d.components[0].value);
+}
+void test_update_aimg_play_period_defaults(void) {
+    static Dashboard d; char err[64], unk[64];
+    dash_set_layout(&d, LAYOUT_AIMG, err, sizeof(err));   // period 80 in layout
+    dash_apply_update(&d, "{\"sp\":{\"play\":true}}", unk, sizeof(unk));
+    TEST_ASSERT_EQUAL_INT(80, d.components[0].aimg_period_ms);
 }
 
 int main(int, char**) {
@@ -611,6 +625,8 @@ int main(int, char**) {
     RUN_TEST(test_update_aimg_play_sets_state);
     RUN_TEST(test_update_aimg_play_loop0_infinite);
     RUN_TEST(test_update_aimg_stop);
+    RUN_TEST(test_update_aimg_frame_clamps_negative);
+    RUN_TEST(test_update_aimg_play_period_defaults);
     RUN_TEST(test_ctxapply_meter_value);
     RUN_TEST(test_ctxapply_chart_appends_on_change);
     RUN_TEST(test_layout_parse_counts);

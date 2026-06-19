@@ -99,7 +99,7 @@ bool dash_set_layout(Dashboard* d, const char* json, char* err, size_t errn) {
         c.aimg_frames   = o["frames"] | 0;
         if (c.aimg_frames > AIMG_MAX_FRAMES) c.aimg_frames = AIMG_MAX_FRAMES;
         if (c.aimg_frames < 0)               c.aimg_frames = 0;
-        c.aimg_period   = o["period"] | 100;
+        { int aimg_per = o["period"] | 100; c.aimg_period = (uint16_t)(aimg_per > 0 ? aimg_per : 100); }
         c.aimg_rest     = o["rest_frame"] | 0;
         if (c.aimg_rest < 0) c.aimg_rest = 0;
         if (c.aimg_frames > 0 && c.aimg_rest >= c.aimg_frames) c.aimg_rest = c.aimg_frames - 1;
@@ -246,7 +246,11 @@ static void apply_image(Component&, JsonVariantConst) {
     // Image statique : pas de /update en v1 (asset GET-only). Entree de vtable requise.
 }
 static void apply_image_anim(Component& c, JsonVariantConst v) {
-    if (v["stop"] | false) { c.aimg_playing = false; return; }
+    if (v["stop"] | false) {
+        c.aimg_playing = false;
+        c.value = (c.aimg_frames > 0 && c.aimg_rest >= 0 && c.aimg_rest < c.aimg_frames) ? c.aimg_rest : 0;
+        return;
+    }
     if (v["frame"].is<int>()) {
         int fr = v["frame"];
         if (c.aimg_frames > 0) { if (fr < 0) fr = 0; if (fr >= c.aimg_frames) fr = c.aimg_frames - 1; }
@@ -256,6 +260,7 @@ static void apply_image_anim(Component& c, JsonVariantConst v) {
         return;
     }
     if (v["play"] | false) {
+        if (c.aimg_frames <= 0) return;          // pas d'asset : play ignore
         int per  = v["period"] | (int)(c.aimg_period ? c.aimg_period : 100);
         int loop = v["loop"]   | c.aimg_loop;            // 0 = infini
         c.aimg_period_ms  = (uint16_t)(per > 0 ? per : 100);
