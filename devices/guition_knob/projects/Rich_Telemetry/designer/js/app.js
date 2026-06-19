@@ -150,9 +150,10 @@ async function main() {
         if (!previewUrl(k)) { const b = await fetchBgImage(base, k); if (b) cachePut(k, b); }
       }
       for (const [id, ic] of Object.entries(model.state.components || {})) {
-        if (ic.type !== 'image' || !ic.src || imagePreviewUrl(ic.src)) continue;
+        // garde w/h > 0 : un layout edite a la main sans dimensions ferait throw createImageData(0,0)
+        if (ic.type !== 'image' || !ic.src || !(ic.w > 0) || !(ic.h > 0) || imagePreviewUrl(ic.src)) continue;
         const b = await fetchImage(base, ic.src);
-        if (b) rehydrateImage(ic.src, id, b, ic.w || 0, ic.h || 0);
+        if (b) rehydrateImage(ic.src, id, b, ic.w, ic.h);
       }
       setStatus('Chargé', 'ok');
     }
