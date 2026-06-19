@@ -522,6 +522,67 @@ void test_ctxapply_chart_appends_on_change(void) {
     TEST_ASSERT_EQUAL_INT(20, d.components[i].hist[1]);
 }
 
+// --- image_anim : parse du layout ---
+static const char* LAYOUT_AIMG =
+  "{\"components\":{"
+  "  \"sp\":{\"type\":\"image_anim\",\"src\":\"abcd1234\",\"w\":64,\"h\":64,"
+  "         \"frames\":6,\"period\":80,\"rest_frame\":2,\"loop\":3,\"autoplay\":true}},"
+  " \"pages\":[{\"name\":\"P\",\"place\":[{\"ref\":\"sp\",\"anchor\":\"CENTER\"}]}]}";
+
+void test_layout_image_anim_parsed(void) {
+    static Dashboard d; char err[64];
+    TEST_ASSERT_TRUE(dash_set_layout(&d, LAYOUT_AIMG, err, sizeof(err)));
+    Component& c = d.components[0];
+    TEST_ASSERT_EQUAL_INT(COMP_IMAGE_ANIM, c.type);
+    TEST_ASSERT_EQUAL_STRING("abcd1234", c.image_src);
+    TEST_ASSERT_EQUAL_INT(64, c.image_w);
+    TEST_ASSERT_EQUAL_INT(6,  c.aimg_frames);
+    TEST_ASSERT_EQUAL_INT(80, c.aimg_period);
+    TEST_ASSERT_EQUAL_INT(2,  c.aimg_rest);
+    TEST_ASSERT_EQUAL_INT(3,  c.aimg_loop);
+    TEST_ASSERT_TRUE(c.aimg_autoplay);
+    TEST_ASSERT_TRUE(c.aimg_playing);
+    TEST_ASSERT_EQUAL_INT(0, c.value);
+    TEST_ASSERT_EQUAL_INT(3, c.aimg_loops_left);
+}
+
+// --- image_anim : apply /update ---
+void test_update_aimg_frame_jumps_and_stops(void) {
+    static Dashboard d; char err[64], unk[64];
+    dash_set_layout(&d, LAYOUT_AIMG, err, sizeof(err));
+    dash_apply_update(&d, "{\"sp\":{\"frame\":4}}", unk, sizeof(unk));
+    TEST_ASSERT_EQUAL_INT(4, d.components[0].value);
+    TEST_ASSERT_FALSE(d.components[0].aimg_playing);
+}
+void test_update_aimg_frame_clamps(void) {
+    static Dashboard d; char err[64], unk[64];
+    dash_set_layout(&d, LAYOUT_AIMG, err, sizeof(err));
+    dash_apply_update(&d, "{\"sp\":{\"frame\":99}}", unk, sizeof(unk));
+    TEST_ASSERT_EQUAL_INT(5, d.components[0].value);
+}
+void test_update_aimg_play_sets_state(void) {
+    static Dashboard d; char err[64], unk[64];
+    dash_set_layout(&d, LAYOUT_AIMG, err, sizeof(err));
+    dash_apply_update(&d, "{\"sp\":{\"play\":true,\"loop\":2,\"period\":40}}", unk, sizeof(unk));
+    Component& c = d.components[0];
+    TEST_ASSERT_TRUE(c.aimg_playing);
+    TEST_ASSERT_EQUAL_INT(40, c.aimg_period_ms);
+    TEST_ASSERT_EQUAL_INT(2, c.aimg_loops_left);
+    TEST_ASSERT_EQUAL_INT(0, c.value);
+}
+void test_update_aimg_play_loop0_infinite(void) {
+    static Dashboard d; char err[64], unk[64];
+    dash_set_layout(&d, LAYOUT_AIMG, err, sizeof(err));
+    dash_apply_update(&d, "{\"sp\":{\"play\":true,\"loop\":0}}", unk, sizeof(unk));
+    TEST_ASSERT_EQUAL_INT(-1, d.components[0].aimg_loops_left);
+}
+void test_update_aimg_stop(void) {
+    static Dashboard d; char err[64], unk[64];
+    dash_set_layout(&d, LAYOUT_AIMG, err, sizeof(err));
+    dash_apply_update(&d, "{\"sp\":{\"stop\":true}}", unk, sizeof(unk));
+    TEST_ASSERT_FALSE(d.components[0].aimg_playing);
+}
+
 int main(int, char**) {
     UNITY_BEGIN();
     RUN_TEST(test_remaining_seconds);
@@ -544,6 +605,12 @@ int main(int, char**) {
     RUN_TEST(test_chart_ring_keeps_last_n);
     RUN_TEST(test_chart_points_parsed_and_clamped);
     RUN_TEST(test_update_meter_value);
+    RUN_TEST(test_layout_image_anim_parsed);
+    RUN_TEST(test_update_aimg_frame_jumps_and_stops);
+    RUN_TEST(test_update_aimg_frame_clamps);
+    RUN_TEST(test_update_aimg_play_sets_state);
+    RUN_TEST(test_update_aimg_play_loop0_infinite);
+    RUN_TEST(test_update_aimg_stop);
     RUN_TEST(test_ctxapply_meter_value);
     RUN_TEST(test_ctxapply_chart_appends_on_change);
     RUN_TEST(test_layout_parse_counts);

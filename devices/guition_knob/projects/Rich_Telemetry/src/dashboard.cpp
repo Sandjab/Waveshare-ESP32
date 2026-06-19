@@ -28,6 +28,7 @@ static const struct { const char* name; CompType type; } COMP_NAMES[] = {
     { "label",    COMP_LABEL    }, { "readout",  COMP_READOUT  }, { "bar",   COMP_BAR   },
     { "ring",     COMP_RING     }, { "led_ring", COMP_LED_RING }, { "sound", COMP_SOUND },
     { "chart",    COMP_CHART    }, { "meter",    COMP_METER    }, { "image", COMP_IMAGE },
+    { "image_anim", COMP_IMAGE_ANIM },
 };
 
 static CompType parse_type(const char* s) {
@@ -95,6 +96,25 @@ bool dash_set_layout(Dashboard* d, const char* json, char* err, size_t errn) {
         strlcpy(c.image_src, bg_key_valid(isrc) ? isrc : "", sizeof(c.image_src));
         c.image_w = o["w"] | 0;
         c.image_h = o["h"] | 0;
+        c.aimg_frames   = o["frames"] | 0;
+        if (c.aimg_frames > AIMG_MAX_FRAMES) c.aimg_frames = AIMG_MAX_FRAMES;
+        if (c.aimg_frames < 0)               c.aimg_frames = 0;
+        c.aimg_period   = o["period"] | 100;
+        c.aimg_rest     = o["rest_frame"] | 0;
+        if (c.aimg_rest < 0) c.aimg_rest = 0;
+        if (c.aimg_frames > 0 && c.aimg_rest >= c.aimg_frames) c.aimg_rest = c.aimg_frames - 1;
+        c.aimg_loop     = o["loop"] | 0;
+        c.aimg_autoplay = o["autoplay"] | false;
+        if (c.type == COMP_IMAGE_ANIM) {                    // n'ecrase value que pour ce type
+            c.value = c.aimg_rest;                          // frame initiale = repos
+            if (c.aimg_autoplay && c.aimg_frames > 0) {
+                c.aimg_playing    = true;
+                c.aimg_loops_left = (c.aimg_loop <= 0) ? -1 : c.aimg_loop;
+                c.aimg_period_ms  = c.aimg_period ? c.aimg_period : 100;
+                c.aimg_last_ms    = 0;
+                c.value           = 0;
+            }
+        }
         JsonArrayConst th = o["thresholds"].as<JsonArrayConst>();
         for (JsonArrayConst pair : th) {
             if (c.threshold_count >= MAX_THRESHOLDS) break;
@@ -225,6 +245,26 @@ static void apply_meter(Component& c, JsonVariantConst v) {
 static void apply_image(Component&, JsonVariantConst) {
     // Image statique : pas de /update en v1 (asset GET-only). Entree de vtable requise.
 }
+static void apply_image_anim(Component& c, JsonVariantConst v) {
+    if (v["stop"] | false) { c.aimg_playing = false; return; }
+    if (v["frame"].is<int>()) {
+        int fr = v["frame"];
+        if (c.aimg_frames > 0) { if (fr < 0) fr = 0; if (fr >= c.aimg_frames) fr = c.aimg_frames - 1; }
+        else fr = 0;
+        c.value = fr;
+        c.aimg_playing = false;
+        return;
+    }
+    if (v["play"] | false) {
+        int per  = v["period"] | (int)(c.aimg_period ? c.aimg_period : 100);
+        int loop = v["loop"]   | c.aimg_loop;            // 0 = infini
+        c.aimg_period_ms  = (uint16_t)(per > 0 ? per : 100);
+        c.aimg_loops_left = (loop <= 0) ? -1 : loop;
+        c.aimg_playing    = true;
+        c.aimg_last_ms    = 0;
+        c.value           = 0;
+    }
+}
 
 static const comp_apply_fn APPLY[] = {
     /* COMP_NONE     */ nullptr,
@@ -237,6 +277,7 @@ static const comp_apply_fn APPLY[] = {
     /* COMP_CHART    */ apply_chart,
     /* COMP_METER    */ apply_meter,
     /* COMP_IMAGE    */ apply_image,
+    /* COMP_IMAGE_ANIM */ apply_image_anim,
 };
 static_assert(sizeof(APPLY) / sizeof(APPLY[0]) == COMP_COUNT,
               "APPLY desync avec CompType : ajoute la ligne du nouveau type");
