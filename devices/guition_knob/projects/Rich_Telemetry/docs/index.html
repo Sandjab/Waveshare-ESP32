@@ -361,6 +361,23 @@ sont <b>physiques</b>. La colonne « <code>/update</code> » donne la forme de l
   </div>
 </div>
 
+<div class="comp">
+  <div>
+    <h3 id="c-image">image — bitmap statique</h3>
+    <p>Bitmap statique placé sur une page, redimensionnable librement (l'image peut être déformée).
+    Choisir un fichier dans l'inspecteur : le navigateur le convertit en RGB565A8 (transparence des PNG
+    conservée) à la taille du composant et l'envoie au device au « Pousser ». La taille est portée par le
+    composant : la même image placée sur plusieurs pages s'affiche à une taille unique. Plafond : 360×360 px.
+    Après rechargement du designer depuis le device, un redimensionnement repart de la version déjà
+    rastérisée (qualité réduite) — re-choisir le fichier pour la pleine qualité.</p>
+    <table><tbody>
+      <tr><th>Config</th><td><code class="fieldname">src</code> (clé d'asset, posée automatiquement au choix du fichier)</td></tr>
+      <tr><th>Géométrie</th><td><code class="fieldname">w</code>, <code class="fieldname">h</code> (taille en pixels, ajustées par les poignées de redimensionnement), <code>anchor</code>, <code>dx</code>, <code>dy</code></td></tr>
+      <tr><th><code>/update</code></th><td>—</td></tr>
+    </tbody></table>
+  </div>
+</div>
+
 <h3 id="c-led">led_ring — anneau LED physique <span class="badge badge-info">physique</span></h3>
 <p>Commande l'anneau de 13 WS2812. Config : <code class="fieldname">color</code>, <code class="fieldname">brightness</code> (0-255, défaut 64).
 Pas de géométrie. Mode &amp; valeur via <code>/update</code> :</p>
