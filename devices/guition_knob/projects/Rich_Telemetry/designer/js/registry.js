@@ -4,7 +4,7 @@
 // L'aperçu (build) reste dans render.js (double-maintenance du rendu firmware) ; ici on le référence
 // via une signature normalisée (comp, placement, mock).
 import { snapPlacement } from './geometry.js';
-import { buildLabel, buildReadout, buildBar, buildRing, buildChart, buildMeter, buildImage } from './render.js';
+import { buildLabel, buildReadout, buildBar, buildRing, buildChart, buildMeter, buildImage, buildImageAnim } from './render.js';
 
 // Placement initial d'un widget d'écran : ancrage + offset déduits du point de dépôt (boîte ~0).
 const screenPlacement = (id, x, y) => {
@@ -92,6 +92,18 @@ export const COMPONENTS = {
     placeFields: [['anchor', 'Ancrage', 'anchor'], ['dx', 'dx', 'num'], ['dy', 'dy', 'num']],
     mockFields: [],
     build: (comp) => buildImage(comp),
+  },
+  image_anim: {
+    label: 'Image animée',
+    defaults: () => ({ type: 'image_anim', w: 120, h: 120, period: 100, rest_frame: 0, loop: 0, autoplay: false }),
+    makePlacement: screenPlacement,
+    centered: false, physical: false,
+    compFields: [['src', 'Animation', 'image_anim'], ['period', 'Période (ms)', 'num'],
+                 ['rest_frame', 'Frame repos', 'num'], ['loop', 'Boucles (0=∞)', 'num'],
+                 ['autoplay', 'Autoplay', 'bool'], ['bind', 'Variable (pull)', 'asciitext']],
+    placeFields: [['anchor', 'Ancrage', 'anchor'], ['dx', 'dx', 'num'], ['dy', 'dy', 'num']],
+    mockFields: [],
+    build: (comp) => buildImageAnim(comp),
   },
   led_ring: {
     label: 'LED ring',

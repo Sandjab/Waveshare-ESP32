@@ -3,6 +3,7 @@
 // La math (ci-dessous) est pure et testée ; les builders DOM (plus bas) sont vérifiés au navigateur.
 
 import { previewUrl } from './image-asset.js';
+import { previewUrl as aimgPreviewUrl } from './image-anim-asset.js';
 
 // Valeurs d'aperçu mock par défaut. Plan C les rendra éditables via l'inspecteur ; ici elles sont fixes.
 export const MOCKS = {
@@ -314,6 +315,28 @@ export function buildMeter(comp, placement, mock = MOCKS.meter) {
   hub.setAttribute('class', 'meter-hub');
   svg.appendChild(hub);
   wrap.appendChild(svg);
+  return wrap;
+}
+
+// Image animee : pack multi-frames RGB565A8. Apercu statique = frame de repos (parite avec le device
+// a l'arret). Meme conteneur CSS que buildImage (w-image) pour reutiliser le placeholder styled.
+export function buildImageAnim(comp) {
+  const wrap = document.createElement('div');
+  wrap.className = 'w w-image';
+  wrap.style.width  = (comp.w || 120) + 'px';
+  wrap.style.height = (comp.h || 120) + 'px';
+  // Apercu statique = frame de repos (parite avec le device a l'arret).
+  const url = comp.src ? aimgPreviewUrl(comp.src, comp.rest_frame || 0) : null;
+  if (url) {
+    const img = document.createElement('img');
+    img.className = 'w-image-img';
+    img.src = url;
+    img.style.width = '100%'; img.style.height = '100%';
+    img.style.display = 'block'; img.style.objectFit = 'fill';
+    wrap.appendChild(img);
+  } else {
+    wrap.classList.add('w-image--empty');
+  }
   return wrap;
 }
 
