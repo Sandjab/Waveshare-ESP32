@@ -23,6 +23,10 @@ static lv_img_dsc_t s_bg_dsc[MAX_PAGES];
 static uint8_t*     s_img_buf[MAX_COMPONENTS] = {0};
 static lv_img_dsc_t s_img_dsc[MAX_COMPONENTS];
 
+// Images animees : pack RGB565A8 multi-frames en PSRAM + un descripteur lv_img par frame.
+static uint8_t*      s_aimg_buf[MAX_COMPONENTS] = {0};
+static lv_img_dsc_t* s_aimg_dsc[MAX_COMPONENTS] = {0};   // tableau de c.aimg_frames descripteurs (PSRAM)
+
 static const lv_align_t ALIGN_MAP[] = {
     LV_ALIGN_CENTER, LV_ALIGN_TOP_MID, LV_ALIGN_BOTTOM_MID, LV_ALIGN_LEFT_MID,
     LV_ALIGN_RIGHT_MID, LV_ALIGN_TOP_LEFT, LV_ALIGN_TOP_RIGHT, LV_ALIGN_BOTTOM_LEFT, LV_ALIGN_BOTTOM_RIGHT
@@ -277,6 +281,31 @@ static void build_image(lv_obj_t* parent, Component& c, Placement& q,
     *main = img;
 }
 
+static void build_image_anim(lv_obj_t* parent, Component& c, Placement& q,
+                             lv_obj_t** main, lv_obj_t**, lv_obj_t**) {
+    lv_obj_t* img = lv_img_create(parent);
+    int idx = q.comp_index;
+    if (idx >= 0 && idx < MAX_COMPONENTS && s_aimg_buf[idx] && s_aimg_dsc[idx]) {
+        int fr = c.value;
+        if (fr < 0 || fr >= c.aimg_frames) fr = 0;
+        lv_img_set_src(img, &s_aimg_dsc[idx][fr]);
+    } else {                                              // asset non charge : placeholder borde
+        lv_obj_set_size(img, c.image_w > 0 ? c.image_w : 120, c.image_h > 0 ? c.image_h : 120);
+        lv_obj_set_style_border_width(img, 1, 0);
+        lv_obj_set_style_border_color(img, lv_color_hex(0x4B5563), 0);
+        lv_obj_set_style_border_opa(img, LV_OPA_COVER, 0);
+    }
+    lv_obj_align(img, ALIGN_MAP[q.anchor], q.dx, q.dy);
+    *main = img;
+}
+static void sync_image_anim(Component& c, Placement& q, lv_obj_t* main, lv_obj_t*, lv_obj_t*) {
+    int idx = q.comp_index;
+    if (idx < 0 || idx >= MAX_COMPONENTS || !s_aimg_buf[idx] || !s_aimg_dsc[idx]) return;
+    int fr = c.value;
+    if (fr < 0 || fr >= c.aimg_frames) fr = 0;
+    lv_img_set_src(main, &s_aimg_dsc[idx][fr]);           // dsc distinct/frame -> refresh garanti
+}
+
 // Vtable vue indexée par CompType. Types physiques (led_ring/sound) : build/sync = nullptr
 // (rendus par leur tick dédié -> le moteur les saute). label/readout partagent build_text.
 struct ViewVTable {
@@ -296,6 +325,7 @@ static const ViewVTable VIEW[] = {
     /* COMP_CHART    */ { build_chart, sync_chart },
     /* COMP_METER    */ { build_meter, sync_meter },
     /* COMP_IMAGE    */ { build_image, nullptr     },
+    /* COMP_IMAGE_ANIM */ { build_image_anim, sync_image_anim },
 };
 static_assert(sizeof(VIEW) / sizeof(VIEW[0]) == COMP_COUNT,
               "VIEW desync avec CompType : ajoute la ligne du nouveau type");
@@ -454,6 +484,44 @@ static bool img_load_component(Dashboard* d, int idx) {
     return true;
 }
 
+// Charge /aimg/<src>.565p en PSRAM (pack RGB565A8 de N frames) et remplit N descripteurs.
+// Idempotent. false si invalide (asset absent, dims/compte nuls, taille incoherente, alloc ratee).
+static bool aimg_load_component(Dashboard* d, int idx) {
+    if (idx < 0 || idx >= d->comp_count || idx >= MAX_COMPONENTS) return false;
+    Component& c = d->components[idx];
+    if (!c.image_src[0] || c.image_w <= 0 || c.image_h <= 0 || c.aimg_frames <= 0) return false;
+    if (s_aimg_buf[idx]) return true;                      // deja charge
+    if (c.aimg_frames > AIMG_MAX_FRAMES) return false;
+    size_t frame_bytes = (size_t)c.image_w * c.image_h * AIMG_PX_BYTES;
+    size_t need = frame_bytes * (size_t)c.aimg_frames;
+    if (need == 0 || need > (size_t)AIMG_MAX_BYTES) return false;
+    char path[40];
+    snprintf(path, sizeof(path), "%s/%s.565p", AIMG_DIR, c.image_src);
+    File f = LittleFS.open(path, "r");
+    if (!f) return false;
+    if ((size_t)f.size() != need) { f.close(); return false; }
+    uint8_t* buf = (uint8_t*)heap_caps_malloc(need, MALLOC_CAP_SPIRAM);
+    if (!buf) { f.close(); return false; }
+    size_t rd = f.read(buf, need);
+    f.close();
+    if (rd != need) { heap_caps_free(buf); return false; }
+    lv_img_dsc_t* dscs = (lv_img_dsc_t*)heap_caps_malloc(sizeof(lv_img_dsc_t) * (size_t)c.aimg_frames, MALLOC_CAP_SPIRAM);
+    if (!dscs) { heap_caps_free(buf); return false; }
+    for (int fr = 0; fr < c.aimg_frames; fr++) {
+        lv_img_dsc_t& dsc = dscs[fr];
+        memset(&dsc, 0, sizeof(dsc));
+        dsc.header.always_zero = 0;
+        dsc.header.cf  = LV_IMG_CF_TRUE_COLOR_ALPHA;
+        dsc.header.w   = c.image_w;
+        dsc.header.h   = c.image_h;
+        dsc.data       = buf + (size_t)fr * frame_bytes;
+        dsc.data_size  = frame_bytes;
+    }
+    s_aimg_buf[idx] = buf;
+    s_aimg_dsc[idx] = dscs;
+    return true;
+}
+
 void view_rebuild(Dashboard* d) {
     page_anim_settle();                // annule une transition en vol avant de libérer les conteneurs
     lv_obj_t* scr = lv_scr_act();
@@ -463,6 +531,10 @@ void view_rebuild(Dashboard* d) {
     }
     for (int i = 0; i < MAX_COMPONENTS; i++) {
         if (s_img_buf[i]) { heap_caps_free(s_img_buf[i]); s_img_buf[i] = nullptr; }
+    }
+    for (int i = 0; i < MAX_COMPONENTS; i++) {
+        if (s_aimg_buf[i]) { heap_caps_free(s_aimg_buf[i]); s_aimg_buf[i] = nullptr; }
+        if (s_aimg_dsc[i]) { heap_caps_free(s_aimg_dsc[i]); s_aimg_dsc[i] = nullptr; }
     }
     s_dots = nullptr;  // freed by lv_obj_clean above; drop stale pointer
     lv_obj_set_style_bg_color(scr, lv_color_hex(d->background), 0);
@@ -494,6 +566,7 @@ void view_rebuild(Dashboard* d) {
             Placement& q = d->pages[p].places[i];
             Component& c = d->components[q.comp_index];
             if (c.type == COMP_IMAGE) img_load_component(d, q.comp_index);
+            if (c.type == COMP_IMAGE_ANIM) aimg_load_component(d, q.comp_index);
             if ((unsigned)c.type < COMP_COUNT && VIEW[c.type].build)
                 VIEW[c.type].build(cont, c, q, &s_widget[p][i], &s_sub1[p][i], &s_sub2[p][i]);
         }
