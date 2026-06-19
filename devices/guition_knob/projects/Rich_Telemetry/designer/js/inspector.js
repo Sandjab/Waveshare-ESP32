@@ -228,7 +228,6 @@ export function createInspector(root, model, { rerenderCanvas, clearSelection, g
   // a la taille COURANTE du composant (c.w×c.h). Commit en bloc : src + frames + w/h (+ period si GIF).
   let _aimgPreviewTimer = null;
   function imageAnimField(label, c) {
-    if (_aimgPreviewTimer) { clearInterval(_aimgPreviewTimer); _aimgPreviewTimer = null; }  // stoppe un apercu au rebuild
     const wrap = document.createElement('div'); wrap.className = 'insp-aimg';
     const row = document.createElement('div'); row.className = 'insp-row';
     const span = document.createElement('span'); span.className = 'insp-label'; span.textContent = label;
@@ -298,6 +297,7 @@ export function createInspector(root, model, { rerenderCanvas, clearSelection, g
   function render() {
     // garde focus : ne pas reconstruire pendant qu'un champ de l'inspecteur est en cours d'édition.
     if (root.contains(document.activeElement) && document.activeElement !== document.body) return;
+    if (_aimgPreviewTimer) { clearInterval(_aimgPreviewTimer); _aimgPreviewTimer = null; }   // stoppe l'apercu avant tout rebuild de l'inspecteur
     root.querySelectorAll('.insp-body').forEach(n => n.remove());
     placementInputs = {};   // les anciens champs viennent d'être retirés
     const c = comp();
