@@ -1,9 +1,10 @@
 import { createModel } from './model.js';
 import { createValidator } from './validate.js';
 import { bindJsonView } from './json-view.js';
-import { loadLayout, pushLayout, captureScreenshot, getStatus, setDevicePage, pushValues, uploadBgImage, fetchBgImage, uploadImage, fetchImage } from './device.js';
+import { loadLayout, pushLayout, captureScreenshot, getStatus, setDevicePage, pushValues, uploadBgImage, fetchBgImage, uploadImage, fetchImage, uploadAimg, fetchAimg } from './device.js';
 import { referencedKeys, cacheBytes, cachePut, previewUrl } from './bg-image.js';
 import { referencedImageKeys, cacheBytes as imageCacheBytes, previewUrl as imagePreviewUrl, rehydrate as rehydrateImage } from './image-asset.js';
+import { referencedAimgKeys, packBytes as aimgPackBytes, previewUrl as aimgPreviewUrl, rehydrate as rehydrateAimg } from './image-anim-asset.js';
 import { getMock } from './mocks.js';
 import { createCanvas } from './canvas.js';
 import { createPalette } from './palette.js';
@@ -151,6 +152,10 @@ async function main() {
       }
       for (const [id, ic] of Object.entries(model.state.components || {})) {
         // garde w/h > 0 : un layout edite a la main sans dimensions ferait throw createImageData(0,0)
+        if (ic.type === 'image_anim' && ic.src && ic.w > 0 && ic.h > 0 && ic.frames > 0 && !aimgPreviewUrl(ic.src)) {
+          const b = await fetchAimg(base, ic.src);
+          if (b) rehydrateAimg(ic.src, b, ic.w, ic.h, ic.frames);
+        }
         if (ic.type !== 'image' || !ic.src || !(ic.w > 0) || !(ic.h > 0) || imagePreviewUrl(ic.src)) continue;
         const b = await fetchImage(base, ic.src);
         if (b) rehydrateImage(ic.src, id, b, ic.w, ic.h);
@@ -173,6 +178,10 @@ async function main() {
       for (const k of referencedImageKeys(model.state)) {
         const bytes = imageCacheBytes(k);
         if (bytes) await uploadImage(base, k, bytes);   // avant pushLayout (le sweep tourne au POST /layout)
+      }
+      for (const k of referencedAimgKeys(model.state)) {
+        const bytes = aimgPackBytes(k);
+        if (bytes) await uploadAimg(base, k, bytes);   // avant pushLayout (le sweep tourne au POST /layout)
       }
       await pushLayout(base, model.toJSON());
       setStatus('Poussé et persisté', 'ok');

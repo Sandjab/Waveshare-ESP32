@@ -84,3 +84,20 @@ export async function fetchImage(base, key) {
   if (!r.ok) throw new Error('HTTP ' + r.status);
   return new Uint8Array(await r.arrayBuffer());
 }
+
+// POST /aimg?key=<hex> : upload d'un pack image animee RGB565A8 (multipart, streame en LittleFS).
+export async function uploadAimg(base, key, bytes) {
+  const fd = new FormData();
+  fd.append('img', new Blob([bytes], { type: 'application/octet-stream' }), key + '.565p');
+  const r = await fetch(clean(base) + '/aimg?key=' + encodeURIComponent(key), { method: 'POST', body: fd });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json().catch(() => ({}));
+}
+
+// GET /aimg?key=<hex> : recupere les octets du pack (Uint8Array), ou null si 404.
+export async function fetchAimg(base, key) {
+  const r = await fetch(clean(base) + '/aimg?key=' + encodeURIComponent(key));
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return new Uint8Array(await r.arrayBuffer());
+}
