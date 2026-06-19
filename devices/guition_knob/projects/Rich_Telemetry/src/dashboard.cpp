@@ -354,9 +354,43 @@ void context_apply(Dashboard* d) {
                     if (c.value != nv) { chart_push(c, (int16_t)nv); c.value = nv; changed = true; }
                 }
                 break;
+            case COMP_IMAGE_ANIM:                       // bind = frame d'etat, seulement a l'arret
+                if (!c.aimg_playing && v.type == CTX_NUM && c.aimg_frames > 0) {
+                    int32_t nv = (int32_t)v.num;
+                    if (nv < 0) nv = 0;
+                    if (nv >= c.aimg_frames) nv = c.aimg_frames - 1;
+                    if (c.value != nv) { c.value = nv; changed = true; }
+                }
+                break;
             default: break;                            // led_ring/sound : pas de bind
         }
         if (changed) { c.dirty = true; d->values_dirty = true; }
+    }
+}
+
+void dash_tick_aimg(Dashboard* d, uint32_t now_ms) {
+    for (int i = 0; i < d->comp_count; i++) {
+        Component& c = d->components[i];
+        if (c.type != COMP_IMAGE_ANIM || !c.aimg_playing) continue;
+        if (c.aimg_frames <= 0) { c.aimg_playing = false; continue; }
+        if (c.aimg_last_ms == 0) { c.aimg_last_ms = now_ms; continue; }   // 1er tick : montre frame 0 une periode
+        uint16_t per = c.aimg_period_ms ? c.aimg_period_ms : 100;
+        if ((now_ms - c.aimg_last_ms) < per) continue;
+        c.aimg_last_ms = now_ms;
+        int32_t nf = c.value + 1;
+        if (nf >= c.aimg_frames) {
+            nf = 0;
+            if (c.aimg_loops_left > 0) {                  // -1 = infini : jamais decremente
+                c.aimg_loops_left--;
+                if (c.aimg_loops_left == 0) {             // derniere passe terminee
+                    c.aimg_playing = false;
+                    nf = (c.aimg_rest >= 0 && c.aimg_rest < c.aimg_frames) ? c.aimg_rest : 0;
+                }
+            }
+        }
+        c.value = nf;
+        c.dirty = true;
+        d->values_dirty = true;
     }
 }
 

@@ -529,6 +529,12 @@ static const char* LAYOUT_AIMG =
   "         \"frames\":6,\"period\":80,\"rest_frame\":2,\"loop\":3,\"autoplay\":true}},"
   " \"pages\":[{\"name\":\"P\",\"place\":[{\"ref\":\"sp\",\"anchor\":\"CENTER\"}]}]}";
 
+static const char* LAYOUT_AIMG_BIND =
+  "{\"components\":{"
+  "  \"sp\":{\"type\":\"image_anim\",\"src\":\"abcd1234\",\"w\":64,\"h\":64,"
+  "         \"frames\":4,\"bind\":\"st\"}},"
+  " \"pages\":[{\"name\":\"P\",\"place\":[{\"ref\":\"sp\",\"anchor\":\"CENTER\"}]}]}";
+
 void test_layout_image_anim_parsed(void) {
     static Dashboard d; char err[64];
     TEST_ASSERT_TRUE(dash_set_layout(&d, LAYOUT_AIMG, err, sizeof(err)));
@@ -597,6 +603,63 @@ void test_update_aimg_play_period_defaults(void) {
     TEST_ASSERT_EQUAL_INT(80, d.components[0].aimg_period_ms);
 }
 
+// --- context_apply : image_anim bind = frame d'etat ---
+void test_ctxapply_aimg_bind_selects_frame(void) {
+    static Dashboard d; char err[64];
+    dash_set_layout(&d, LAYOUT_AIMG_BIND, err, sizeof(err));
+    dash_set_context(&d, "{\"st\":3}", 1000);
+    context_apply(&d);
+    TEST_ASSERT_EQUAL_INT(3, d.components[0].value);
+}
+void test_ctxapply_aimg_bind_clamps(void) {
+    static Dashboard d; char err[64];
+    dash_set_layout(&d, LAYOUT_AIMG_BIND, err, sizeof(err));
+    dash_set_context(&d, "{\"st\":9}", 1000);
+    context_apply(&d);
+    TEST_ASSERT_EQUAL_INT(3, d.components[0].value);   // clamp a frames-1 = 3
+}
+void test_ctxapply_aimg_bind_ignored_while_playing(void) {
+    static Dashboard d; char err[64], unk[64];
+    dash_set_layout(&d, LAYOUT_AIMG_BIND, err, sizeof(err));
+    dash_apply_update(&d, "{\"sp\":{\"play\":true}}", unk, sizeof(unk));  // value->0, playing
+    dash_set_context(&d, "{\"st\":3}", 1000);
+    context_apply(&d);
+    TEST_ASSERT_EQUAL_INT(0, d.components[0].value);   // bind ignore pendant la lecture
+}
+
+// --- dash_tick_aimg : moteur d'avance de frame ---
+void test_aimg_tick_advances_after_period(void) {
+    static Dashboard d; char err[64], unk[64];
+    dash_set_layout(&d, LAYOUT_AIMG, err, sizeof(err));
+    dash_apply_update(&d, "{\"sp\":{\"play\":true,\"loop\":0,\"period\":50}}", unk, sizeof(unk));
+    dash_tick_aimg(&d, 1000);                  // 1er tick : pose last, n'avance pas (frame 0 affichee)
+    TEST_ASSERT_EQUAL_INT(0, d.components[0].value);
+    dash_tick_aimg(&d, 1040);                  // < periode : rien
+    TEST_ASSERT_EQUAL_INT(0, d.components[0].value);
+    dash_tick_aimg(&d, 1060);                  // >= periode : frame 0 -> 1
+    TEST_ASSERT_EQUAL_INT(1, d.components[0].value);
+    TEST_ASSERT_TRUE(d.components[0].dirty);
+}
+void test_aimg_tick_finite_loop_settles_to_rest(void) {
+    static Dashboard d; char err[64], unk[64];
+    dash_set_layout(&d, LAYOUT_AIMG, err, sizeof(err));   // 6 frames, rest_frame=2
+    dash_apply_update(&d, "{\"sp\":{\"play\":true,\"loop\":1,\"period\":10}}", unk, sizeof(unk));
+    uint32_t t = 1000;
+    dash_tick_aimg(&d, t);                                // pose last (frame 0)
+    for (int i = 0; i < 6; i++) { t += 10; dash_tick_aimg(&d, t); }  // 0->1->2->3->4->5->wrap
+    TEST_ASSERT_FALSE(d.components[0].aimg_playing);
+    TEST_ASSERT_EQUAL_INT(2, d.components[0].value);      // settle a rest_frame
+}
+void test_aimg_tick_infinite_keeps_playing(void) {
+    static Dashboard d; char err[64], unk[64];
+    dash_set_layout(&d, LAYOUT_AIMG, err, sizeof(err));   // 6 frames
+    dash_apply_update(&d, "{\"sp\":{\"play\":true,\"loop\":0,\"period\":10}}", unk, sizeof(unk));
+    uint32_t t = 1000;
+    dash_tick_aimg(&d, t);
+    for (int i = 0; i < 14; i++) { t += 10; dash_tick_aimg(&d, t); }  // > 2 tours
+    TEST_ASSERT_TRUE(d.components[0].aimg_playing);       // infini : ne s'arrete jamais seul
+}
+
 int main(int, char**) {
     UNITY_BEGIN();
     RUN_TEST(test_remaining_seconds);
@@ -662,6 +725,12 @@ int main(int, char**) {
     RUN_TEST(test_bar_label_style_defaults);
     RUN_TEST(test_ctxapply_unchanged_not_dirty);
     RUN_TEST(test_ctxapply_missing_var_keeps_value);
+    RUN_TEST(test_ctxapply_aimg_bind_selects_frame);
+    RUN_TEST(test_ctxapply_aimg_bind_clamps);
+    RUN_TEST(test_ctxapply_aimg_bind_ignored_while_playing);
+    RUN_TEST(test_aimg_tick_advances_after_period);
+    RUN_TEST(test_aimg_tick_finite_loop_settles_to_rest);
+    RUN_TEST(test_aimg_tick_infinite_keeps_playing);
     RUN_TEST(test_layout_invalid_keeps_old);
     RUN_TEST(test_hex_parse);
     RUN_TEST(test_hex_no_hash);
