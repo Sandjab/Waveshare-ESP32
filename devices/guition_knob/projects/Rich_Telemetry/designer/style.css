@@ -110,7 +110,15 @@ textarea { width: 100%; height: 220px; background: #0a0a0e; color: #cbd5e1; bord
 .ag-active { fill: var(--accent); fill-opacity: .25; stroke: var(--accent); stroke-width: 2.5; }
 .ag-active.snapped { fill: var(--ok); fill-opacity: .4; stroke: var(--ok); }
 
-.w-bar-label { font: 14px Montserrat, system-ui, sans-serif; color: #9AA0AA; margin-bottom: 4px; text-align: center; }
+.w-bar-label { position: absolute; white-space: nowrap; line-height: 1; font-family: Montserrat, system-ui, sans-serif; pointer-events: none; }
+.w-bar-label--TOP_MID      { bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 6px; }
+.w-bar-label--TOP_LEFT     { bottom: 100%; left: 0;   margin-bottom: 6px; }
+.w-bar-label--TOP_RIGHT    { bottom: 100%; right: 0;  margin-bottom: 6px; }
+.w-bar-label--BOTTOM_MID   { top: 100%; left: 50%; transform: translateX(-50%); margin-top: 6px; }
+.w-bar-label--BOTTOM_LEFT  { top: 100%; left: 0;  margin-top: 6px; }
+.w-bar-label--BOTTOM_RIGHT { top: 100%; right: 0; margin-top: 6px; }
+.w-bar-label--LEFT_MID     { right: 100%; top: 50%; transform: translateY(-50%); margin-right: 6px; }
+.w-bar-label--RIGHT_MID    { left: 100%;  top: 50%; transform: translateY(-50%); margin-left: 6px; }
 .w-bar-track { background: #1F2937; border-radius: 999px; overflow: hidden; }   /* pilule (lv_bar arrondi) */
 .w-bar-fill { height: 100%; border-radius: 999px; }                            /* extrémité droite arrondie */
 

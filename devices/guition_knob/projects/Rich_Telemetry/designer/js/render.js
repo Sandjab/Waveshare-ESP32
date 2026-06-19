@@ -127,22 +127,24 @@ export function buildReadout(comp, mock = MOCKS.readout) {
 export function buildBar(comp, placement, mock = MOCKS.bar) {
   const wrap = document.createElement('div');
   wrap.className = 'w w-bar';
-  if (comp.label) {                          // label au-dessus (view.cpp:137-144)
-    const lbl = document.createElement('div');
-    lbl.className = 'w-bar-label';
-    lbl.textContent = comp.label;
-    wrap.appendChild(lbl);
-  }
   const track = document.createElement('div');
   track.className = 'w-bar-track';
-  track.style.width  = (placement.width  || 200) + 'px'; // défauts firmware (view.cpp:132)
+  track.style.width  = (placement.width  || 200) + 'px'; // défauts firmware (view.cpp)
   track.style.height = (placement.height || 16)  + 'px';
   const fill = document.createElement('div');
   fill.className = 'w-bar-fill';
   fill.style.width = (barFill(mock.value, comp.min ?? 0, comp.max ?? 100) * 100) + '%';
   fill.style.background = comp.color || '#38BDF8';
   track.appendChild(fill);
-  wrap.appendChild(track);
+  wrap.appendChild(track);                    // track d'abord = référence de taille du wrap
+  if (comp.label) {                           // label hors flux (absolu) → ne fausse pas le placement de la barre
+    const lbl = document.createElement('div');
+    lbl.className = 'w-bar-label w-bar-label--' + (comp.label_align || 'TOP_MID');
+    lbl.textContent = comp.label;
+    lbl.style.color = comp.label_color || '#9AA0AA';
+    lbl.style.fontSize = (comp.label_font || 14) + 'px';
+    wrap.appendChild(lbl);
+  }
   return wrap;
 }
 
