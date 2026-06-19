@@ -35,10 +35,10 @@ export const COMPONENTS = {
   },
   bar: {
     label: 'Barre',
-    defaults: () => ({ type: 'bar', label: 'Bar', min: 0, max: 100, color: '#38BDF8' }),
+    defaults: () => ({ type: 'bar', label: 'Bar', min: 0, max: 100, color: '#38BDF8', label_color: '#9AA0AA', label_font: 14, label_align: 'TOP_MID' }),
     makePlacement: screenPlacement,
     centered: false, physical: false,
-    compFields: [['label', 'Label', 'asciitext'], ['min', 'Min', 'num'], ['max', 'Max', 'num'], ['color', 'Couleur', 'color'], ['bind', 'Variable (pull)', 'asciitext']],
+    compFields: [['label', 'Label', 'asciitext'], ['min', 'Min', 'num'], ['max', 'Max', 'num'], ['color', 'Couleur', 'color'], ['label_color', 'Couleur label', 'color'], ['label_font', 'Police label', 'font'], ['label_align', 'Alignement label', 'anchorOut'], ['bind', 'Variable (pull)', 'asciitext']],
     placeFields: [['anchor', 'Ancrage', 'anchor'], ['dx', 'dx', 'num'], ['dy', 'dy', 'num'], ['width', 'Largeur', 'num'], ['height', 'Hauteur', 'num']],
     mockFields: [['value', 'Valeur (aperçu)']],
     build: (comp, pl, mock) => buildBar(comp, pl, mock),

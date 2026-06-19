@@ -1,6 +1,7 @@
 // Modèle de positionnement : ancrage LVGL + offset (dx, dy). Pur, sans DOM.
 // parent = carré 360×360 ; le widget s'aligne par le même "point d'ancrage" que le parent.
 export const ANCHORS = ['CENTER','TOP_MID','BOTTOM_MID','LEFT_MID','RIGHT_MID','TOP_LEFT','TOP_RIGHT','BOTTOM_LEFT','BOTTOM_RIGHT'];
+export const ANCHORS_OUT = ['TOP_LEFT','TOP_MID','TOP_RIGHT','LEFT_MID','RIGHT_MID','BOTTOM_LEFT','BOTTOM_MID','BOTTOM_RIGHT'];
 export const SCREEN = 360;
 
 const P = {

@@ -4,7 +4,7 @@
 import { setComponentProp, setPlacementProp, setThresholds, removePlacement, setPageBackground, setPageBackgroundImage } from './mutations.js';
 import { imageFileToBg, previewUrl } from './bg-image.js';
 import { COMPONENTS } from './registry.js';
-import { ANCHORS } from './geometry.js';
+import { ANCHORS, ANCHORS_OUT } from './geometry.js';
 import { getMock, setMock } from './mocks.js';
 
 const FONTS = [14, 20, 28, 36, 48];
@@ -27,6 +27,10 @@ function makeInput(kind, value, onChange) {
   } else if (kind === 'anchor') {
     el = document.createElement('select');
     for (const a of ANCHORS) { const o = document.createElement('option'); o.value = a; o.textContent = a; if (a === (value || 'CENTER')) o.selected = true; el.appendChild(o); }
+    el.addEventListener('change', () => onChange(el.value));
+  } else if (kind === 'anchorOut') {
+    el = document.createElement('select');
+    for (const a of ANCHORS_OUT) { const o = document.createElement('option'); o.value = a; o.textContent = a; if (a === (value || 'TOP_MID')) o.selected = true; el.appendChild(o); }
     el.addEventListener('change', () => onChange(el.value));
   } else if (kind === 'num') {
     el = document.createElement('input'); el.type = 'number'; el.value = value ?? '';
