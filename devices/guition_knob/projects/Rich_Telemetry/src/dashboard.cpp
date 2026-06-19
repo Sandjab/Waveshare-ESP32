@@ -368,6 +368,11 @@ void context_apply(Dashboard* d) {
     }
 }
 
+// Moteur d'avance de frame pour les composants image_anim en lecture.
+// Appelé à chaque tick (100 ms typ.) depuis la tâche LVGL ou main loop.
+// Sentinelle aimg_loops_left == -1 : boucle infinie — jamais décrémentée.
+// Premier tick : pose aimg_last_ms sans avancer (la frame 0 s'affiche pendant une periode complète).
+// Fin de boucle finie : règle aimg_playing=false puis saute à aimg_rest (frame de repos).
 void dash_tick_aimg(Dashboard* d, uint32_t now_ms) {
     for (int i = 0; i < d->comp_count; i++) {
         Component& c = d->components[i];
