@@ -26,6 +26,9 @@ struct Component {
     Threshold thresholds[MAX_THRESHOLDS];
     int      threshold_count;
     uint16_t font;
+    uint32_t label_color;            // bar : couleur du libelle (defaut 0x9AA0AA)
+    uint16_t label_font;             // bar : taille de police du libelle (defaut 14)
+    Anchor   label_align;            // bar : position du libelle autour de la barre (defaut A_TOP_MID)
     uint8_t  led_brightness_cfg;
     char     bind[ID_LEN];           // nom de variable du contexte (pull) ; vide = push par id
     int      chart_points;           // chart : longueur de la fenêtre d'historique (défaut 30, borné CHART_MAX_POINTS)

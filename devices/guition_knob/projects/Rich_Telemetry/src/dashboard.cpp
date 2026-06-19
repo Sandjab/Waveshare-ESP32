@@ -83,6 +83,9 @@ bool dash_set_layout(Dashboard* d, const char* json, char* err, size_t errn) {
         c.center_color     = c.center_color_set ? parse_hex_color(o["center_color"], c.color) : c.color;
         c.countdown   = o["countdown"] | false;
         c.font        = o["font"] | 20;
+        c.label_color = parse_hex_color(o["label_color"] | "#9AA0AA", 0x9AA0AA);
+        c.label_font  = o["label_font"] | 14;
+        c.label_align = parse_anchor(o["label_align"] | "TOP_MID");
         c.led_brightness_cfg = o["brightness"] | 64;
         strlcpy(c.bind, o["bind"] | "", sizeof(c.bind));
         c.chart_points = o["points"] | 30;

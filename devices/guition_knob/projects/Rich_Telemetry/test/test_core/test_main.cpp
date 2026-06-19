@@ -466,6 +466,27 @@ void test_ctxapply_bar_value(void) {
     context_apply(&d);
     TEST_ASSERT_EQUAL_INT(63, d.components[dash_find(&d,"x")].value);
 }
+void test_bar_label_style_parsed(void) {
+    Dashboard d{}; char err[80];
+    const char* j = "{\"components\":{\"b\":{\"type\":\"bar\",\"label\":\"RAM\","
+                    "\"label_color\":\"#FF0000\",\"label_font\":20,\"label_align\":\"BOTTOM_MID\"}},"
+                    "\"pages\":[{\"name\":\"p\",\"place\":[{\"ref\":\"b\"}]}]}";
+    TEST_ASSERT_TRUE(dash_set_layout(&d, j, err, sizeof(err)));
+    int i = dash_find(&d, "b");
+    TEST_ASSERT_EQUAL_HEX32(0xFF0000, d.components[i].label_color);
+    TEST_ASSERT_EQUAL_INT(20, d.components[i].label_font);
+    TEST_ASSERT_EQUAL_INT(A_BOTTOM_MID, d.components[i].label_align);
+}
+void test_bar_label_style_defaults(void) {
+    Dashboard d{}; char err[80];
+    const char* j = "{\"components\":{\"b\":{\"type\":\"bar\",\"label\":\"RAM\"}},"
+                    "\"pages\":[{\"name\":\"p\",\"place\":[{\"ref\":\"b\"}]}]}";
+    TEST_ASSERT_TRUE(dash_set_layout(&d, j, err, sizeof(err)));
+    int i = dash_find(&d, "b");
+    TEST_ASSERT_EQUAL_HEX32(0x9AA0AA, d.components[i].label_color);
+    TEST_ASSERT_EQUAL_INT(14, d.components[i].label_font);
+    TEST_ASSERT_EQUAL_INT(A_TOP_MID, d.components[i].label_align);
+}
 void test_ctxapply_unchanged_not_dirty(void) {
     Dashboard d{}; char err[80];
     dash_set_layout(&d, bound_layout("bar", ""), err, sizeof(err));
@@ -554,6 +575,8 @@ int main(int, char**) {
     RUN_TEST(test_ctxapply_readout_num_formats);
     RUN_TEST(test_ctxapply_readout_string);
     RUN_TEST(test_ctxapply_bar_value);
+    RUN_TEST(test_bar_label_style_parsed);
+    RUN_TEST(test_bar_label_style_defaults);
     RUN_TEST(test_ctxapply_unchanged_not_dirty);
     RUN_TEST(test_ctxapply_missing_var_keeps_value);
     RUN_TEST(test_layout_invalid_keeps_old);
